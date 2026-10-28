@@ -15,7 +15,6 @@
   #top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; background:rgba(0,0,0,0.7); padding:8px 12px; border-radius:10px; border:1px solid #d4af37; }
   #bal { font-size:20px; font-weight:900; color:#ffd700; }
   
-  /* Меню выбора игр */
   #menu { position:absolute; inset:0; background:rgba(0,0,0,0.95); z-index:10; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:20px; }
   #menu h1 { color:#d4af37; margin-bottom:20px; font-size:24px; text-align:center; }
   .game-btn { width:100%; max-width:300px; padding:20px; margin:10px 0; border-radius:12px; border:2px solid #d4af37; background:#111; color:#fff; font-size:18px; text-align:left; display:flex; justify-content:space-between; align-items:center; }
@@ -50,7 +49,6 @@
 </head>
 <body>
 
-<!-- Меню выбора игр -->
 <div id="menu">
   <h1>Выбери игру</h1>
   <button class="game-btn" onclick="startGame('fruits')"><span>🍒 Классика</span> <span>3x1</span></button>
@@ -90,7 +88,6 @@ if (tg) { tg.ready(); tg.expand(); }
 const init = tg?.initData || '';
 const $ = id => document.getElementById(id);
 
-/* ==================== АУДИО ==================== */
 const AC = window.AudioContext || window.webkitAudioContext;
 let actx = null;
 function audioCtx() { if (!AC) return null; if (!actx) actx = new AC(); if (actx.state === 'suspended') actx.resume(); return actx; }
@@ -121,11 +118,10 @@ const SFX = {
   lose: () => tone(150,.3,'sawtooth',.06,0),
 };
 
-/* ==================== КОНФИГ ИГР ==================== */
 const GAME_CONFIG = {
   fruits: { cols: 3, rows: 1, syms: ['🍒','🍋','🔔','⭐','💎','7️⃣'], bg: '#110000', scatter: null },
-  space:  { cols: 12, rows: 3, syms: ['👽','🚀','🪐','⭐','🌌','☄️'], bg: '#000511', scatter: 2 }, // 🪐 - скаттер
-  egypt:  { cols: 5, rows: 3, syms: ['🐈','🐍','👁️','🏺','⚱️','🔺'], bg: '#110b00', scatter: 2 }  // 👁️ - скаттер
+  space:  { cols: 12, rows: 3, syms: ['👽','🚀','🪐','⭐','🌌','☄️'], bg: '#000511', scatter: 2 },
+  egypt:  { cols: 5, rows: 3, syms: ['🐈','🐍','👁️','🏺','⚱️','🔺'], bg: '#110b00', scatter: 2 }
 };
 
 const LINES = {
@@ -251,7 +247,7 @@ function showResult(d) {
     for(let col=0; col<conf.cols; col++) {
       for(let row=0; row<conf.rows; row++) {
         if (d.grid[col][row] === conf.scatter) {
-          reels[col].labels[row].style.fill = 0xffd700; // Скаттер - золотой
+          reels[col].labels[row].style.fill = 0xffd700;
           hasScatters = true;
         }
       }
@@ -269,13 +265,17 @@ function showResult(d) {
     showMsg(`+${d.win}`, true);
     toast(`+${d.win}`);
     
-    // Рисуем линии
+    // Рисуем линии ТОЛЬКО до совпавших символов
     winLinesGraphics = new PIXI.Graphics();
     d.lines.forEach(l => {
       const lineData = LINES[currentGame][l.line];
-      for(let col=0; col<l.count; col++) { reels[col].labels[lineData[col]].style.fill = 0xffd700; }
+      for(let col=0; col<l.count; col++) { 
+        reels[col].labels[lineData[col]].style.fill = 0xffd700; 
+      }
       winLinesGraphics.moveTo(cellW/2, lineData[0]*cellH + cellH/2);
-      for(let col=1; col<conf.cols; col++) { winLinesGraphics.lineTo(col*cellW + cellW/2, lineData[col]*cellH + cellH/2); }
+      for(let col=1; col<l.count; col++) { 
+        winLinesGraphics.lineTo(col*cellW + cellW/2, lineData[col]*cellH + cellH/2); 
+      }
       winLinesGraphics.stroke({ width: 3, color: 0xffd700, alpha: 0.8 });
     });
     app.stage.addChild(winLinesGraphics);
@@ -287,19 +287,18 @@ function showResult(d) {
   refresh();
   spinning = false;
   
-  // Логика фриспинов
+  // Логика фриспинов (ИСПРАВЛЕНО: больше не выдает ошибку)
   if (freeSpins > 0) {
     freeSpins--;
     showMsg(`ФРИСПИН (осталось: ${freeSpins})`, true);
     setTimeout(() => {
-      doSpin(0); // Спин бесплатный (ставка 0)
+      doSpin(0); 
     }, 2000);
   } else {
     $('spin').disabled = false;
   }
 }
 
-/* ==================== API ==================== */
 async function api(path, body={}) {
   const r = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ init_data: init, ...body }) });
   const j = await r.json(); if (!r.ok) throw new Error(j.detail || 'ошибка'); return j;
@@ -323,7 +322,13 @@ async function doSpin(betAmount) {
     const d = await api('/spin', { bet: betAmount, game: currentGame }); 
     startSpin(d.grid);
     setTimeout(() => { showResult(d); }, 1000 + GAME_CONFIG[currentGame].cols * 150 + 500);
-  } catch(e) { SFX.lose(); showMsg(e.message, false); spinning = false; $('spin').disabled = false; }
+  } catch(e) { 
+    SFX.lose(); 
+    showMsg(e.message, false); 
+    spinning = false; 
+    $('spin').disabled = false;
+    freeSpins = 0; // Сбрасываем фриспины, если произошла ошибка
+  }
 }
 
 $('spin').onclick = async () => {
@@ -344,7 +349,6 @@ $('ad').onclick = async () => {
 
 $('backBtn').onclick = () => { location.reload(); };
 
-// Инициализация меню
 $('menu').style.display = 'flex';
 </script>
 </body>
