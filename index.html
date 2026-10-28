@@ -463,3 +463,230 @@ $('bonus').onclick = async () => {
                  let mm = Math.floor(tl / 60);
                  let ss = Math.floor(tl % 60);
                  $('wheel-timer').textContent = `Ждать: ${mm}:${ss
+  if (freeSpins > 0) {
+    freeSpins--;
+    $('fs-counter').textContent = freeSpins > 0 ? `FS: ${freeSpins}` : '';
+    if (freeSpins > 0) {
+      showMsg(`ФРИСПИН (осталось: ${freeSpins})`, true);
+      setTimeout(() => { doSpin(0); }, 2000);
+    } else {
+      $('spin').disabled = false;
+      showMsg(`ФРИСПИНЫ ОКОНЧЕНЫ`, false);
+    }
+  } else { $('spin').disabled = false; }
+}
+
+async function api(path, body={}) {
+  const r = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ init_data: init, ...body }) });
+  const j = await r.json(); if (!r.ok) throw new Error(j.detail || 'ошибка'); return j;
+}
+
+let state = {};
+async function refresh() {
+  state = await api('/state'); 
+  $('bal').textContent = state.balance; 
+  
+  if (freeSpins === 0) {
+      if (state.wheel_daily >= 5) {
+          $('bonus').disabled = true;
+          $('bonus').textContent = `БОНУС (0/5)`;
+      } else if (state.wheel_ready) {
+          $('bonus').disabled = false;
+          $('bonus').textContent = `БОНУС (${5 - state.wheel_daily}/5)`;
+      } else {
+          $('bonus').disabled = true;
+          let m = Math.floor(state.wheel_time_left / 60);
+          let s = state.wheel_time_left % 60;
+          $('bonus').textContent = `ЖДАТЬ ${m}:${s < 10 ? '0':''}${s}`;
+      }
+  }
+  $('ad').disabled = !state.ad_ready || !state.ad_allowed || freeSpins > 0;
+}
+
+function showMsg(t, win) { const m = $('msg'); m.textContent = t; m.className = 'show ' + (win ? 'win':'lose'); setTimeout(()=> m.className='', 2000); }
+function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); setTimeout(()=> el.classList.remove('show'), 1500); }
+
+$('betrow').onclick = e => { 
+    if (freeSpins > 0) return;
+    if (e.target.id === 'custom-bet') return;
+    if (!e.target.dataset.bet) return; 
+    
+    SFX.click(); 
+    [...$('betrow').children].forEach(b=>b.classList.remove('active')); 
+    e.target.classList.add('active'); 
+    $('custom-bet').value = '';
+    currentBet = +e.target.dataset.bet; 
+    $('spin').textContent = `SPIN (${currentBet})`; 
+};
+
+$('custom-bet').oninput = e => {
+    let val = parseInt(e.target.value);
+    let minB = GAME_CONFIG[currentGame].min_bet;
+    if (isNaN(val) || val < minB) {
+        $('spin').textContent = `SPIN (мин. ${minB})`;
+        currentBet = 0; 
+    } else {
+        $('spin').textContent = `SPIN (${val})`;
+        currentBet = val;
+        [...$('betrow').children].forEach(b=>b.classList.remove('active'));
+    }
+};
+
+let spinning = false;
+async function doSpin(betAmount) {
+  try {
+    const d = await api('/spin', { bet: betAmount, game: currentGame }); 
+    startSpin(d.grid);
+    setTimeout(() => { showResult(d); }, 1000 + GAME_CONFIG[currentGame].cols * 150 + 500);
+  } catch(e) { 
+      SFX.lose(); 
+      showMsg(e.message, false); 
+      spinning = false; 
+      $('spin').disabled = false; 
+      freeSpins = 0; 
+      $('fs-counter').textContent = ''; 
+  }
+}
+
+$('spin').onclick = async () => {
+  if (spinning || freeSpins > 0) return; 
+  if (currentBet <= 0) { showMsg('Ставка меньше минимума!', false); return; }
+  SFX.click(); spinning = true; $('spin').disabled = true;
+  doSpin(currentBet);
+};
+
+// ==================== РУЛЕТКА ====================
+const wheelCanvas = $('wheel-canvas');
+const ctx = wheelCanvas.getContext('2d');
+const slices = [
+    { label: '1000', color: '#ff0000' }, { label: '0', color: '#333333' }, 
+    { label: '500', color: '#ffd700' }, { label: '20', color: '#111111' },
+    { label: '250', color: '#8a2be2' }, { label: '50', color: '#111111' },
+    { label: '100', color: '#00c853' }, { label: '0', color: '#333333' }
+];
+const sliceAngle = Math.PI * 2 / slices.length;
+let currentRotation = 0;
+let isSpinningWheel = false;
+const offsetAngle = -Math.PI / 2 - sliceAngle / 2; 
+
+let wheelStartTime = 0;
+
+function drawWheel() {
+    ctx.clearRect(0, 0, 300, 300);
+    for (let i = 0; i < slices.length; i++) {
+        const angle = i * sliceAngle + currentRotation + offsetAngle;
+        ctx.beginPath();
+        ctx.fillStyle = slices[i].color;
+        ctx.moveTo(150, 150);
+        ctx.arc(150, 150, 140, angle, angle + sliceAngle);
+        ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+
+        ctx.save();
+        ctx.translate(150, 150);
+        ctx.rotate(angle + sliceAngle / 2);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 20px Arial";
+        ctx.fillText(slices[i].label, 130, 10);
+        ctx.restore();
+    }
+    ctx.beginPath(); ctx.fillStyle = '#d4af37'; ctx.arc(150, 150, 30, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
+}
+
+$('bonus').onclick = async () => {
+  if (isSpinningWheel || freeSpins > 0) return;
+  
+  $('wheel-modal').style.display = 'flex';
+  $('wheel-result').style.opacity = '0';
+  $('wheel-close').style.display = 'none';
+  $('wheel-spin-btn').style.display = 'block';
+  
+  if (state.wheel_ready) {
+      $('wheel-spin-btn').disabled = false;
+      $('wheel-timer').textContent = `Доступно круток: ${5 - state.wheel_daily}/5`;
+  } else {
+      $('wheel-spin-btn').disabled = true;
+      if (state.wheel_daily >= 5) {
+          $('wheel-timer').textContent = `Лимит на сегодня исчерпан (5/5)`;
+      } else {
+          let m = Math.floor(state.wheel_time_left / 60);
+          let s = state.wheel_time_left % 60;
+          $('wheel-timer').textContent = `Ждать: ${m}:${s < 10 ? '0':''}${s}`;
+          if(wheelTimerInterval) clearInterval(wheelTimerInterval);
+          
+          wheelStartTime = Date.now();
+          wheelTimerInterval = setInterval(() => {
+             let tl = Math.max(0, state.wheel_time_left - (Date.now() - wheelStartTime) / 1000);
+             if (tl <= 0) {
+                 $('wheel-spin-btn').disabled = false;
+                 $('wheel-timer').textContent = `Доступно круток: ${5 - state.wheel_daily}/5`;
+                 clearInterval(wheelTimerInterval);
+             } else {
+                 let mm = Math.floor(tl / 60);
+                 let ss = Math.floor(tl % 60);
+                 $('wheel-timer').textContent = `Ждать: ${mm}:${ss < 10 ? '0':''}${ss}`;
+             }
+          }, 1000);
+      }
+  }
+  drawWheel();
+};
+
+$('wheel-spin-btn').onclick = async () => {
+  if (isSpinningWheel) return;
+  isSpinningWheel = true;
+  $('wheel-spin-btn').style.display = 'none';
+  if(wheelTimerInterval) clearInterval(wheelTimerInterval);
+
+  try {
+    const d = await api('/bonus');
+    let targetIdx = slices.findIndex(s => s.label == d.amount.toString());
+    if (targetIdx === -1) targetIdx = 1;
+
+    let spins = 5 * Math.PI * 2;
+    let stopAngle = spins + (Math.PI*2 - targetIdx * sliceAngle);
+    
+    let startTime = performance.now();
+    let duration = 4000;
+
+    function animateWheel(time) {
+        let progress = (time - startTime) / duration;
+        if (progress > 1) progress = 1;
+        let ease = 1 - Math.pow(1 - progress, 3);
+        currentRotation = stopAngle * ease;
+        drawWheel();
+
+        if (progress < 1) {
+            requestAnimationFrame(animateWheel);
+            if (Math.random() < 0.1) SFX.reelTick();
+        } else {
+            $('wheel-result').textContent = `+${d.amount}`;
+            $('wheel-result').style.opacity = '1';
+            $('wheel-close').style.display = 'block';
+            if(d.amount > 0) SFX.bigWin(); else SFX.lose();
+            isSpinningWheel = false;
+            refresh();
+        }
+    }
+    requestAnimationFrame(animateWheel);
+  } catch(e) {
+    showMsg(e.message, false);
+    $('wheel-modal').style.display = 'none';
+    isSpinningWheel = false;
+  }
+};
+
+$('wheel-close').onclick = () => { $('wheel-modal').style.display = 'none'; };
+
+$('ad').onclick = async () => {
+  SFX.click(); $('ad').disabled = true; showMsg('показ рекламы…', false);
+  setTimeout(async () => { try { const d = await api('/ad'); SFX.win(); toast(`за рекламу +${d.amount}`); refresh(); } catch(e) { showMsg(e.message, false); refresh(); } }, 5000);
+};
+
+$('backBtn').onclick = () => { location.reload(); };
+$('menu').style.display = 'flex';
+</script>
+</body>
+</html>
