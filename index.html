@@ -11,25 +11,36 @@
   #app { position:relative; z-index:1; max-width:600px; margin:0 auto; padding:8px; display:flex; flex-direction:column; height:100vh; }
   #top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; background:rgba(0,0,0,0.7); padding:8px 12px; border-radius:10px; border:1px solid #d4af37; }
   #bal { font-size:20px; font-weight:900; color:#ffd700; }
+  
   #menu { position:absolute; inset:0; background:rgba(0,0,0,0.95); z-index:10; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:20px; }
   #menu h1 { color:#d4af37; margin-bottom:20px; font-size:24px; text-align:center; }
   .game-btn { width:100%; max-width:300px; padding:20px; margin:10px 0; border-radius:12px; border:2px solid #d4af37; background:#111; color:#fff; font-size:18px; text-align:left; display:flex; justify-content:space-between; align-items:center; }
   .game-btn:active { background:#222; transform:scale(0.98); }
+  
   #msg { min-height:24px; text-align:center; font-weight:900; font-size:16px; transition:opacity .2s; opacity:0; margin-bottom: 4px; }
   #msg.show { opacity:1; }
   #msg.win { color:#00ff00; text-shadow:0 0 10px #0f0; }
   #msg.lose { color:#ff3333; }
+  
   #pixi { width:100%; border-radius:12px; overflow:hidden; background:#000; border:3px solid #d4af37; position:relative; transition: aspect-ratio 0.3s; }
+          
   .controls { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-top:auto; margin-bottom:8px; }
-  button { padding:14px 6px; font-size:14px; font-weight:900; border-radius:10px; border:2px solid #d4af37; color:#fff; }
+  button { padding:14px 6px; font-size:14px; font-weight:900; border-radius:10px; border:2px solid #d4af37; color:#fff; cursor:pointer;}
   button:active { transform:scale(.95); }
-  button:disabled { opacity:.4; filter:grayscale(1); }
+  button:disabled { opacity:.4; filter:grayscale(1); cursor:not-allowed;}
+  
   #spin { grid-column:1 / -1; padding:16px; font-size:20px; background:linear-gradient(to bottom, #ff0000, #990000); }
-  #bonus { background:linear-gradient(to bottom, #8a2be2, #4b0082); }
+  #bonus { background:linear-gradient(to bottom, #8a2be2, #4b0082); position:relative;}
   #ad { background:linear-gradient(to bottom, #00c853, #00796b); }
-  .betrow { display:flex; gap:4px; justify-content:center; margin-bottom:6px; }
+  
+  .betrow { display:flex; gap:4px; justify-content:center; margin-bottom:6px; align-items:center;}
   .betrow button { padding:8px 10px; font-size:12px; background:#111; color:#888; border:1px solid #333; }
   .betrow button.active { background:#d4af37; color:#000; border-color:#fff; }
+  
+  /* Поле ввода ставки */
+  #custom-bet { width: 80px; padding: 8px; font-size: 14px; font-weight: bold; text-align: center; background: #111; color: #fff; border: 2px solid #333; border-radius: 8px; outline: none; }
+  #custom-bet:focus { border-color: #d4af37; }
+
   .toast { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(.8); background:rgba(0,0,0,.9); padding:16px 32px; border-radius:12px; border:2px solid #ffd700; font-size:24px; font-weight:900; opacity:0; pointer-events:none; transition:.25s; z-index:99; color:#ffd700; }
   .toast.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
 
@@ -46,9 +57,9 @@
 
 <div id="menu">
   <h1>Выбери игру</h1>
-  <button class="game-btn" onclick="startGame('fruits')"><span>🍒 Классика</span> <span>3x1</span></button>
-  <button class="game-btn" onclick="startGame('space')"><span>🚀 Космос</span> <span>7x3</span></button>
-  <button class="game-btn" onclick="startGame('egypt')"><span>🏺 Египет</span> <span>5x3</span></button>
+  <button class="game-btn" onclick="startGame('fruits')"><span>🍒 Классика</span> <span>3x1 (мин: 10)</span></button>
+  <button class="game-btn" onclick="startGame('space')"><span>🚀 Космос</span> <span>7x3 (мин: 50)</span></button>
+  <button class="game-btn" onclick="startGame('egypt')"><span>🏺 Египет</span> <span>5x3 (мин: 50)</span></button>
 </div>
 
 <div id="app">
@@ -58,17 +69,19 @@
   </div>
   <div id="pixi"></div>
   <div id="msg"></div>
+  
   <div style="margin-top: auto;">
     <div class="betrow" id="betrow">
       <button data-bet="10" class="active">10</button>
       <button data-bet="50">50</button>
       <button data-bet="100">100</button>
       <button data-bet="500">500</button>
+      <input type="number" id="custom-bet" placeholder="Своя" min="1">
     </div>
     <div class="controls">
       <button id="spin">SPIN</button>
-      <button id="bonus" disabled>БОНУС</button>
-      <button id="ad" disabled>РЕКЛАМА</button>
+      <button id="bonus">БОНУС</button>
+      <button id="ad">РЕКЛАМА</button>
       <button id="backBtn" style="grid-column:1/-1; background:#333; color:#ccc; padding:8px; font-size:12px; margin-top:4px;">⬅ Сменить игру</button>
     </div>
   </div>
@@ -83,6 +96,8 @@
   </div>
   <div id="wheel-result">0</div>
   <button id="wheel-close">ЗАБРАТЬ</button>
+  <div style="color:#888; margin-top:10px; font-size:12px;" id="wheel-timer"></div>
+  <button id="wheel-spin-btn" style="margin-top:10px; background:#4b0082; width:200px;">КРУТИТЬ</button>
 </div>
 
 <script>
@@ -122,10 +137,9 @@ const SFX = {
 };
 
 const GAME_CONFIG = {
-  fruits: { cols: 3, rows: 1, syms: ['🍒','🍋','🔔','⭐','💎','7️⃣'], bg: '#110000', scatter: null },
-  // ИСПРАВЛЕНО: скаттер (6) теперь отдельный символ (🪐)
-  space:  { cols: 7, rows: 3, syms: ['👽','🚀','⭐','🌌','☄️','🔮', '🪐'], bg: '#000511', scatter: 6 },
-  egypt:  { cols: 5, rows: 3, syms: ['🐈','🐍','🏺','⚱️','🔺','🔱', '👁️'], bg: '#110b00', scatter: 6 }
+  fruits: { cols: 3, rows: 1, min_bet: 10, syms: ['🍒','🍋','🔔','⭐','💎','7️⃣'], bg: '#110000', scatter: null },
+  space:  { cols: 7, rows: 3, min_bet: 50, syms: ['👽','🚀','⭐','🌌','☄️','🔮', '🪐'], bg: '#000511', scatter: 6 },
+  egypt:  { cols: 5, rows: 3, min_bet: 50, syms: ['🐈','🐍','🏺','⚱️','🔺','🔱', '👁️'], bg: '#110b00', scatter: 6 }
 };
 
 const LINES = {
@@ -142,6 +156,8 @@ const LINES = {
 let currentGame = 'fruits';
 let app, reels = [], cellW = 0, cellH = 0;
 let freeSpins = 0;
+let currentBet = 10;
+let wheelTimerInt = null;
 
 function startGame(gameKey) {
   currentGame = gameKey;
@@ -149,6 +165,13 @@ function startGame(gameKey) {
   $('menu').style.display = 'none';
   $('pixi').style.aspectRatio = `${conf.cols}/${conf.rows}`;
   $('pixi').style.background = conf.bg;
+  
+  currentBet = conf.min_bet;
+  $('custom-bet').value = '';
+  $('custom-bet').min = conf.min_bet;
+  $('spin').textContent = `SPIN (${currentBet})`;
+  [...$('betrow').children].forEach(b=>b.classList.remove('active'));
+  
   initPixi();
 }
 
@@ -301,18 +324,59 @@ async function api(path, body={}) {
   const r = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ init_data: init, ...body }) });
   const j = await r.json(); if (!r.ok) throw new Error(j.detail || 'ошибка'); return j;
 }
+
 let state = {};
 async function refresh() {
   state = await api('/state'); 
   $('bal').textContent = state.balance; 
-  $('bonus').disabled = !state.bonus_ready || freeSpins > 0; 
+  
+  if (freeSpins === 0) {
+      // Таймер и статус бонуса
+      if (state.wheel_daily >= 5) {
+          $('bonus').disabled = true;
+          $('bonus').textContent = `БОНУС (0/5)`;
+      } else if (state.wheel_ready) {
+          $('bonus').disabled = false;
+          $('bonus').textContent = `БОНУС (${5 - state.wheel_daily}/5)`;
+      } else {
+          $('bonus').disabled = true;
+          let m = Math.floor(state.wheel_time_left / 60);
+          let s = state.wheel_time_left % 60;
+          $('bonus').textContent = `ЖДАТЬ ${m}:${s < 10 ? '0':''}${s}`;
+      }
+  }
   $('ad').disabled = !state.ad_ready || !state.ad_allowed || freeSpins > 0;
 }
+
 function showMsg(t, win) { const m = $('msg'); m.textContent = t; m.className = 'show ' + (win ? 'win':'lose'); setTimeout(()=> m.className='', 2000); }
 function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); setTimeout(()=> el.classList.remove('show'), 1500); }
 
-let currentBet = 10;
-$('betrow').onclick = e => { if (!e.target.dataset.bet || e.target.disabled || freeSpins > 0) return; SFX.click(); [...$('betrow').children].forEach(b=>b.classList.remove('active')); e.target.classList.add('active'); currentBet = +e.target.dataset.bet; $('spin').textContent = `SPIN (${currentBet})`; };
+$('betrow').onclick = e => { 
+    if (freeSpins > 0) return;
+    if (e.target.id === 'custom-bet') return;
+
+    if (!e.target.dataset.bet) return; 
+    SFX.click(); 
+    [...$('betrow').children].forEach(b=>b.classList.remove('active')); 
+    e.target.classList.add('active'); 
+    $('custom-bet').value = '';
+    currentBet = +e.target.dataset.bet; 
+    $('spin').textContent = `SPIN (${currentBet})`; 
+};
+
+// Обработка ввода кастомной ставки
+$('custom-bet').oninput = e => {
+    let val = parseInt(e.target.value);
+    let minB = GAME_CONFIG[currentGame].min_bet;
+    if (isNaN(val) || val < minB) {
+        $('spin').textContent = `SPIN (мин. ${minB})`;
+        currentBet = 0; // Флаг, что ставка невалидна
+    } else {
+        $('spin').textContent = `SPIN (${val})`;
+        currentBet = val;
+        [...$('betrow').children].forEach(b=>b.classList.remove('active'));
+    }
+};
 
 let spinning = false;
 async function doSpin(betAmount) {
@@ -325,6 +389,7 @@ async function doSpin(betAmount) {
 
 $('spin').onclick = async () => {
   if (spinning || freeSpins > 0) return; 
+  if (currentBet <= 0) { showMsg('Ставка меньше минимума!', false); return; }
   SFX.click(); spinning = true; $('spin').disabled = true;
   doSpin(currentBet);
 };
@@ -368,60 +433,33 @@ function drawWheel() {
 }
 
 $('bonus').onclick = async () => {
-  if (isSpinningWheel) return;
-  isSpinningWheel = true;
+  if (isSpinningWheel || freeSpins > 0) return;
+  
   $('wheel-modal').style.display = 'flex';
   $('wheel-result').style.opacity = '0';
   $('wheel-close').style.display = 'none';
-  drawWheel();
-
-  try {
-    const d = await api('/bonus');
-    let targetIdx = slices.findIndex(s => s.label == d.amount.toString());
-    if (targetIdx === -1) targetIdx = 1;
-
-    let spins = 5 * Math.PI * 2;
-    let stopAngle = spins + (Math.PI*2 - targetIdx * sliceAngle);
-    
-    let startTime = performance.now();
-    let duration = 4000;
-
-    function animateWheel(time) {
-        let progress = (time - startTime) / duration;
-        if (progress > 1) progress = 1;
-        let ease = 1 - Math.pow(1 - progress, 3);
-        currentRotation = stopAngle * ease;
-        drawWheel();
-
-        if (progress < 1) {
-            requestAnimationFrame(animateWheel);
-            if (Math.random() < 0.1) SFX.reelTick();
-        } else {
-            $('wheel-result').textContent = `+${d.amount}`;
-            $('wheel-result').style.opacity = '1';
-            $('wheel-close').style.display = 'block';
-            if(d.amount > 0) SFX.bigWin(); else SFX.lose();
-            isSpinningWheel = false;
-            refresh();
-        }
-    }
-    requestAnimationFrame(animateWheel);
-  } catch(e) {
-    showMsg(e.message, false);
-    $('wheel-modal').style.display = 'none';
-    isSpinningWheel = false;
-  }
-};
-
-$('wheel-close').onclick = () => { $('wheel-modal').style.display = 'none'; };
-
-$('ad').onclick = async () => {
-  SFX.click(); $('ad').disabled = true; showMsg('показ рекламы…', false);
-  setTimeout(async () => { try { const d = await api('/ad'); SFX.win(); toast(`за рекламу +${d.amount}`); refresh(); } catch(e) { showMsg(e.message, false); refresh(); } }, 5000);
-};
-
-$('backBtn').onclick = () => { location.reload(); };
-$('menu').style.display = 'flex';
-</script>
-</body>
-</html>
+  $('wheel-spin-btn').style.display = 'block';
+  
+  // Показываем таймер и лимит
+  if (state.wheel_ready) {
+      $('wheel-spin-btn').disabled = false;
+      $('wheel-timer').textContent = `Доступно круток: ${5 - state.wheel_daily}/5`;
+  } else {
+      $('wheel-spin-btn').disabled = true;
+      if (state.wheel_daily >= 5) {
+          $('wheel-timer').textContent = `Лимит на сегодня исчерпан (5/5)`;
+      } else {
+          let m = Math.floor(state.wheel_time_left / 60);
+          let s = state.wheel_time_left % 60;
+          $('wheel-timer').textContent = `Ждать: ${m}:${s < 10 ? '0':''}${s}`;
+          if(wheelTimerInt) clearInterval(wheelTimerInt);
+          wheelTimerInt = setInterval(() => {
+             let tl = Math.max(0, state.wheel_time_left - (Date.now() - startWheelTs) / 1000);
+             if (tl <= 0) {
+                 $('wheel-spin-btn').disabled = false;
+                 $('wheel-timer').textContent = `Доступно круток: ${5 - state.wheel_daily}/5`;
+                 clearInterval(wheelTimerInt);
+             } else {
+                 let mm = Math.floor(tl / 60);
+                 let ss = Math.floor(tl % 60);
+                 $('wheel-timer').textContent = `Ждать: ${mm}:${ss
