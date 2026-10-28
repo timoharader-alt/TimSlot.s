@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pixi.js@8/dist/pixi.min.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin:0; padding:0; background:#07070d; color:#eee;
+               font-family:system-ui,-apple-system,sans-serif; overflow:hidden; height:100%; }
+  #bg { position:fixed; inset:0; z-index:0; }
+  #app { position:relative; z-index:1; max-width:480px; margin:0 auto; padding:12px; }
+  #top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  #bal { font-size:22px; font-weight:800; color:#ffd54a; text-shadow:0 0 12px rgba(255,213,74,.5); }
+  #msg { min-height:26px; text-align:center; font-weight:700; margin:6px 0;
+         transition:opacity .2s; opacity:0; }
+  #msg.show { opacity:1; }
+  #msg.win { color:#5eff9b; text-shadow:0 0 14px rgba(94,255,155,.6); }
+  #msg.lose { color:#ff7a7a; }
+  #pixi { width:100%; aspect-ratio:3/1; border-radius:14px; overflow:hidden;
+          background:#0d0d18; border:1px solid #2a2a44;
+          box-shadow:0 0 60px rgba(120,80,255,.25), inset 0 0 40px rgba(0,0,0,.7); }
+  .controls { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:12px; }
+  button { padding:14px 8px; font-size:15px; font-weight:800; border-radius:12px; border:none;
+           cursor:pointer; transition:transform .08s, opacity .15s; color:#0b0b12; }
+  button:active { transform:scale(.96); }
+  button:disabled { opacity:.35; cursor:not-allowed; }
+  #spin { grid-column:1 / -1; padding:18px; font-size:20px;
+          background:linear-gradient(135deg,#ffd54a,#ff8a3d);
+          box-shadow:0 6px 24px rgba(255,140,60,.4); }
+  #bonus { background:linear-gradient(135deg,#8a7dff,#5e4bff); color:#fff; }
+  #ad { background:linear-gradient(135deg,#5eff9b,#2ecc71); }
+  .betrow { display:flex; gap:6px; margin-top:8px; justify-content:center; }
+  .betrow button { padding:8px 14px; font-size:13px; background:#1c1c2a; color:#888; }
+  .betrow button.active { background:#ffd54a; color:#0b0b12; }
+  .toast { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(.8);
+           background:rgba(0,0,0,.9); padding:18px 28px; border-radius:14px;
+           font-size:22px; font-weight:800; opacity:0; pointer-events:none;
+           transition:.25s; z-index:99; color:#ffd54a; }
+  .toast.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div id="app">
+  <div id="top">
+    <div id="bal">0</div>
+    <div style="font-size:12px;color:#555">фишки · без вывода</div>
+  </div>
+  <div id="pixi"></div>
+  <div id="msg"></div>
+  <div class="betrow" id="betrow">
+    <button data-bet="10" class="active">10</button>
+    <button data-bet="50">50</button>
+    <button data-bet="100">100</button>
+    <button data-bet="500">500</button>
+  </div>
+  <div class="controls">
+    <button id="spin">SPIN</button>
+    <button id="bonus" disabled>БОНУС</button>
+    <button id="ad" disabled>РЕКЛАМА</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+const init = tg?.initData || '';
+const $ = id => document.getElementById(id);
+
+/* ==================== АУДИО ==================== */
+const AC = window.AudioContext || window.webkitAudioContext;
+let actx = null;
+function audioCtx() {
+  if (!AC) return null;
+  if (!actx) actx = new AC();
+  if (actx.state === 'suspended') actx.resume();
+  return actx;
+}
+function tone(freq, dur, type='sine', vol=0.06, when=0, slideTo=null) {
+  const ctx = audioCtx(); if (!ctx) return;
+  const t = ctx.currentTime + when;
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(ctx.destination);
+  o.start(t); o.stop(t + dur + 0.02);
+}
+function noise(dur=0.05, vol=0.04) {
+  const ctx = audioCtx(); if (!ctx) return;
+  const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * (1 - i/d.length);
+  const src = ctx.createBufferSource(); src.buffer = buf;
+  const g = ctx.createGain(); g.gain.value = vol;
+  const f = ctx.createBiquadFilter(); f.type='highpass'; f.frequency.value=800;
+  src.connect(f); f.connect(g); g.connect(ctx.destination);
+  src.start();
+}
+const SFX = {
+  click: () => tone(700, .04, 'square', .04),
+  reelTick: () => noise(.03, .03),
+  reelStop: (i=0) => { tone(140 + i*20, .08, 'triangle', .07); noise(.05,.05); },
+  win: () => { [523,659,784,1046].forEach((f,i)=>tone(f,.15,'triangle',.06,i*.08)); tone(1568,.25,'sine',.04,.32); },
+  bigWin: () => { [523,659,784,1046,1318,1568].forEach((f,i)=>tone(f,.18,'triangle',.07,i*.07)); [261,329,392].forEach((f,i)=>tone(f,.6,'sine',.05,.4)); },
+  lose: () => tone(200,.18,'sine',.05,0,120),
+  bonus: () => [392,523,659,784,1046].forEach((f,i)=>tone(f,.16,'triangle',.06,i*.07)),
+  bonusWin: () => { [784,1046,1318,1568].forEach((f,i)=>tone(f,.2,'triangle',.07,i*.08)); tone(2093,.4,'sine',.05,.35); },
+  ad: () => [300,450,600].forEach((f,i)=>tone(f,.1,'square',.04,i*.08)),
+  adWin: () => [600,900,1200].forEach((f,i)=>tone(f,.15,'triangle',.06,i*.08)),
+};
+
+/* ==================== ФОН ==================== */
+(function initBg() {
+  const c = $('bg'), x = c.getContext('2d');
+  let W, H, stars = [], orbs = [];
+  function resize() {
+    W = c.width = window.innerWidth * devicePixelRatio;
+    H = c.height = window.innerHeight * devicePixelRatio;
+    c.style.width = window.innerWidth + 'px'; c.style.height = window.innerHeight + 'px';
+    stars = Array.from({length: 140}, () => ({ x: Math.random()*W, y: Math.random()*H, r: Math.random()*1.6 + .4, sp: Math.random()*.3 + .05, a: Math.random()*.6 + .2, hue: Math.random()*60 + 220 }));
+    orbs = Array.from({length: 4}, () => ({ x: Math.random()*W, y: Math.random()*H, r: (Math.random()*180 + 120) * devicePixelRatio, hue: Math.random()*80 + 220, vx: (Math.random()-.5)*.15, vy: (Math.random()-.5)*.15, a: Math.random()*.05 + .03 }));
+  }
+  resize(); window.addEventListener('resize', resize);
+  let t = 0;
+  function frame() {
+    t += 0.016;
+    const g = x.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, '#07070d'); g.addColorStop(.5, '#0b0a1a'); g.addColorStop(1, '#0a0712');
+    x.fillStyle = g; x.fillRect(0,0,W,H);
+    x.globalCompositeOperation = 'screen';
+    orbs.forEach(o => {
+      o.x += o.vx * devicePixelRatio; o.y += o.vy * devicePixelRatio;
+      if (o.x < -o.r) o.x = W + o.r; if (o.x > W + o.r) o.x = -o.r;
+      if (o.y < -o.r) o.y = H + o.r; if (o.y > H + o.r) o.y = -o.r;
+      const gg = x.createRadialGradient(o.x, o.y, 0, o.x, o.y, o.r);
+      gg.addColorStop(0, `hsla(${o.hue},80%,60%,${o.a})`); gg.addColorStop(1, 'hsla(0,0%,0%,0)');
+      x.fillStyle = gg; x.beginPath(); x.arc(o.x, o.y, o.r, 0, Math.PI*2); x.fill();
+    });
+    x.globalCompositeOperation = 'source-over';
+    stars.forEach(s => {
+      s.y += s.sp * devicePixelRatio; if (s.y > H) { s.y = -4; s.x = Math.random()*W; }
+      const tw = (Math.sin(t*2 + s.x) + 1) / 2;
+      x.fillStyle = `hsla(${s.hue},90%,80%,${s.a * (.4 + tw*.6)})`;
+      x.beginPath(); x.arc(s.x, s.y, s.r*devicePixelRatio, 0, Math.PI*2); x.fill();
+    });
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+/* ==================== PIXI ==================== */
+const SYMBOLS = ['🍒','🍋','🔔','💎'];
+let app, reels = [], cellH = 0, totalReels = 3;
+
+(async () => {
+  app = new PIXI.Application();
+  await app.init({ backgroundAlpha: 0, resizeTo: $('pixi'), antialias: true, autoDensity: true, resolution: window.devicePixelRatio || 1 });
+  $('pixi').appendChild(app.canvas);
+  const w = app.screen.width, h = app.screen.height; cellH = h;
+  for (let i=0;i<totalReels;i++) {
+    const cont = new PIXI.Container(); cont.x = i * (w/3);
+    const mask = new PIXI.Graphics().rect(0,0,w/3,h).fill(0xffffff); cont.addChild(mask); cont.mask = mask;
+    const strip = new PIXI.Container(); const labels = [];
+    for (let j=0;j<16;j++) {
+      const t = new PIXI.Text({ text: SYMBOLS[j%4], style:{ fontFamily:'system-ui, "Segoe UI Emoji", sans-serif', fontSize: Math.floor(h*0.6), fill:0xffffff, align:'center' }});
+      t.anchor.set(0.5); t.x = w/6; t.y = j*cellH + cellH/2; strip.addChild(t); labels.push(t);
+    }
+    cont.addChild(strip);
+    const border = new PIXI.Graphics().rect(0,0,w/3,h).stroke({width:2, color:0x4a4a7a, alpha:0.7}); cont.addChild(border);
+    app.stage.addChild(cont); reels.push({ cont, strip, labels, offset:0 });
+  }
+  for (let i=1;i<totalReels;i++) { const line = new PIXI.Graphics().rect(i*(w/3)-1, 0, 2, h).fill({color:0x000000, alpha:0.55}); app.stage.addChild(line); }
+  app.ticker.add(tick);
+})();
+
+const reelsState = [ { speed:0, pos:0, stopAt:0, stopped:true }, { speed:0, pos:0, stopAt:0, stopped:true }, { speed:0, pos:0, stopAt:0, stopped:true } ];
+function tick() {
+  const delta = app.ticker.deltaMS;
+  for (let i=0;i<reels.length;i++) {
+    const r = reelsState[i], rv = reels[i];
+    if (r.speed > 0) {
+      r.pos += r.speed * delta * 0.001;
+      if (Math.random() < 0.25) SFX.reelTick();
+      if (r.pos >= r.stopAt) { r.pos = r.stopAt; r.speed = 0; r.stopped = true; SFX.reelStop(i); }
+      rv.strip.y = -r.pos * cellH; if (r.pos > 8) { r.pos -= 4; r.stopAt -= 4; }
+    }
+  }
+}
+function startSpin(finalSymbols) {
+  for (let i=0;i<reels.length;i++) {
+    const r = reelsState[i]; r.speed = 0.7 + i*0.18; r.pos = 0; r.stopAt = 3 + i*1.4; r.stopped = false;
+    reels[i].labels.forEach(l => l.text = SYMBOLS[Math.floor(Math.random()*4)]);
+    const stopIdx = Math.floor(r.stopAt) % 16; reels[i].labels[stopIdx].text = finalSymbols[i];
+  }
+}
+
+/* ==================== API ==================== */
+async function api(path, body={}) {
+  const r = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ init_data: init, ...body }) });
+  const j = await r.json(); if (!r.ok) throw new Error(j.detail || 'ошибка'); return j;
+}
+let state = {};
+async function refresh() {
+  state = await api('/state'); $('bal').textContent = state.balance; $('bonus').disabled = !state.bonus_ready; $('ad').disabled = !state.ad_ready || !state.ad_allowed;
+}
+function showMsg(t, win) { const m = $('msg'); m.textContent = t; m.className = 'show ' + (win ? 'win':'lose'); setTimeout(()=> m.className='', 1600); }
+function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); setTimeout(()=> el.classList.remove('show'), 1000); }
+
+let currentBet = 10;
+$('betrow').onclick = e => { if (!e.target.dataset.bet) return; SFX.click(); [...$('betrow').children].forEach(b=>b.classList.remove('active')); e.target.classList.add('active'); currentBet = +e.target.dataset.bet; $('spin').textContent = `SPIN (${currentBet})`; };
+
+let spinning = false;
+$('spin').onclick = async () => {
+  if (spinning) return; SFX.click(); spinning = true; $('spin').disabled = true;
+  try {
+    const d = await api('/spin', { bet: currentBet }); startSpin(d.reels);
+    setTimeout(() => {
+      spinning = false; $('spin').disabled = false; refresh();
+      if (d.win > 0) { const big = d.win >= currentBet * 10; big ? SFX.bigWin() : SFX.win(); showMsg(`+${d.win}`, true); toast(`+${d.win}`); } else { SFX.lose(); showMsg('пусто', false); }
+    }, 1700);
+  } catch(e) { SFX.lose(); showMsg(e.message, false); spinning = false; $('spin').disabled = false; }
+};
+
+$('bonus').onclick = async () => {
+  SFX.click(); SFX.bonus();
+  try { const d = await api('/bonus'); setTimeout(() => { SFX.bonusWin(); toast(`бонус +${d.amount}`); }, 400); refresh(); } catch(e) { showMsg(e.message, false); }
+};
+
+$('ad').onclick = async () => {
+  SFX.click(); $('ad').disabled = true; showMsg('показ рекламы…', false); SFX.ad();
+  setTimeout(async () => { try { const d = await api('/ad'); SFX.adWin(); toast(`за рекламу +${d.amount}`); refresh(); } catch(e) { showMsg(e.message, false); refresh(); } }, 5000);
+};
+
+refresh().catch(e => showMsg('ошибка: '+e.message, false));
+</script>
+</body>
+</html>
