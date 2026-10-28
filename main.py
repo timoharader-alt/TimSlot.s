@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "ВСТАВЬ_СЮДА_ТВОЙ_ТОКЕН")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "ВСТАВЬ_ТОКЕН")
 app = FastAPI()
 
 def db():
@@ -69,11 +69,10 @@ LINES = {
 def generate_grid(game_key):
     g = GAMES[game_key]
     cols, rows = g["cols"], g["rows"]
-    # Веса для повышения шанса выигрыша (базовые символы падают чаще)
     weights = [50, 30, 15, 10, 5, 2]
     pool = [s["id"] for s in g["symbols"] for _ in range(weights[s["id"]])]
     if g["scatter"] is not None:
-        pool.extend([g["scatter"]] * 4) # Скаттер падает почаще
+        pool.extend([g["scatter"]] * 4)
         
     grid = [[random.choice(pool) for _ in range(rows)] for _ in range(cols)]
     return grid
@@ -101,9 +100,7 @@ def check_win(grid, game_key, bet):
             else:
                 break
         
-        # Для 3-барабанного - 3 совпадения. Для 5 и 12 - от 3-х.
-        min_match = 3 
-        if count >= min_match:
+        if count >= 3:
             sym_data = next(s for s in g["symbols"] if s["id"] == first_sym)
             payout = sym_data["pay"] * (bet // 10) * count
             total_win += payout
@@ -128,13 +125,14 @@ class SpinReq(BaseModel):
 def spin(r: SpinReq):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
     
-    # Разрешаем ставку 0 для фриспинов
     if r.bet < 0 or d["balance"] < r.bet: 
         raise HTTPException(400, "мало фишек")
         
     bal = d["balance"] - r.bet
     grid = generate_grid(r.game)
-    win_amount, win_lines, scatters = check_win(grid, r.game, r.bet if r.bet > 0 else 10) # Считаем выигрыш от минималки, если фриспин
+    
+    calc_bet = r.bet if r.bet > 0 else 10
+    win_amount, win_lines, scatters = check_win(grid, r.game, calc_bet)
     
     bal += win_amount
     set_user(uid, balance=bal)
