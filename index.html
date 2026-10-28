@@ -396,4 +396,34 @@ $('bonus').onclick = async () => {
             if (Math.random() < 0.1) SFX.reelTick();
         } else {
             // Остановились
-            $('wheel-result').textContent
+            $('wheel-result').textContent = `+${d.amount}`;
+            $('wheel-result').style.opacity = '1';
+            $('wheel-close').style.display = 'block';
+            if(d.amount > 0) SFX.bigWin(); else SFX.lose();
+            isSpinningWheel = false;
+            refresh();
+        }
+    }
+    requestAnimationFrame(animateWheel);
+  } catch(e) {
+    showMsg(e.message, false);
+    $('wheel-modal').style.display = 'none';
+    isSpinningWheel = false;
+  }
+};
+
+$('wheel-close').onclick = () => {
+  $('wheel-modal').style.display = 'none';
+};
+
+$('ad').onclick = async () => {
+  SFX.click(); $('ad').disabled = true; showMsg('показ рекламы…', false);
+  setTimeout(async () => { try { const d = await api('/ad'); SFX.win(); toast(`за рекламу +${d.amount}`); refresh(); } catch(e) { showMsg(e.message, false); refresh(); } }, 5000);
+};
+
+$('backBtn').onclick = () => { location.reload(); };
+
+$('menu').style.display = 'flex';
+</script>
+</body>
+</html>
