@@ -7,43 +7,30 @@
 <script src="https://cdn.jsdelivr.net/npm/pixi.js@8/dist/pixi.min.js"></script>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin:0; padding:0; background:#050505; color:#eee;
-               font-family:'Arial Black', system-ui, sans-serif; overflow:hidden; height:100%; }
-  
+  html, body { margin:0; padding:0; background:#050505; color:#eee; font-family:'Arial Black', sans-serif; overflow:hidden; height:100%; }
   #app { position:relative; z-index:1; max-width:600px; margin:0 auto; padding:8px; display:flex; flex-direction:column; height:100vh; }
-  
   #top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; background:rgba(0,0,0,0.7); padding:8px 12px; border-radius:10px; border:1px solid #d4af37; }
   #bal { font-size:20px; font-weight:900; color:#ffd700; }
-  
   #menu { position:absolute; inset:0; background:rgba(0,0,0,0.95); z-index:10; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:20px; }
   #menu h1 { color:#d4af37; margin-bottom:20px; font-size:24px; text-align:center; }
   .game-btn { width:100%; max-width:300px; padding:20px; margin:10px 0; border-radius:12px; border:2px solid #d4af37; background:#111; color:#fff; font-size:18px; text-align:left; display:flex; justify-content:space-between; align-items:center; }
   .game-btn:active { background:#222; transform:scale(0.98); }
-  
-  #msg { min-height:24px; text-align:center; font-weight:900; font-size:16px; transition:opacity .2s; opacity:0; }
+  #msg { min-height:24px; text-align:center; font-weight:900; font-size:16px; transition:opacity .2s; opacity:0; margin-bottom: 4px; }
   #msg.show { opacity:1; }
   #msg.win { color:#00ff00; text-shadow:0 0 10px #0f0; }
   #msg.lose { color:#ff3333; }
-  
-  #pixi { width:100%; aspect-ratio:3/1; border-radius:12px; overflow:hidden;
-          background:#000; border:3px solid #d4af37; position:relative; transition: aspect-ratio 0.3s; }
-          
+  #pixi { width:100%; border-radius:12px; overflow:hidden; background:#000; border:3px solid #d4af37; position:relative; transition: aspect-ratio 0.3s; }
   .controls { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-top:auto; margin-bottom:8px; }
   button { padding:14px 6px; font-size:14px; font-weight:900; border-radius:10px; border:2px solid #d4af37; color:#fff; }
   button:active { transform:scale(.95); }
   button:disabled { opacity:.4; filter:grayscale(1); }
-  
   #spin { grid-column:1 / -1; padding:16px; font-size:20px; background:linear-gradient(to bottom, #ff0000, #990000); }
   #bonus { background:linear-gradient(to bottom, #8a2be2, #4b0082); }
   #ad { background:linear-gradient(to bottom, #00c853, #00796b); }
-  
   .betrow { display:flex; gap:4px; justify-content:center; margin-bottom:6px; }
   .betrow button { padding:8px 10px; font-size:12px; background:#111; color:#888; border:1px solid #333; }
   .betrow button.active { background:#d4af37; color:#000; border-color:#fff; }
-  
-  .toast { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(.8);
-           background:rgba(0,0,0,.9); padding:16px 32px; border-radius:12px; border:2px solid #ffd700;
-           font-size:24px; font-weight:900; opacity:0; pointer-events:none; transition:.25s; z-index:99; color:#ffd700; }
+  .toast { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(.8); background:rgba(0,0,0,.9); padding:16px 32px; border-radius:12px; border:2px solid #ffd700; font-size:24px; font-weight:900; opacity:0; pointer-events:none; transition:.25s; z-index:99; color:#ffd700; }
   .toast.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
 </style>
 </head>
@@ -59,7 +46,7 @@
 <div id="app">
   <div id="top">
     <div id="bal">0</div>
-    <div style="font-size:10px;color:#d4af37">MEGA WAYS</div>
+    <div style="font-size:10px;color:#d4af37" id="fs-counter"></div>
   </div>
 
   <div id="pixi"></div>
@@ -142,11 +129,9 @@ let freeSpins = 0;
 function startGame(gameKey) {
   currentGame = gameKey;
   const conf = GAME_CONFIG[gameKey];
-  
   $('menu').style.display = 'none';
   $('pixi').style.aspectRatio = `${conf.cols}/${conf.rows}`;
   $('pixi').style.background = conf.bg;
-  
   initPixi();
 }
 
@@ -210,7 +195,6 @@ function tick() {
 }
 
 let winLinesGraphics = null;
-let pendingResult = null;
 
 function startSpin(finalGrid) {
   if (winLinesGraphics) { app.stage.removeChild(winLinesGraphics); winLinesGraphics = null; }
@@ -254,9 +238,11 @@ function showResult(d) {
     }
   }
 
-  if (hasScatters && d.scatters >= 3) {
+  // Если выпал скаттер и мы не во фриспинах
+  if (hasScatters && d.scatters >= 3 && freeSpins === 0) {
     SFX.scatter();
     freeSpins += 10;
+    $('fs-counter').textContent = `FS: ${freeSpins}`;
     showMsg(`БОНУС! +10 ФРИСПИНОВ`, true);
     toast(`SCATTER x${d.scatters}!`);
   } else if (d.win > 0) {
@@ -276,7 +262,7 @@ function showResult(d) {
       for(let col=1; col<l.count; col++) { 
         winLinesGraphics.lineTo(col*cellW + cellW/2, lineData[col]*cellH + cellH/2); 
       }
-      winLinesGraphics.stroke({ width: 3, color: 0xffd700, alpha: 0.8 });
+      winLinesGraphics.stroke({ width: 4, color: 0xffd700, alpha: 1 });
     });
     app.stage.addChild(winLinesGraphics);
   } else {
@@ -287,13 +273,17 @@ function showResult(d) {
   refresh();
   spinning = false;
   
-  // Логика фриспинов (ИСПРАВЛЕНО: больше не выдает ошибку)
+  // Логика фриспинов
   if (freeSpins > 0) {
     freeSpins--;
-    showMsg(`ФРИСПИН (осталось: ${freeSpins})`, true);
-    setTimeout(() => {
-      doSpin(0); 
-    }, 2000);
+    $('fs-counter').textContent = freeSpins > 0 ? `FS: ${freeSpins}` : '';
+    if (freeSpins > 0) {
+      showMsg(`ФРИСПИН (осталось: ${freeSpins})`, true);
+      setTimeout(() => { doSpin(0); }, 2000);
+    } else {
+      $('spin').disabled = false;
+      showMsg(`ФРИСПИНЫ ОКОНЧЕНЫ`, false);
+    }
   } else {
     $('spin').disabled = false;
   }
@@ -307,14 +297,14 @@ let state = {};
 async function refresh() {
   state = await api('/state'); 
   $('bal').textContent = state.balance; 
-  $('bonus').disabled = !state.bonus_ready; 
-  $('ad').disabled = !state.ad_ready || !state.ad_allowed;
+  $('bonus').disabled = !state.bonus_ready || freeSpins > 0; 
+  $('ad').disabled = !state.ad_ready || !state.ad_allowed || freeSpins > 0;
 }
 function showMsg(t, win) { const m = $('msg'); m.textContent = t; m.className = 'show ' + (win ? 'win':'lose'); setTimeout(()=> m.className='', 2000); }
 function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); setTimeout(()=> el.classList.remove('show'), 1500); }
 
 let currentBet = 10;
-$('betrow').onclick = e => { if (!e.target.dataset.bet || e.target.disabled) return; SFX.click(); [...$('betrow').children].forEach(b=>b.classList.remove('active')); e.target.classList.add('active'); currentBet = +e.target.dataset.bet; $('spin').textContent = `SPIN (${currentBet})`; };
+$('betrow').onclick = e => { if (!e.target.dataset.bet || e.target.disabled || freeSpins > 0) return; SFX.click(); [...$('betrow').children].forEach(b=>b.classList.remove('active')); e.target.classList.add('active'); currentBet = +e.target.dataset.bet; $('spin').textContent = `SPIN (${currentBet})`; };
 
 let spinning = false;
 async function doSpin(betAmount) {
@@ -327,7 +317,8 @@ async function doSpin(betAmount) {
     showMsg(e.message, false); 
     spinning = false; 
     $('spin').disabled = false;
-    freeSpins = 0; // Сбрасываем фриспины, если произошла ошибка
+    freeSpins = 0;
+    $('fs-counter').textContent = '';
   }
 }
 
