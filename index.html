@@ -32,6 +32,12 @@
   .betrow button.active { background:#d4af37; color:#000; border-color:#fff; }
   .toast { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(.8); background:rgba(0,0,0,.9); padding:16px 32px; border-radius:12px; border:2px solid #ffd700; font-size:24px; font-weight:900; opacity:0; pointer-events:none; transition:.25s; z-index:99; color:#ffd700; }
   .toast.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
+
+  /* Рулетка */
+  #wheel-modal { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:100; display:none; flex-direction:column; justify-content:center; align-items:center; }
+  #wheel-canvas { width: 300px; height: 300px; border-radius: 50%; box-shadow: 0 0 30px #d4af37; border: 4px solid #d4af37; }
+  #wheel-result { font-size:32px; font-weight:900; color:#ffd700; text-shadow:0 0 20px #ffd700; margin-top:20px; opacity:0; transition: 0.3s; }
+  #wheel-close { margin-top:20px; padding:12px 24px; font-size:16px; background:#d4af37; color:#000; border-radius:8px; border:none; display:none; }
 </style>
 </head>
 <body>
@@ -48,10 +54,8 @@
     <div id="bal">0</div>
     <div style="font-size:10px;color:#d4af37" id="fs-counter"></div>
   </div>
-
   <div id="pixi"></div>
   <div id="msg"></div>
-  
   <div style="margin-top: auto;">
     <div class="betrow" id="betrow">
       <button data-bet="10" class="active">10</button>
@@ -68,6 +72,13 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
+
+<!-- Рулетка -->
+<div id="wheel-modal">
+  <canvas id="wheel-canvas" width="300" height="300"></canvas>
+  <div id="wheel-result">0</div>
+  <button id="wheel-close">ЗАБРАТЬ</button>
+</div>
 
 <script>
 const tg = window.Telegram?.WebApp;
@@ -152,21 +163,15 @@ function initPixi() {
     for (let i=0;i<conf.cols;i++) {
       const cont = new PIXI.Container();
       cont.x = i * cellW; 
-      
       const strip = new PIXI.Container();
       const labels = [];
 
-      // Создаем запас символов сверху и снизу
       for (let j=0;j<conf.rows + 2;j++) {
         const t = new PIXI.Text({ text: conf.syms[j % 6], style:{ fontFamily:'Arial', fontSize: cellH * 0.7, align:'center', fontWeight: 'bold' } });
-        t.anchor.set(0.5); 
-        t.x = cellW / 2; 
-        t.y = j*cellH + cellH/2;
-        strip.addChild(t); 
-        labels.push(t);
+        t.anchor.set(0.5); t.x = cellW / 2; t.y = j*cellH + cellH/2;
+        strip.addChild(t); labels.push(t);
       }
 
-      // ИСПРАВЛЕНО: Маска теперь привязана к абсолютным координатам контейнера
       const mask = new PIXI.Graphics().rect(i * cellW, 0, cellW, h).fill(0xffffff);
       app.stage.addChild(mask);
       strip.mask = mask;
@@ -189,21 +194,15 @@ function tick() {
     const r = reels[i];
     if (r.spinning) {
       r.yOffset += r.speed * (app.ticker.deltaMS / 16.6);
-      
-      // Если прокрутили на высоту одного символа - сдвигаем массив
       if (r.yOffset >= cellH) {
         r.yOffset -= cellH;
-        // Сдвигаем все символы наверх
-        r.labels.forEach(l => l.y -= cellH);
-        
-        // Верхний символ (тот что ушел за экран) переносим в самый низ и меняем
+        r.strip.y -= cellH;
         const topLabel = r.labels.reduce((a, b) => a.y < b.y ? a : b);
         topLabel.y += (GAME_CONFIG[currentGame].rows + 2) * cellH;
         topLabel.text = GAME_CONFIG[currentGame].syms[Math.floor(Math.random() * 6)];
-        
         if (Math.random() < 0.1) SFX.reelTick();
       }
-      r.strip.y = -r.yOffset;
+      r.strip.y = -r.yOffset - (r.labels[0].y - cellH/2); 
     }
   }
 }
@@ -216,8 +215,7 @@ function startSpin(finalGrid) {
 
   for (let i=0;i<conf.cols;i++) {
     const r = reels[i];
-    r.spinning = true;
-    r.speed = 40 + Math.random() * 10;
+    r.spinning = true; r.speed = 40 + Math.random() * 10;
     r.labels.forEach((l, idx) => { l.text = conf.syms[Math.floor(Math.random()*6)]; l.y = idx * cellH + cellH/2; l.style.fill = 0xffffff; });
     r.yOffset = 0; r.strip.y = 0;
   }
@@ -266,13 +264,9 @@ function showResult(d) {
     winLinesGraphics = new PIXI.Graphics();
     d.lines.forEach(l => {
       const lineData = LINES[currentGame][l.line];
-      for(let col=0; col<l.count; col++) { 
-        reels[col].labels[lineData[col]].style.fill = 0xffd700; 
-      }
+      for(let col=0; col<l.count; col++) { reels[col].labels[lineData[col]].style.fill = 0xffd700; }
       winLinesGraphics.moveTo(cellW/2, lineData[0]*cellH + cellH/2);
-      for(let col=1; col<l.count; col++) { 
-        winLinesGraphics.lineTo(col*cellW + cellW/2, lineData[col]*cellH + cellH/2); 
-      }
+      for(let col=1; col<l.count; col++) { winLinesGraphics.lineTo(col*cellW + cellW/2, lineData[col]*cellH + cellH/2); }
       winLinesGraphics.stroke({ width: 4, color: 0xffd700, alpha: 1 });
     });
     app.stage.addChild(winLinesGraphics);
@@ -294,9 +288,7 @@ function showResult(d) {
       $('spin').disabled = false;
       showMsg(`ФРИСПИНЫ ОКОНЧЕНЫ`, false);
     }
-  } else {
-    $('spin').disabled = false;
-  }
+  } else { $('spin').disabled = false; }
 }
 
 async function api(path, body={}) {
@@ -322,14 +314,7 @@ async function doSpin(betAmount) {
     const d = await api('/spin', { bet: betAmount, game: currentGame }); 
     startSpin(d.grid);
     setTimeout(() => { showResult(d); }, 1000 + GAME_CONFIG[currentGame].cols * 150 + 500);
-  } catch(e) { 
-    SFX.lose(); 
-    showMsg(e.message, false); 
-    spinning = false; 
-    $('spin').disabled = false;
-    freeSpins = 0;
-    $('fs-counter').textContent = '';
-  }
+  } catch(e) { SFX.lose(); showMsg(e.message, false); spinning = false; $('spin').disabled = false; freeSpins = 0; $('fs-counter').textContent = ''; }
 }
 
 $('spin').onclick = async () => {
@@ -338,19 +323,77 @@ $('spin').onclick = async () => {
   doSpin(currentBet);
 };
 
+// ==================== РУЛЕТКА ====================
+const wheelCanvas = $('wheel-canvas');
+const ctx = wheelCanvas.getContext('2d');
+const slices = [
+    { label: '1000', color: '#ff0000' }, { label: '0', color: '#333333' }, 
+    { label: '500', color: '#ffd700' }, { label: '20', color: '#111111' },
+    { label: '250', color: '#8a2be2' }, { label: '50', color: '#111111' },
+    { label: '100', color: '#00c853' }, { label: '0', color: '#333333' }
+];
+const sliceAngle = Math.PI * 2 / slices.length;
+let currentRotation = 0;
+let isSpinningWheel = false;
+
+function drawWheel() {
+    ctx.clearRect(0, 0, 300, 300);
+    for (let i = 0; i < slices.length; i++) {
+        const angle = i * sliceAngle + currentRotation;
+        ctx.beginPath();
+        ctx.fillStyle = slices[i].color;
+        ctx.moveTo(150, 150);
+        ctx.arc(150, 150, 140, angle, angle + sliceAngle);
+        ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+
+        // Текст
+        ctx.save();
+        ctx.translate(150, 150);
+        ctx.rotate(angle + sliceAngle / 2);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 20px Arial";
+        ctx.fillText(slices[i].label, 130, 10);
+        ctx.restore();
+    }
+    // Центр
+    ctx.beginPath(); ctx.fillStyle = '#d4af37'; ctx.arc(150, 150, 30, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
+}
+
 $('bonus').onclick = async () => {
-  SFX.click();
-  try { const d = await api('/bonus'); SFX.win(); toast(`бонус +${d.amount}`); refresh(); } catch(e) { showMsg(e.message, false); }
-};
+  if (isSpinningWheel) return;
+  isSpinningWheel = true;
+  $('wheel-modal').style.display = 'flex';
+  $('wheel-result').style.opacity = '0';
+  $('wheel-close').style.display = 'none';
+  drawWheel();
 
-$('ad').onclick = async () => {
-  SFX.click(); $('ad').disabled = true; showMsg('показ рекламы…', false);
-  setTimeout(async () => { try { const d = await api('/ad'); SFX.win(); toast(`за рекламу +${d.amount}`); refresh(); } catch(e) { showMsg(e.message, false); refresh(); } }, 5000);
-};
+  try {
+    const d = await api('/bonus'); // Получаем результат с сервера
+    let targetIdx = slices.findIndex(s => s.label == d.amount.toString());
+    if (targetIdx === -1) targetIdx = 1; // Если 0, кидаем на пустой
 
-$('backBtn').onclick = () => { location.reload(); };
+    // Крутим рулетку (5 полных оборотов + нужный угол)
+    let spins = 5 * Math.PI * 2;
+    let stopAngle = spins + (Math.PI*2 - targetIdx * sliceAngle);
+    
+    let startTime = performance.now();
+    let duration = 4000; // 4 секунды кручения
 
-$('menu').style.display = 'flex';
-</script>
-</body>
-</html>
+    function animateWheel(time) {
+        let progress = (time - startTime) / duration;
+        if (progress > 1) progress = 1;
+        
+        // Плавное замедление (easeOutCubic)
+        let ease = 1 - Math.pow(1 - progress, 3);
+        currentRotation = stopAngle * ease;
+        drawWheel();
+
+        if (progress < 1) {
+            requestAnimationFrame(animateWheel);
+            if (Math.random() < 0.1) SFX.reelTick();
+        } else {
+            // Остановились
+            $('wheel-result').textContent
