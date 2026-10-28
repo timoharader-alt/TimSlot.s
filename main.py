@@ -44,7 +44,7 @@ GAMES = {
         "scatter": None
     },
     "space": {
-        "cols": 7, "rows": 3, # ИСПРАВЛЕНО: 7x3
+        "cols": 7, "rows": 3,
         "symbols": [{"id":0,"pay":2}, {"id":1,"pay":3}, {"id":2,"pay":4}, {"id":3,"pay":6}, {"id":4,"pay":10}, {"id":5,"pay":20}],
         "scatter": 2
     },
@@ -69,16 +69,19 @@ LINES = {
 def generate_grid(game_key):
     g = GAMES[game_key]
     cols, rows = g["cols"], g["rows"]
-    # Веса: 0-3 обычные, 4-5 редкие.
     weights = [50, 30, 20, 10, 5, 2]
     pool = [s["id"] for s in g["symbols"] for _ in range(weights[s["id"]])]
     
-    # ИСПРАВЛЕНО: Шанс на бонус. Скаттер (id=2) падает с шансом ~2%. 
-    # На сетке 7x3 (21 ячейка) это дает выпадение 3+ скаттеров примерно 1 раз на 100 спинов.
-    if g["scatter"] is not None:
-        pool.extend([g["scatter"]] * 2) 
-        
-    grid = [[random.choice(pool) for _ in range(rows)] for _ in range(cols)]
+    grid = []
+    for _ in range(cols):
+        col = []
+        for _ in range(rows):
+            # Строгий шанс на скаттер (1.5%)
+            if g["scatter"] is not None and random.random() < 0.015:
+                col.append(g["scatter"])
+            else:
+                col.append(random.choice(pool))
+        grid.append(col)
     return grid
 
 def check_win(grid, game_key, bet):
@@ -96,20 +99,15 @@ def check_win(grid, game_key, bet):
     for line_idx, line in enumerate(lines):
         first_sym = grid[0][line[0]]
         if first_sym == g["scatter"]: continue
-        
         count = 1
         for col in range(1, len(grid)):
-            if grid[col][line[col]] == first_sym:
-                count += 1
-            else:
-                break
-        
+            if grid[col][line[col]] == first_sym: count += 1
+            else: break
         if count >= 3:
             sym_data = next(s for s in g["symbols"] if s["id"] == first_sym)
             payout = sym_data["pay"] * (bet // 10) * count
             total_win += payout
             win_lines.append({"line": line_idx, "count": count, "win": payout})
-            
     return total_win, win_lines, scatters
 
 class Req(BaseModel):
@@ -129,28 +127,29 @@ class SpinReq(BaseModel):
 def spin(r: SpinReq):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
     if r.bet < 0 or d["balance"] < r.bet: raise HTTPException(400, "мало фишек")
-        
     bal = d["balance"] - r.bet
     grid = generate_grid(r.game)
     calc_bet = r.bet if r.bet > 0 else 10
     win_amount, win_lines, scatters = check_win(grid, r.game, calc_bet)
-    
     bal += win_amount
     set_user(uid, balance=bal)
-    
-    return {
-        "grid": grid, 
-        "win": win_amount, 
-        "balance": bal, 
-        "lines": win_lines,
-        "scatters": scatters
-    }
+    return {"grid": grid, "win": win_amount, "balance": bal, "lines": win_lines, "scatters": scatters}
 
 @app.post("/bonus")
 def bonus(r: Req):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid); now = int(time.time())
     if now - d["last_bonus"] < 86400: raise HTTPException(400, "бонус уже получен")
-    amount = random.choice([100, 200, 300, 500, 700, 1000])
+    
+    # Рулетка: от 0 до 1000. Шансы подкручены.
+    rnd = random.random() * 100
+    if rnd < 2: amount = 1000     # 2% шанс (Джекпот)
+    elif rnd < 7: amount = 500    # 5% шанс
+    elif rnd < 17: amount = 250   # 10% шанс
+    elif rnd < 42: amount = 100   # 25% шанс
+    elif rnd < 72: amount = 50    # 30% шанс
+    elif rnd < 92: amount = 20    # 20% шанс
+    else: amount = 0              # 8% шанс (Пусто)
+
     set_user(uid, balance=d["balance"] + amount, last_bonus=now)
     return {"amount": amount, "balance": d["balance"] + amount}
 
