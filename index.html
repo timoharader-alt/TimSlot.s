@@ -39,7 +39,7 @@
 <div id="menu">
   <h1>Выбери игру</h1>
   <button class="game-btn" onclick="startGame('fruits')"><span>🍒 Классика</span> <span>3x1</span></button>
-  <button class="game-btn" onclick="startGame('space')"><span>🚀 Космос</span> <span>12x3</span></button>
+  <button class="game-btn" onclick="startGame('space')"><span>🚀 Космос</span> <span>7x3</span></button>
   <button class="game-btn" onclick="startGame('egypt')"><span>🏺 Египет</span> <span>5x3</span></button>
 </div>
 
@@ -107,15 +107,15 @@ const SFX = {
 
 const GAME_CONFIG = {
   fruits: { cols: 3, rows: 1, syms: ['🍒','🍋','🔔','⭐','💎','7️⃣'], bg: '#110000', scatter: null },
-  space:  { cols: 12, rows: 3, syms: ['👽','🚀','🪐','⭐','🌌','☄️'], bg: '#000511', scatter: 2 },
+  space:  { cols: 7, rows: 3, syms: ['👽','🚀','🪐','⭐','🌌','☄️'], bg: '#000511', scatter: 2 },
   egypt:  { cols: 5, rows: 3, syms: ['🐈','🐍','👁️','🏺','⚱️','🔺'], bg: '#110b00', scatter: 2 }
 };
 
 const LINES = {
   fruits: [[0,0,0]],
   space: [
-      [1,1,1,1,1,1,1,1,1,1,1,1], [0,0,0,0,0,0,0,0,0,0,0,0], [2,2,2,2,2,2,2,2,2,2,2,2],
-      [0,1,2,1,0,1,2,1,0,1,2,1], [2,1,0,1,2,1,0,1,2,1,0,1], [0,0,1,2,2,2,2,1,0,0,0,0]
+      [1,1,1,1,1,1,1], [0,0,0,0,0,0,0], [2,2,2,2,2,2,2],
+      [0,1,2,1,0,1,0], [2,1,0,1,2,1,2], [0,0,1,2,2,1,0]
   ],
   egypt: [
       [1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2]
@@ -151,18 +151,26 @@ function initPixi() {
 
     for (let i=0;i<conf.cols;i++) {
       const cont = new PIXI.Container();
-      cont.x = i * cellW + cellW/2;
+      cont.x = i * cellW; 
+      
       const strip = new PIXI.Container();
       const labels = [];
 
+      // Создаем запас символов сверху и снизу
       for (let j=0;j<conf.rows + 2;j++) {
         const t = new PIXI.Text({ text: conf.syms[j % 6], style:{ fontFamily:'Arial', fontSize: cellH * 0.7, align:'center', fontWeight: 'bold' } });
-        t.anchor.set(0.5); t.x = 0; t.y = j*cellH + cellH/2;
-        strip.addChild(t); labels.push(t);
+        t.anchor.set(0.5); 
+        t.x = cellW / 2; 
+        t.y = j*cellH + cellH/2;
+        strip.addChild(t); 
+        labels.push(t);
       }
 
-      const mask = new PIXI.Graphics().rect(-cellW/2, 0, cellW, h).fill(0xffffff);
-      cont.addChild(mask); cont.mask = mask;
+      // ИСПРАВЛЕНО: Маска теперь привязана к абсолютным координатам контейнера
+      const mask = new PIXI.Graphics().rect(i * cellW, 0, cellW, h).fill(0xffffff);
+      app.stage.addChild(mask);
+      strip.mask = mask;
+      
       cont.addChild(strip);
       app.stage.addChild(cont);
       reels.push({ cont, strip, labels, yOffset: 0, speed: 0, spinning: false });
@@ -181,12 +189,18 @@ function tick() {
     const r = reels[i];
     if (r.spinning) {
       r.yOffset += r.speed * (app.ticker.deltaMS / 16.6);
+      
+      // Если прокрутили на высоту одного символа - сдвигаем массив
       if (r.yOffset >= cellH) {
         r.yOffset -= cellH;
+        // Сдвигаем все символы наверх
         r.labels.forEach(l => l.y -= cellH);
+        
+        // Верхний символ (тот что ушел за экран) переносим в самый низ и меняем
         const topLabel = r.labels.reduce((a, b) => a.y < b.y ? a : b);
         topLabel.y += (GAME_CONFIG[currentGame].rows + 2) * cellH;
         topLabel.text = GAME_CONFIG[currentGame].syms[Math.floor(Math.random() * 6)];
+        
         if (Math.random() < 0.1) SFX.reelTick();
       }
       r.strip.y = -r.yOffset;
@@ -226,7 +240,6 @@ function showResult(d) {
   const conf = GAME_CONFIG[currentGame];
   let hasScatters = false;
 
-  // Подсветка скаттеров
   if (conf.scatter !== null) {
     for(let col=0; col<conf.cols; col++) {
       for(let row=0; row<conf.rows; row++) {
@@ -238,7 +251,6 @@ function showResult(d) {
     }
   }
 
-  // Если выпал скаттер и мы не во фриспинах
   if (hasScatters && d.scatters >= 3 && freeSpins === 0) {
     SFX.scatter();
     freeSpins += 10;
@@ -251,7 +263,6 @@ function showResult(d) {
     showMsg(`+${d.win}`, true);
     toast(`+${d.win}`);
     
-    // Рисуем линии ТОЛЬКО до совпавших символов
     winLinesGraphics = new PIXI.Graphics();
     d.lines.forEach(l => {
       const lineData = LINES[currentGame][l.line];
@@ -273,7 +284,6 @@ function showResult(d) {
   refresh();
   spinning = false;
   
-  // Логика фриспинов
   if (freeSpins > 0) {
     freeSpins--;
     $('fs-counter').textContent = freeSpins > 0 ? `FS: ${freeSpins}` : '';
