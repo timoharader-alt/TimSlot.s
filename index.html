@@ -7,54 +7,63 @@
 <script src="https://cdn.jsdelivr.net/npm/pixi.js@8/dist/pixi.min.js"></script>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin:0; padding:0; background:#0a0505; color:#eee;
+  html, body { margin:0; padding:0; background:#050505; color:#eee;
                font-family:'Arial Black', system-ui, sans-serif; overflow:hidden; height:100%; }
-  #bg { position:fixed; inset:0; z-index:0; }
-  #app { position:relative; z-index:1; max-width:480px; margin:0 auto; padding:12px; display:flex; flex-direction:column; height:100vh; }
   
-  #top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; background:rgba(0,0,0,0.6); padding:8px 16px; border-radius:12px; border:1px solid #d4af37; }
-  #bal { font-size:24px; font-weight:900; color:#ffd700; text-shadow:0 0 10px rgba(255,215,0,0.8); }
+  #app { position:relative; z-index:1; max-width:600px; margin:0 auto; padding:8px; display:flex; flex-direction:column; height:100vh; }
   
-  #msg { min-height:30px; text-align:center; font-weight:900; font-size:18px; margin:6px 0;
-         transition:opacity .2s; opacity:0; text-transform:uppercase; }
+  #top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; background:rgba(0,0,0,0.7); padding:8px 12px; border-radius:10px; border:1px solid #d4af37; }
+  #bal { font-size:20px; font-weight:900; color:#ffd700; }
+  
+  /* Меню выбора игр */
+  #menu { position:absolute; inset:0; background:rgba(0,0,0,0.95); z-index:10; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:20px; }
+  #menu h1 { color:#d4af37; margin-bottom:20px; font-size:24px; text-align:center; }
+  .game-btn { width:100%; max-width:300px; padding:20px; margin:10px 0; border-radius:12px; border:2px solid #d4af37; background:#111; color:#fff; font-size:18px; text-align:left; display:flex; justify-content:space-between; align-items:center; }
+  .game-btn:active { background:#222; transform:scale(0.98); }
+  
+  #msg { min-height:24px; text-align:center; font-weight:900; font-size:16px; transition:opacity .2s; opacity:0; }
   #msg.show { opacity:1; }
-  #msg.win { color:#00ff00; text-shadow:0 0 15px rgba(0,255,0,0.8); }
-  #msg.lose { color:#ff3333; text-shadow:0 0 10px rgba(255,0,0,0.5); }
+  #msg.win { color:#00ff00; text-shadow:0 0 10px #0f0; }
+  #msg.lose { color:#ff3333; }
   
-  #pixi { width:100%; aspect-ratio:3/1.2; border-radius:16px; overflow:hidden;
-          background:#110000; border:4px solid #d4af37;
-          box-shadow:0 0 40px rgba(212,175,55,0.4), inset 0 0 50px rgba(0,0,0,0.9); position:relative; }
+  #pixi { width:100%; aspect-ratio:3/1; border-radius:12px; overflow:hidden;
+          background:#000; border:3px solid #d4af37; position:relative; transition: aspect-ratio 0.3s; }
           
-  .controls { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:auto; margin-bottom:12px; }
-  button { padding:16px 8px; font-size:16px; font-weight:900; border-radius:12px; border:2px solid #d4af37;
-           cursor:pointer; transition:transform .08s, opacity .15s; color:#fff; text-shadow:1px 1px 2px #000; }
+  .controls { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-top:auto; margin-bottom:8px; }
+  button { padding:14px 6px; font-size:14px; font-weight:900; border-radius:10px; border:2px solid #d4af37; color:#fff; }
   button:active { transform:scale(.95); }
-  button:disabled { opacity:.4; cursor:not-allowed; filter:grayscale(1); }
+  button:disabled { opacity:.4; filter:grayscale(1); }
   
-  #spin { grid-column:1 / -1; padding:20px; font-size:24px; letter-spacing:2px;
-          background:linear-gradient(to bottom, #ff0000, #990000);
-          box-shadow:0 0 20px rgba(255,0,0,0.6), inset 0 0 10px rgba(255,255,255,0.3); }
+  #spin { grid-column:1 / -1; padding:16px; font-size:20px; background:linear-gradient(to bottom, #ff0000, #990000); }
   #bonus { background:linear-gradient(to bottom, #8a2be2, #4b0082); }
   #ad { background:linear-gradient(to bottom, #00c853, #00796b); }
   
-  .betrow { display:flex; gap:6px; margin-top:8px; justify-content:center; }
-  .betrow button { padding:10px 14px; font-size:14px; background:#222; color:#ccc; border:1px solid #555; }
-  .betrow button.active { background:#ffd700; color:#000; border-color:#fff; }
+  .betrow { display:flex; gap:4px; justify-content:center; margin-bottom:6px; }
+  .betrow button { padding:8px 10px; font-size:12px; background:#111; color:#888; border:1px solid #333; }
+  .betrow button.active { background:#d4af37; color:#000; border-color:#fff; }
   
   .toast { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(.8);
-           background:rgba(0,0,0,.9); padding:20px 40px; border-radius:16px; border:2px solid #ffd700;
-           font-size:28px; font-weight:900; opacity:0; pointer-events:none;
-           transition:.25s; z-index:99; color:#ffd700; box-shadow:0 0 50px rgba(255,215,0,0.5); }
+           background:rgba(0,0,0,.9); padding:16px 32px; border-radius:12px; border:2px solid #ffd700;
+           font-size:24px; font-weight:900; opacity:0; pointer-events:none; transition:.25s; z-index:99; color:#ffd700; }
   .toast.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
 </style>
 </head>
 <body>
-<canvas id="bg"></canvas>
+
+<!-- Меню выбора игр -->
+<div id="menu">
+  <h1>Выбери игру</h1>
+  <button class="game-btn" onclick="startGame('fruits')"><span>🍒 Классика</span> <span>3x1</span></button>
+  <button class="game-btn" onclick="startGame('space')"><span>🚀 Космос</span> <span>12x3</span></button>
+  <button class="game-btn" onclick="startGame('egypt')"><span>🏺 Египет</span> <span>5x3</span></button>
+</div>
+
 <div id="app">
   <div id="top">
     <div id="bal">0</div>
-    <div style="font-size:12px;color:#d4af37">FUN MODE</div>
+    <div style="font-size:10px;color:#d4af37">MEGA WAYS</div>
   </div>
+
   <div id="pixi"></div>
   <div id="msg"></div>
   
@@ -69,6 +78,7 @@
       <button id="spin">SPIN</button>
       <button id="bonus" disabled>БОНУС</button>
       <button id="ad" disabled>РЕКЛАМА</button>
+      <button id="backBtn" style="grid-column:1/-1; background:#333; color:#ccc; padding:8px; font-size:12px; margin-top:4px;">⬅ Сменить игру</button>
     </div>
   </div>
 </div>
@@ -83,184 +93,209 @@ const $ = id => document.getElementById(id);
 /* ==================== АУДИО ==================== */
 const AC = window.AudioContext || window.webkitAudioContext;
 let actx = null;
-function audioCtx() {
-  if (!AC) return null;
-  if (!actx) actx = new AC();
-  if (actx.state === 'suspended') actx.resume();
-  return actx;
-}
-function tone(freq, dur, type='sine', vol=0.06, when=0, slideTo=null) {
+function audioCtx() { if (!AC) return null; if (!actx) actx = new AC(); if (actx.state === 'suspended') actx.resume(); return actx; }
+function tone(freq, dur, type='sine', vol=0.06, when=0) {
   const ctx = audioCtx(); if (!ctx) return;
   const t = ctx.currentTime + when;
   const o = ctx.createOscillator(), g = ctx.createGain();
   o.type = type; o.frequency.setValueAtTime(freq, t);
-  if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
-  g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  o.connect(g); g.connect(ctx.destination);
-  o.start(t); o.stop(t + dur + 0.02);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + dur + 0.02);
 }
 function noise(dur=0.05, vol=0.04) {
   const ctx = audioCtx(); if (!ctx) return;
   const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
-  const d = buf.getChannelData(0);
-  for (let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * (1 - i/d.length);
+  const d = buf.getChannelData(0); for (let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * (1 - i/d.length);
   const src = ctx.createBufferSource(); src.buffer = buf;
   const g = ctx.createGain(); g.gain.value = vol;
   const f = ctx.createBiquadFilter(); f.type='highpass'; f.frequency.value=800;
-  src.connect(f); f.connect(g); g.connect(ctx.destination);
-  src.start();
+  src.connect(f); f.connect(g); g.connect(ctx.destination); src.start();
 }
 const SFX = {
   click: () => tone(700, .04, 'square', .04),
   reelTick: () => noise(.02, .04),
-  reelStop: (i=0) => { tone(100 + i*30, .15, 'square', .1); noise(.08,.08); },
-  win: () => { [523,659,784,1046].forEach((f,i)=>tone(f,.15,'square',.06,i*.08)); tone(1568,.25,'sine',.04,.32); },
-  bigWin: () => { [523,659,784,1046,1318,1568].forEach((f,i)=>tone(f,.2,'square',.08,i*.06)); [261,329,392].forEach((f,i)=>tone(f,.8,'sawtooth',.06,.4)); },
-  lose: () => tone(150,.3,'sawtooth',.06,0,50),
-  bonus: () => [392,523,659,784,1046].forEach((f,i)=>tone(f,.16,'square',.06,i*.06)),
-  bonusWin: () => { [784,1046,1318,1568].forEach((f,i)=>tone(f,.2,'square',.08,i*.08)); tone(2093,.5,'sine',.05,.35); },
-  ad: () => [300,450,600].forEach((f,i)=>tone(f,.1,'square',.04,i*.08)),
-  adWin: () => [600,900,1200].forEach((f,i)=>tone(f,.15,'square',.06,i*.08)),
+  reelStop: () => { tone(120, .1, 'square', .1); noise(.05,.05); },
+  win: () => { [523,659,784,1046].forEach((f,i)=>tone(f,.15,'square',.06,i*.08)); },
+  bigWin: () => { [523,659,784,1046,1318,1568].forEach((f,i)=>tone(f,.2,'square',.08,i*.06)); },
+  scatter: () => { [800, 1000, 1200, 1600].forEach((f,i)=>tone(f,.1,'sine',.1,i*.1)); },
+  lose: () => tone(150,.3,'sawtooth',.06,0),
 };
 
-/* ==================== ФОН ==================== */
-(function initBg() {
-  const c = $('bg'), x = c.getContext('2d');
-  let W, H, stars = [];
-  function resize() {
-    W = c.width = window.innerWidth * devicePixelRatio;
-    H = c.height = window.innerHeight * devicePixelRatio;
-    c.style.width = window.innerWidth + 'px'; c.style.height = window.innerHeight + 'px';
-    stars = Array.from({length: 50}, () => ({ x: Math.random()*W, y: Math.random()*H, r: Math.random()*2 + 1, sp: Math.random()*1 + .5, a: Math.random()*.8 + .2, hue: 40 }));
-  }
-  resize(); window.addEventListener('resize', resize);
-  function frame() {
-    const g = x.createRadialGradient(W/2, H/2, 0, W/2, H/2, W);
-    g.addColorStop(0, '#2a0808'); g.addColorStop(1, '#050000');
-    x.fillStyle = g; x.fillRect(0,0,W,H);
-    stars.forEach(s => {
-      s.y += s.sp * devicePixelRatio; if (s.y > H) { s.y = -4; s.x = Math.random()*W; }
-      x.fillStyle = `hsla(${s.hue},100%,70%,${s.a})`;
-      x.beginPath(); x.arc(s.x, s.y, s.r*devicePixelRatio, 0, Math.PI*2); x.fill();
-    });
-    requestAnimationFrame(frame);
-  }
-  frame();
-})();
+/* ==================== КОНФИГ ИГР ==================== */
+const GAME_CONFIG = {
+  fruits: { cols: 3, rows: 1, syms: ['🍒','🍋','🔔','⭐','💎','7️⃣'], bg: '#110000', scatter: null },
+  space:  { cols: 12, rows: 3, syms: ['👽','🚀','🪐','⭐','🌌','☄️'], bg: '#000511', scatter: 2 }, // 🪐 - скаттер
+  egypt:  { cols: 5, rows: 3, syms: ['🐈','🐍','👁️','🏺','⚱️','🔺'], bg: '#110b00', scatter: 2 }  // 👁️ - скаттер
+};
 
-/* ==================== PIXI СЛОТ ==================== */
-const SYMBOLS = ['7️⃣','🍒','🔔','⭐','💎','🍋'];
-let app, reels = [], cellH = 0, totalReels = 3;
+const LINES = {
+  fruits: [[0,0,0]],
+  space: [
+      [1,1,1,1,1,1,1,1,1,1,1,1], [0,0,0,0,0,0,0,0,0,0,0,0], [2,2,2,2,2,2,2,2,2,2,2,2],
+      [0,1,2,1,0,1,2,1,0,1,2,1], [2,1,0,1,2,1,0,1,2,1,0,1], [0,0,1,2,2,2,2,1,0,0,0,0]
+  ],
+  egypt: [
+      [1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2]
+  ]
+};
 
-(async () => {
+let currentGame = 'fruits';
+let app, reels = [], cellW = 0, cellH = 0;
+let freeSpins = 0;
+
+function startGame(gameKey) {
+  currentGame = gameKey;
+  const conf = GAME_CONFIG[gameKey];
+  
+  $('menu').style.display = 'none';
+  $('pixi').style.aspectRatio = `${conf.cols}/${conf.rows}`;
+  $('pixi').style.background = conf.bg;
+  
+  initPixi();
+}
+
+function initPixi() {
+  if (app) { app.destroy(true, { children: true }); }
+  
   app = new PIXI.Application();
-  await app.init({ backgroundAlpha: 0, resizeTo: $('pixi'), antialias: true, autoDensity: true, resolution: window.devicePixelRatio || 1 });
-  $('pixi').appendChild(app.canvas);
-  
-  const w = app.screen.width, h = app.screen.height; 
-  cellH = h;
-
-  for (let i=0;i<totalReels;i++) {
-    const cont = new PIXI.Container(); 
-    cont.x = i * (w/3) + (w/3)/2;
+  app.init({ backgroundAlpha: 0, resizeTo: $('pixi'), antialias: true, autoDensity: true, resolution: window.devicePixelRatio || 1 }).then(() => {
+    $('pixi').innerHTML = '';
+    $('pixi').appendChild(app.canvas);
     
-    const mask = new PIXI.Graphics().rect(-w/6, 0, w/3, h).fill(0xffffff); 
-    cont.addChild(mask); 
-    cont.mask = mask;
+    const conf = GAME_CONFIG[currentGame];
+    const w = app.screen.width, h = app.screen.height;
+    cellW = w / conf.cols;
+    cellH = h / conf.rows;
+    reels = [];
 
-    const strip = new PIXI.Container(); 
-    const labels = [];
-    
-    // Создаем 3 видимых слота (плюс 1 запасной для плавности)
-    for (let j=0;j<4;j++) {
-      const t = new PIXI.Text({ 
-        text: '❓', 
-        style:{ fontFamily:'Arial', fontSize: h * 0.65, fill:0xffffff, align:'center', fontWeight: 'bold',
-        dropShadow: { alpha: 0.8, angle: Math.PI/4, blur: 5, color: 0x000000, distance: 3 } } 
-      });
-      t.anchor.set(0.5); 
-      t.x = 0; 
-      t.y = j*cellH + cellH/2; 
-      strip.addChild(t); 
-      labels.push(t);
+    for (let i=0;i<conf.cols;i++) {
+      const cont = new PIXI.Container();
+      cont.x = i * cellW + cellW/2;
+      const strip = new PIXI.Container();
+      const labels = [];
+
+      for (let j=0;j<conf.rows + 2;j++) {
+        const t = new PIXI.Text({ text: conf.syms[j % 6], style:{ fontFamily:'Arial', fontSize: cellH * 0.7, align:'center', fontWeight: 'bold' } });
+        t.anchor.set(0.5); t.x = 0; t.y = j*cellH + cellH/2;
+        strip.addChild(t); labels.push(t);
+      }
+
+      const mask = new PIXI.Graphics().rect(-cellW/2, 0, cellW, h).fill(0xffffff);
+      cont.addChild(mask); cont.mask = mask;
+      cont.addChild(strip);
+      app.stage.addChild(cont);
+      reels.push({ cont, strip, labels, yOffset: 0, speed: 0, spinning: false });
     }
-    
-    cont.addChild(strip);
-    const border = new PIXI.Graphics().rect(-w/6, 0, w/3, h).stroke({width:4, color:0xd4af37, alpha:1}); 
-    cont.addChild(border);
-    
-    app.stage.addChild(cont); 
-    reels.push({ strip, labels, yOffset: 0, speed: 0, spinning: false });
-  }
-  
-  for (let i=1;i<totalReels;i++) { 
-    const line = new PIXI.Graphics().rect(i*(w/3), 0, 4, h).fill({color:0x000000, alpha:0.8}); 
-    app.stage.addChild(line); 
-  }
-  
-  app.ticker.add(tick);
-})();
+
+    for (let i=1;i<conf.cols;i++) { app.stage.addChild(new PIXI.Graphics().rect(i*cellW, 0, 1, h).fill({color:0xffffff, alpha:0.1})); }
+    for (let i=1;i<conf.rows;i++) { app.stage.addChild(new PIXI.Graphics().rect(0, i*cellH, w, 1).fill({color:0xffffff, alpha:0.1})); }
+
+    app.ticker.add(tick);
+    refresh();
+  });
+}
 
 function tick() {
   for (let i=0;i<reels.length;i++) {
     const r = reels[i];
     if (r.spinning) {
       r.yOffset += r.speed * (app.ticker.deltaMS / 16.6);
-      
-      // Прокрутка. Когда лента сдвигается на один символ вверх, мы перекидываем нижний наверх.
       if (r.yOffset >= cellH) {
         r.yOffset -= cellH;
-        // Сдвигаем текст вверх и меняем нижний
         r.labels.forEach(l => l.y -= cellH);
-        
-        // Верхний элемент улетел слишком высоко, переносим его вниз и меняем символ
         const topLabel = r.labels.reduce((a, b) => a.y < b.y ? a : b);
-        topLabel.y += 4 * cellH;
-        topLabel.text = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
-        
-        if (Math.random() < 0.2) SFX.reelTick();
+        topLabel.y += (GAME_CONFIG[currentGame].rows + 2) * cellH;
+        topLabel.text = GAME_CONFIG[currentGame].syms[Math.floor(Math.random() * 6)];
+        if (Math.random() < 0.1) SFX.reelTick();
       }
       r.strip.y = -r.yOffset;
     }
   }
 }
 
-function startSpin(finalSymbols) {
-  for (let i=0;i<reels.length;i++) {
+let winLinesGraphics = null;
+let pendingResult = null;
+
+function startSpin(finalGrid) {
+  if (winLinesGraphics) { app.stage.removeChild(winLinesGraphics); winLinesGraphics = null; }
+  const conf = GAME_CONFIG[currentGame];
+
+  for (let i=0;i<conf.cols;i++) {
     const r = reels[i];
     r.spinning = true;
-    r.speed = 35 + i * 5; // Скорость
-    
-    // Подготовка: ставим нужный символ на самый верх
-    r.labels.forEach(l => { l.text = SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)]; l.y = r.labels.indexOf(l) * cellH + cellH/2; });
-    
-    // Символ, который должен выпасть, ставим первым в списке
-    r.labels[0].text = finalSymbols[i];
-    
-    // Начинаем с небольшим сдвигом, чтобы нужный символ оказался в центре
-    r.yOffset = 0;
-    r.strip.y = 0;
+    r.speed = 40 + Math.random() * 10;
+    r.labels.forEach((l, idx) => { l.text = conf.syms[Math.floor(Math.random()*6)]; l.y = idx * cellH + cellH/2; l.style.fill = 0xffffff; });
+    r.yOffset = 0; r.strip.y = 0;
   }
 
-  // Тайминги остановки для каждого барабана (1 сек, 1.5 сек, 2 сек)
-  const stopTimes = [1200, 1700, 2200];
-  
-  for (let i=0;i<reels.length;i++) {
+  for (let i=0;i<conf.cols;i++) {
     setTimeout(() => {
       const r = reels[i];
-      r.speed = 0; // Резкая остановка
-      r.spinning = false;
-      r.yOffset = 0;
-      r.strip.y = 0;
-      SFX.reelStop(i);
-      
-      // Выравниваем текст, чтобы все стояло ровно по центру
-      r.labels.forEach((l, idx) => {
-        l.y = idx * cellH + cellH/2;
-      });
-    }, stopTimes[i]);
+      r.speed = 0; r.spinning = false; r.yOffset = 0; r.strip.y = 0;
+      SFX.reelStop();
+      for(let row=0; row<conf.rows; row++) {
+        r.labels[row].text = conf.syms[finalGrid[i][row]];
+        r.labels[row].y = row * cellH + cellH/2;
+        r.labels[row].style.fill = 0xffffff;
+      }
+    }, 1000 + i * 150);
+  }
+}
+
+function showResult(d) {
+  const conf = GAME_CONFIG[currentGame];
+  let hasScatters = false;
+
+  // Подсветка скаттеров
+  if (conf.scatter !== null) {
+    for(let col=0; col<conf.cols; col++) {
+      for(let row=0; row<conf.rows; row++) {
+        if (d.grid[col][row] === conf.scatter) {
+          reels[col].labels[row].style.fill = 0xffd700; // Скаттер - золотой
+          hasScatters = true;
+        }
+      }
+    }
+  }
+
+  if (hasScatters && d.scatters >= 3) {
+    SFX.scatter();
+    freeSpins += 10;
+    showMsg(`БОНУС! +10 ФРИСПИНОВ`, true);
+    toast(`SCATTER x${d.scatters}!`);
+  } else if (d.win > 0) {
+    const big = d.win >= currentBet * 10;
+    big ? SFX.bigWin() : SFX.win();
+    showMsg(`+${d.win}`, true);
+    toast(`+${d.win}`);
+    
+    // Рисуем линии
+    winLinesGraphics = new PIXI.Graphics();
+    d.lines.forEach(l => {
+      const lineData = LINES[currentGame][l.line];
+      for(let col=0; col<l.count; col++) { reels[col].labels[lineData[col]].style.fill = 0xffd700; }
+      winLinesGraphics.moveTo(cellW/2, lineData[0]*cellH + cellH/2);
+      for(let col=1; col<conf.cols; col++) { winLinesGraphics.lineTo(col*cellW + cellW/2, lineData[col]*cellH + cellH/2); }
+      winLinesGraphics.stroke({ width: 3, color: 0xffd700, alpha: 0.8 });
+    });
+    app.stage.addChild(winLinesGraphics);
+  } else {
+    SFX.lose();
+    showMsg('пусто', false);
+  }
+
+  refresh();
+  spinning = false;
+  
+  // Логика фриспинов
+  if (freeSpins > 0) {
+    freeSpins--;
+    showMsg(`ФРИСПИН (осталось: ${freeSpins})`, true);
+    setTimeout(() => {
+      doSpin(0); // Спин бесплатный (ставка 0)
+    }, 2000);
+  } else {
+    $('spin').disabled = false;
   }
 }
 
@@ -276,47 +311,41 @@ async function refresh() {
   $('bonus').disabled = !state.bonus_ready; 
   $('ad').disabled = !state.ad_ready || !state.ad_allowed;
 }
-function showMsg(t, win) { const m = $('msg'); m.textContent = t; m.className = 'show ' + (win ? 'win':'lose'); setTimeout(()=> m.className='', 1600); }
-function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); setTimeout(()=> el.classList.remove('show'), 1000); }
+function showMsg(t, win) { const m = $('msg'); m.textContent = t; m.className = 'show ' + (win ? 'win':'lose'); setTimeout(()=> m.className='', 2000); }
+function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); setTimeout(()=> el.classList.remove('show'), 1500); }
 
 let currentBet = 10;
-$('betrow').onclick = e => { if (!e.target.dataset.bet) return; SFX.click(); [...$('betrow').children].forEach(b=>b.classList.remove('active')); e.target.classList.add('active'); currentBet = +e.target.dataset.bet; $('spin').textContent = `SPIN (${currentBet})`; };
+$('betrow').onclick = e => { if (!e.target.dataset.bet || e.target.disabled) return; SFX.click(); [...$('betrow').children].forEach(b=>b.classList.remove('active')); e.target.classList.add('active'); currentBet = +e.target.dataset.bet; $('spin').textContent = `SPIN (${currentBet})`; };
 
 let spinning = false;
-$('spin').onclick = async () => {
-  if (spinning) return; SFX.click(); spinning = true; $('spin').disabled = true;
+async function doSpin(betAmount) {
   try {
-    const d = await api('/spin', { bet: currentBet }); 
-    startSpin(d.reels);
-    
-    // Ждем 2.5 секунды, пока последний барабан не встанет
-    setTimeout(() => {
-      spinning = false; $('spin').disabled = false; refresh();
-      
-      if (d.win > 0) { 
-        const big = d.win >= currentBet * 10; 
-        big ? SFX.bigWin() : SFX.win(); 
-        showMsg(`+${d.win}`, true); 
-        toast(`+${d.win}`); 
-      } else { 
-        SFX.lose(); 
-        showMsg('пусто', false); 
-      }
-    }, 2500);
+    const d = await api('/spin', { bet: betAmount, game: currentGame }); 
+    startSpin(d.grid);
+    setTimeout(() => { showResult(d); }, 1000 + GAME_CONFIG[currentGame].cols * 150 + 500);
   } catch(e) { SFX.lose(); showMsg(e.message, false); spinning = false; $('spin').disabled = false; }
+}
+
+$('spin').onclick = async () => {
+  if (spinning || freeSpins > 0) return; 
+  SFX.click(); spinning = true; $('spin').disabled = true;
+  doSpin(currentBet);
 };
 
 $('bonus').onclick = async () => {
-  SFX.click(); SFX.bonus();
-  try { const d = await api('/bonus'); setTimeout(() => { SFX.bonusWin(); toast(`бонус +${d.amount}`); }, 400); refresh(); } catch(e) { showMsg(e.message, false); }
+  SFX.click();
+  try { const d = await api('/bonus'); SFX.win(); toast(`бонус +${d.amount}`); refresh(); } catch(e) { showMsg(e.message, false); }
 };
 
 $('ad').onclick = async () => {
-  SFX.click(); $('ad').disabled = true; showMsg('показ рекламы…', false); SFX.ad();
-  setTimeout(async () => { try { const d = await api('/ad'); SFX.adWin(); toast(`за рекламу +${d.amount}`); refresh(); } catch(e) { showMsg(e.message, false); refresh(); } }, 5000);
+  SFX.click(); $('ad').disabled = true; showMsg('показ рекламы…', false);
+  setTimeout(async () => { try { const d = await api('/ad'); SFX.win(); toast(`за рекламу +${d.amount}`); refresh(); } catch(e) { showMsg(e.message, false); refresh(); } }, 5000);
 };
 
-refresh().catch(e => showMsg('ошибка: '+e.message, false));
+$('backBtn').onclick = () => { location.reload(); };
+
+// Инициализация меню
+$('menu').style.display = 'flex';
 </script>
 </body>
 </html>
