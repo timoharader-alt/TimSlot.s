@@ -153,7 +153,6 @@ const SFX = {
 /* ==================== PIXI СЛОТ ==================== */
 const SYMBOLS = ['7️⃣','🍒','🔔','⭐','💎','🍋'];
 let app, reels = [], cellH = 0, totalReels = 3;
-const REEL_SPEED = 25; // Скорость прокрутки (пикселей за кадр)
 
 (async () => {
   app = new PIXI.Application();
@@ -161,13 +160,12 @@ const REEL_SPEED = 25; // Скорость прокрутки (пикселей 
   $('pixi').appendChild(app.canvas);
   
   const w = app.screen.width, h = app.screen.height; 
-  cellH = h; // Высота видимого слота
+  cellH = h;
 
   for (let i=0;i<totalReels;i++) {
     const cont = new PIXI.Container(); 
-    cont.x = i * (w/3) + (w/3)/2; // Центрируем барабан по горизонтали
+    cont.x = i * (w/3) + (w/3)/2;
     
-    // Маска (видимая область)
     const mask = new PIXI.Graphics().rect(-w/6, 0, w/3, h).fill(0xffffff); 
     cont.addChild(mask); 
     cont.mask = mask;
@@ -175,10 +173,10 @@ const REEL_SPEED = 25; // Скорость прокрутки (пикселей 
     const strip = new PIXI.Container(); 
     const labels = [];
     
-    // 5 символов в полосе (видим только 1)
-    for (let j=0;j<5;j++) {
+    // Создаем 3 видимых слота (плюс 1 запасной для плавности)
+    for (let j=0;j<4;j++) {
       const t = new PIXI.Text({ 
-        text: SYMBOLS[j % SYMBOLS.length], 
+        text: '❓', 
         style:{ fontFamily:'Arial', fontSize: h * 0.65, fill:0xffffff, align:'center', fontWeight: 'bold',
         dropShadow: { alpha: 0.8, angle: Math.PI/4, blur: 5, color: 0x000000, distance: 3 } } 
       });
@@ -190,16 +188,13 @@ const REEL_SPEED = 25; // Скорость прокрутки (пикселей 
     }
     
     cont.addChild(strip);
-    
-    // Золотая рамка
     const border = new PIXI.Graphics().rect(-w/6, 0, w/3, h).stroke({width:4, color:0xd4af37, alpha:1}); 
     cont.addChild(border);
     
     app.stage.addChild(cont); 
-    reels.push({ cont, strip, labels, pos: 0, speed: 0, spinning: false, targetY: 0, timeSpinning: 0 });
+    reels.push({ strip, labels, yOffset: 0, speed: 0, spinning: false });
   }
   
-  // Линии между барабанами
   for (let i=1;i<totalReels;i++) { 
     const line = new PIXI.Graphics().rect(i*(w/3), 0, 4, h).fill({color:0x000000, alpha:0.8}); 
     app.stage.addChild(line); 
@@ -209,79 +204,63 @@ const REEL_SPEED = 25; // Скорость прокрутки (пикселей 
 })();
 
 function tick() {
-  const delta = app.ticker.deltaMS;
-  let allStopped = true;
-
   for (let i=0;i<reels.length;i++) {
     const r = reels[i];
     if (r.spinning) {
-      allStopped = false;
-      r.timeSpinning += delta;
-
-      // Крутим с заданной скоростью
-      r.pos += r.speed * (delta / 16.6); 
+      r.yOffset += r.speed * (app.ticker.deltaMS / 16.6);
       
-      // Если пришло время тормозить (индивидуально для каждого барабана)
-      if (r.timeSpinning > (1000 + i * 400)) { 
-        // Плавное замедление (easing)
-        r.speed *= 0.92; 
+      // Прокрутка. Когда лента сдвигается на один символ вверх, мы перекидываем нижний наверх.
+      if (r.yOffset >= cellH) {
+        r.yOffset -= cellH;
+        // Сдвигаем текст вверх и меняем нижний
+        r.labels.forEach(l => l.y -= cellH);
         
-        // Если скорость упала достаточно, привязываем к цели и стопаем
-        if (r.speed < 0.5) {
-           r.speed = 0;
-           r.pos = r.targetY;
-           r.spinning = false;
-           SFX.reelStop(i); // Звук остановки конкретного барабана
-        }
+        // Верхний элемент улетел слишком высоко, переносим его вниз и меняем символ
+        const topLabel = r.labels.reduce((a, b) => a.y < b.y ? a : b);
+        topLabel.y += 4 * cellH;
+        topLabel.text = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+        
+        if (Math.random() < 0.2) SFX.reelTick();
       }
-      
-      // Обновляем визуальную позицию полосы
-      r.strip.y = -r.pos;
-      
-      // Зацикливание (когда лента уходит вверх, переносим вниз)
-      if (r.pos >= 4 * cellH) {
-         r.pos -= 4 * cellH;
-         r.targetY -= 4 * cellH;
-      }
-      
-      // Тики
-      if (r.speed > 1 && Math.random() < 0.1) SFX.reelTick();
-      
-    } else if (r.pos !== r.targetY) {
-        // Если не крутится, но позиция не совпадает — фиксируем (страховка)
-        r.pos = r.targetY;
-        r.strip.y = -r.pos;
+      r.strip.y = -r.yOffset;
     }
-  }
-  
-  // Если все остановились и мы ждем результат
-  if (allStopped && spinning && state._pendingResult) {
-      // Ничего не делаем, обработка в spin()
   }
 }
 
-// Функция запуска. Принимает выигрышные символы с сервера.
 function startSpin(finalSymbols) {
   for (let i=0;i<reels.length;i++) {
     const r = reels[i];
     r.spinning = true;
-    r.timeSpinning = 0;
-    r.speed = REEL_SPEED + i * 5; // Каждый следующий барабан стартует чуть быстрее
-    r.pos = 0; // Сброс
+    r.speed = 35 + i * 5; // Скорость
+    
+    // Подготовка: ставим нужный символ на самый верх
+    r.labels.forEach(l => { l.text = SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)]; l.y = r.labels.indexOf(l) * cellH + cellH/2; });
+    
+    // Символ, который должен выпасть, ставим первым в списке
+    r.labels[0].text = finalSymbols[i];
+    
+    // Начинаем с небольшим сдвигом, чтобы нужный символ оказался в центре
+    r.yOffset = 0;
+    r.strip.y = 0;
+  }
 
-    // Нам нужно подставить нужный символ так, чтобы он оказался ровно на нулевой позиции (в центре).
-    // Полоса у нас длиной 4 символа. Мы подставляем нужный символ в конец (индекс 3).
-    // И останавливаем прокрутку, когда индекс 3 окажется на нулевой позиции.
-    // Для этого полоса должна прокрутиться на 3 * cellH.
-    
-    // Записываем финальные символы в конец полосы
-    for(let j=0; j<4; j++) {
-        r.labels[j].text = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
-    }
-    r.labels[3].text = finalSymbols[i]; // Нужный символ в конце
-    
-    // Цель остановки: сдвиг на 3 ячейки вверх
-    r.targetY = 3 * cellH; 
+  // Тайминги остановки для каждого барабана (1 сек, 1.5 сек, 2 сек)
+  const stopTimes = [1200, 1700, 2200];
+  
+  for (let i=0;i<reels.length;i++) {
+    setTimeout(() => {
+      const r = reels[i];
+      r.speed = 0; // Резкая остановка
+      r.spinning = false;
+      r.yOffset = 0;
+      r.strip.y = 0;
+      SFX.reelStop(i);
+      
+      // Выравниваем текст, чтобы все стояло ровно по центру
+      r.labels.forEach((l, idx) => {
+        l.y = idx * cellH + cellH/2;
+      });
+    }, stopTimes[i]);
   }
 }
 
@@ -308,15 +287,12 @@ $('spin').onclick = async () => {
   if (spinning) return; SFX.click(); spinning = true; $('spin').disabled = true;
   try {
     const d = await api('/spin', { bet: currentBet }); 
-    
-    // Запускаем визуал
     startSpin(d.reels);
     
-    // Ждем, пока визуал полностью остановится (примерно 2.5 сек из-за задержек)
+    // Ждем 2.5 секунды, пока последний барабан не встанет
     setTimeout(() => {
       spinning = false; $('spin').disabled = false; refresh();
       
-      // ТОЛЬКО ТЕПЕРЬ показываем результат
       if (d.win > 0) { 
         const big = d.win >= currentBet * 10; 
         big ? SFX.bigWin() : SFX.win(); 
