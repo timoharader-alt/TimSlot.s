@@ -7,37 +7,44 @@
 <script src="https://cdn.jsdelivr.net/npm/pixi.js@8/dist/pixi.min.js"></script>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin:0; padding:0; background:#07070d; color:#eee;
-               font-family:system-ui,-apple-system,sans-serif; overflow:hidden; height:100%; }
+  html, body { margin:0; padding:0; background:#0a0505; color:#eee;
+               font-family:'Arial Black', system-ui, sans-serif; overflow:hidden; height:100%; }
   #bg { position:fixed; inset:0; z-index:0; }
-  #app { position:relative; z-index:1; max-width:480px; margin:0 auto; padding:12px; }
-  #top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
-  #bal { font-size:22px; font-weight:800; color:#ffd54a; text-shadow:0 0 12px rgba(255,213,74,.5); }
-  #msg { min-height:26px; text-align:center; font-weight:700; margin:6px 0;
-         transition:opacity .2s; opacity:0; }
+  #app { position:relative; z-index:1; max-width:480px; margin:0 auto; padding:12px; display:flex; flex-direction:column; height:100vh; }
+  
+  #top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; background:rgba(0,0,0,0.6); padding:8px 16px; border-radius:12px; border:1px solid #d4af37; }
+  #bal { font-size:24px; font-weight:900; color:#ffd700; text-shadow:0 0 10px rgba(255,215,0,0.8); }
+  
+  #msg { min-height:30px; text-align:center; font-weight:900; font-size:18px; margin:6px 0;
+         transition:opacity .2s; opacity:0; text-transform:uppercase; }
   #msg.show { opacity:1; }
-  #msg.win { color:#5eff9b; text-shadow:0 0 14px rgba(94,255,155,.6); }
-  #msg.lose { color:#ff7a7a; }
-  #pixi { width:100%; aspect-ratio:3/1; border-radius:14px; overflow:hidden;
-          background:#0d0d18; border:1px solid #2a2a44;
-          box-shadow:0 0 60px rgba(120,80,255,.25), inset 0 0 40px rgba(0,0,0,.7); }
-  .controls { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:12px; }
-  button { padding:14px 8px; font-size:15px; font-weight:800; border-radius:12px; border:none;
-           cursor:pointer; transition:transform .08s, opacity .15s; color:#0b0b12; }
-  button:active { transform:scale(.96); }
-  button:disabled { opacity:.35; cursor:not-allowed; }
-  #spin { grid-column:1 / -1; padding:18px; font-size:20px;
-          background:linear-gradient(135deg,#ffd54a,#ff8a3d);
-          box-shadow:0 6px 24px rgba(255,140,60,.4); }
-  #bonus { background:linear-gradient(135deg,#8a7dff,#5e4bff); color:#fff; }
-  #ad { background:linear-gradient(135deg,#5eff9b,#2ecc71); }
+  #msg.win { color:#00ff00; text-shadow:0 0 15px rgba(0,255,0,0.8); }
+  #msg.lose { color:#ff3333; text-shadow:0 0 10px rgba(255,0,0,0.5); }
+  
+  #pixi { width:100%; aspect-ratio:3/1.2; border-radius:16px; overflow:hidden;
+          background:#110000; border:4px solid #d4af37;
+          box-shadow:0 0 40px rgba(212,175,55,0.4), inset 0 0 50px rgba(0,0,0,0.9); position:relative; }
+          
+  .controls { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:auto; margin-bottom:12px; }
+  button { padding:16px 8px; font-size:16px; font-weight:900; border-radius:12px; border:2px solid #d4af37;
+           cursor:pointer; transition:transform .08s, opacity .15s; color:#fff; text-shadow:1px 1px 2px #000; }
+  button:active { transform:scale(.95); }
+  button:disabled { opacity:.4; cursor:not-allowed; filter:grayscale(1); }
+  
+  #spin { grid-column:1 / -1; padding:20px; font-size:24px; letter-spacing:2px;
+          background:linear-gradient(to bottom, #ff0000, #990000);
+          box-shadow:0 0 20px rgba(255,0,0,0.6), inset 0 0 10px rgba(255,255,255,0.3); }
+  #bonus { background:linear-gradient(to bottom, #8a2be2, #4b0082); }
+  #ad { background:linear-gradient(to bottom, #00c853, #00796b); }
+  
   .betrow { display:flex; gap:6px; margin-top:8px; justify-content:center; }
-  .betrow button { padding:8px 14px; font-size:13px; background:#1c1c2a; color:#888; }
-  .betrow button.active { background:#ffd54a; color:#0b0b12; }
+  .betrow button { padding:10px 14px; font-size:14px; background:#222; color:#ccc; border:1px solid #555; }
+  .betrow button.active { background:#ffd700; color:#000; border-color:#fff; }
+  
   .toast { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(.8);
-           background:rgba(0,0,0,.9); padding:18px 28px; border-radius:14px;
-           font-size:22px; font-weight:800; opacity:0; pointer-events:none;
-           transition:.25s; z-index:99; color:#ffd54a; }
+           background:rgba(0,0,0,.9); padding:20px 40px; border-radius:16px; border:2px solid #ffd700;
+           font-size:28px; font-weight:900; opacity:0; pointer-events:none;
+           transition:.25s; z-index:99; color:#ffd700; box-shadow:0 0 50px rgba(255,215,0,0.5); }
   .toast.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
 </style>
 </head>
@@ -46,20 +53,23 @@
 <div id="app">
   <div id="top">
     <div id="bal">0</div>
-    <div style="font-size:12px;color:#555">фишки · без вывода</div>
+    <div style="font-size:12px;color:#d4af37">FUN MODE</div>
   </div>
   <div id="pixi"></div>
   <div id="msg"></div>
-  <div class="betrow" id="betrow">
-    <button data-bet="10" class="active">10</button>
-    <button data-bet="50">50</button>
-    <button data-bet="100">100</button>
-    <button data-bet="500">500</button>
-  </div>
-  <div class="controls">
-    <button id="spin">SPIN</button>
-    <button id="bonus" disabled>БОНУС</button>
-    <button id="ad" disabled>РЕКЛАМА</button>
+  
+  <div style="margin-top: auto;">
+    <div class="betrow" id="betrow">
+      <button data-bet="10" class="active">10</button>
+      <button data-bet="50">50</button>
+      <button data-bet="100">100</button>
+      <button data-bet="500">500</button>
+    </div>
+    <div class="controls">
+      <button id="spin">SPIN</button>
+      <button id="bonus" disabled>БОНУС</button>
+      <button id="ad" disabled>РЕКЛАМА</button>
+    </div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -104,49 +114,35 @@ function noise(dur=0.05, vol=0.04) {
 }
 const SFX = {
   click: () => tone(700, .04, 'square', .04),
-  reelTick: () => noise(.03, .03),
-  reelStop: (i=0) => { tone(140 + i*20, .08, 'triangle', .07); noise(.05,.05); },
-  win: () => { [523,659,784,1046].forEach((f,i)=>tone(f,.15,'triangle',.06,i*.08)); tone(1568,.25,'sine',.04,.32); },
-  bigWin: () => { [523,659,784,1046,1318,1568].forEach((f,i)=>tone(f,.18,'triangle',.07,i*.07)); [261,329,392].forEach((f,i)=>tone(f,.6,'sine',.05,.4)); },
-  lose: () => tone(200,.18,'sine',.05,0,120),
-  bonus: () => [392,523,659,784,1046].forEach((f,i)=>tone(f,.16,'triangle',.06,i*.07)),
-  bonusWin: () => { [784,1046,1318,1568].forEach((f,i)=>tone(f,.2,'triangle',.07,i*.08)); tone(2093,.4,'sine',.05,.35); },
+  reelTick: () => noise(.02, .04),
+  reelStop: (i=0) => { tone(100 + i*30, .15, 'square', .1); noise(.08,.08); },
+  win: () => { [523,659,784,1046].forEach((f,i)=>tone(f,.15,'square',.06,i*.08)); tone(1568,.25,'sine',.04,.32); },
+  bigWin: () => { [523,659,784,1046,1318,1568].forEach((f,i)=>tone(f,.2,'square',.08,i*.06)); [261,329,392].forEach((f,i)=>tone(f,.8,'sawtooth',.06,.4)); },
+  lose: () => tone(150,.3,'sawtooth',.06,0,50),
+  bonus: () => [392,523,659,784,1046].forEach((f,i)=>tone(f,.16,'square',.06,i*.06)),
+  bonusWin: () => { [784,1046,1318,1568].forEach((f,i)=>tone(f,.2,'square',.08,i*.08)); tone(2093,.5,'sine',.05,.35); },
   ad: () => [300,450,600].forEach((f,i)=>tone(f,.1,'square',.04,i*.08)),
-  adWin: () => [600,900,1200].forEach((f,i)=>tone(f,.15,'triangle',.06,i*.08)),
+  adWin: () => [600,900,1200].forEach((f,i)=>tone(f,.15,'square',.06,i*.08)),
 };
 
-/* ==================== ФОН ==================== */
+/* ==================== ФОН (Казино) ==================== */
 (function initBg() {
   const c = $('bg'), x = c.getContext('2d');
-  let W, H, stars = [], orbs = [];
+  let W, H, stars = [];
   function resize() {
     W = c.width = window.innerWidth * devicePixelRatio;
     H = c.height = window.innerHeight * devicePixelRatio;
     c.style.width = window.innerWidth + 'px'; c.style.height = window.innerHeight + 'px';
-    stars = Array.from({length: 140}, () => ({ x: Math.random()*W, y: Math.random()*H, r: Math.random()*1.6 + .4, sp: Math.random()*.3 + .05, a: Math.random()*.6 + .2, hue: Math.random()*60 + 220 }));
-    orbs = Array.from({length: 4}, () => ({ x: Math.random()*W, y: Math.random()*H, r: (Math.random()*180 + 120) * devicePixelRatio, hue: Math.random()*80 + 220, vx: (Math.random()-.5)*.15, vy: (Math.random()-.5)*.15, a: Math.random()*.05 + .03 }));
+    stars = Array.from({length: 50}, () => ({ x: Math.random()*W, y: Math.random()*H, r: Math.random()*2 + 1, sp: Math.random()*1 + .5, a: Math.random()*.8 + .2, hue: 40 }));
   }
   resize(); window.addEventListener('resize', resize);
-  let t = 0;
   function frame() {
-    t += 0.016;
-    const g = x.createLinearGradient(0, 0, W, H);
-    g.addColorStop(0, '#07070d'); g.addColorStop(.5, '#0b0a1a'); g.addColorStop(1, '#0a0712');
+    const g = x.createRadialGradient(W/2, H/2, 0, W/2, H/2, W);
+    g.addColorStop(0, '#2a0808'); g.addColorStop(1, '#050000');
     x.fillStyle = g; x.fillRect(0,0,W,H);
-    x.globalCompositeOperation = 'screen';
-    orbs.forEach(o => {
-      o.x += o.vx * devicePixelRatio; o.y += o.vy * devicePixelRatio;
-      if (o.x < -o.r) o.x = W + o.r; if (o.x > W + o.r) o.x = -o.r;
-      if (o.y < -o.r) o.y = H + o.r; if (o.y > H + o.r) o.y = -o.r;
-      const gg = x.createRadialGradient(o.x, o.y, 0, o.x, o.y, o.r);
-      gg.addColorStop(0, `hsla(${o.hue},80%,60%,${o.a})`); gg.addColorStop(1, 'hsla(0,0%,0%,0)');
-      x.fillStyle = gg; x.beginPath(); x.arc(o.x, o.y, o.r, 0, Math.PI*2); x.fill();
-    });
-    x.globalCompositeOperation = 'source-over';
     stars.forEach(s => {
       s.y += s.sp * devicePixelRatio; if (s.y > H) { s.y = -4; s.x = Math.random()*W; }
-      const tw = (Math.sin(t*2 + s.x) + 1) / 2;
-      x.fillStyle = `hsla(${s.hue},90%,80%,${s.a * (.4 + tw*.6)})`;
+      x.fillStyle = `hsla(${s.hue},100%,70%,${s.a})`;
       x.beginPath(); x.arc(s.x, s.y, s.r*devicePixelRatio, 0, Math.PI*2); x.fill();
     });
     requestAnimationFrame(frame);
@@ -154,49 +150,137 @@ const SFX = {
   frame();
 })();
 
-/* ==================== PIXI ==================== */
-const SYMBOLS = ['🍒','🍋','🔔','💎'];
+/* ==================== PIXI СЛОТ ==================== */
+// Символы: 7, Вишня, Бар, Звезда, Алмаз, Колокол
+const SYMBOLS = ['7️⃣','🍒','🔔','⭐','💎','🍋'];
+const SYM_W = [10, 40, 20, 15, 5, 30]; // Вероятности
+const POOL = [];
+SYMBOLS.forEach((s, i) => { for(let j=0; j<SYM_W[i]; j++) POOL.push(i); });
+
 let app, reels = [], cellH = 0, totalReels = 3;
+const SYMBOL_SIZE = 100; // Размер одного символа
 
 (async () => {
   app = new PIXI.Application();
   await app.init({ backgroundAlpha: 0, resizeTo: $('pixi'), antialias: true, autoDensity: true, resolution: window.devicePixelRatio || 1 });
   $('pixi').appendChild(app.canvas);
-  const w = app.screen.width, h = app.screen.height; cellH = h;
+  
+  const w = app.screen.width, h = app.screen.height; 
+  cellH = h; // Высота одного видимого символа
+
   for (let i=0;i<totalReels;i++) {
-    const cont = new PIXI.Container(); cont.x = i * (w/3);
-    const mask = new PIXI.Graphics().rect(0,0,w/3,h).fill(0xffffff); cont.addChild(mask); cont.mask = mask;
-    const strip = new PIXI.Container(); const labels = [];
-    for (let j=0;j<16;j++) {
-      const t = new PIXI.Text({ text: SYMBOLS[j%4], style:{ fontFamily:'system-ui, "Segoe UI Emoji", sans-serif', fontSize: Math.floor(h*0.6), fill:0xffffff, align:'center' }});
-      t.anchor.set(0.5); t.x = w/6; t.y = j*cellH + cellH/2; strip.addChild(t); labels.push(t);
+    const cont = new PIXI.Container(); 
+    cont.x = i * (w/3) + (w/3)/2; // Центрируем контейнер барабана
+    
+    // Маска (видимая область)
+    const mask = new PIXI.Graphics().rect(-w/6, 0, w/3, h).fill(0xffffff); 
+    cont.addChild(mask); 
+    cont.mask = mask;
+
+    const strip = new PIXI.Container(); 
+    const labels = [];
+    
+    // Заполняем длинную полосу символами
+    for (let j=0;j<20;j++) {
+      const t = new PIXI.Text({ 
+        text: SYMBOLS[j % SYMBOLS.length], 
+        style:{ fontFamily:'Arial', fontSize: h * 0.65, fill:0xffffff, align:'center', fontWeight: 'bold',
+        dropShadow: { alpha: 0.8, angle: Math.PI/4, blur: 5, color: 0x000000, distance: 3 } } 
+      });
+      t.anchor.set(0.5); 
+      t.x = 0; 
+      t.y = j*cellH + cellH/2; 
+      strip.addChild(t); 
+      labels.push(t);
     }
+    
     cont.addChild(strip);
-    const border = new PIXI.Graphics().rect(0,0,w/3,h).stroke({width:2, color:0x4a4a7a, alpha:0.7}); cont.addChild(border);
-    app.stage.addChild(cont); reels.push({ cont, strip, labels, offset:0 });
+    
+    // Золотая рамка вокруг каждого барабана
+    const border = new PIXI.Graphics().rect(-w/6, 0, w/3, h).stroke({width:4, color:0xd4af37, alpha:1}); 
+    cont.addChild(border);
+    
+    app.stage.addChild(cont); 
+    reels.push({ cont, strip, labels });
   }
-  for (let i=1;i<totalReels;i++) { const line = new PIXI.Graphics().rect(i*(w/3)-1, 0, 2, h).fill({color:0x000000, alpha:0.55}); app.stage.addChild(line); }
+  
+  // Линии между барабанами
+  for (let i=1;i<totalReels;i++) { 
+    const line = new PIXI.Graphics().rect(i*(w/3), 0, 4, h).fill({color:0x000000, alpha:0.8}); 
+    app.stage.addChild(line); 
+  }
+  
   app.ticker.add(tick);
 })();
 
-const reelsState = [ { speed:0, pos:0, stopAt:0, stopped:true }, { speed:0, pos:0, stopAt:0, stopped:true }, { speed:0, pos:0, stopAt:0, stopped:true } ];
+// Состояние барабанов: скорость, текущая позиция, позиция остановки
+const reelsState = [ 
+  { speed:0, pos:0, stopPos:0, spinning:false }, 
+  { speed:0, pos:0, stopPos:0, spinning:false }, 
+  { speed:0, pos:0, stopPos:0, spinning:false } 
+];
+
 function tick() {
   const delta = app.ticker.deltaMS;
   for (let i=0;i<reels.length;i++) {
     const r = reelsState[i], rv = reels[i];
-    if (r.speed > 0) {
-      r.pos += r.speed * delta * 0.001;
-      if (Math.random() < 0.25) SFX.reelTick();
-      if (r.pos >= r.stopAt) { r.pos = r.stopAt; r.speed = 0; r.stopped = true; SFX.reelStop(i); }
-      rv.strip.y = -r.pos * cellH; if (r.pos > 8) { r.pos -= 4; r.stopAt -= 4; }
+    if (r.spinning) {
+      // Крутим быстро
+      r.pos += r.speed * delta * 0.01; 
+      
+      // Звук тиков (реже)
+      if (Math.random() < 0.1) SFX.reelTick();
+      
+      // Если доехали до точки остановки
+      if (r.pos >= r.stopPos) { 
+        r.pos = r.stopPos; 
+        r.spinning = false; 
+        SFX.reelStop(i); 
+      }
+      
+      // Обновляем позицию полосы
+      rv.strip.y = -r.pos * cellH;
+      
+      // Зацикливаем, чтобы не улететь в бесконечность
+      if (r.pos > 8 * cellH) { 
+        r.pos -= 8 * cellH; 
+        r.stopPos -= 8 * cellH; 
+      }
     }
   }
 }
+
+// Запуск спина
 function startSpin(finalSymbols) {
   for (let i=0;i<reels.length;i++) {
-    const r = reelsState[i]; r.speed = 0.7 + i*0.18; r.pos = 0; r.stopAt = 3 + i*1.4; r.stopped = false;
-    reels[i].labels.forEach(l => l.text = SYMBOLS[Math.floor(Math.random()*4)]);
-    const stopIdx = Math.floor(r.stopAt) % 16; reels[i].labels[stopIdx].text = finalSymbols[i];
+    const r = reelsState[i];
+    r.spinning = true;
+    
+    // Разная скорость для эффекта
+    r.speed = 3.5 + i * 0.5; 
+    
+    // Случайный старт, чтобы не дергалось
+    r.pos = (Math.random() * 5) * cellH;
+    
+    // Куда остановится: минимум 15 символов проворота + позиция нужного символа
+    // Так как полоса зациклена, нам нужно найти индекс нужного символа и выставить stopPos так, 
+    // чтобы этот индекс оказался ровно по центру (на нулевом видимом слоте).
+    
+    const symIndex = SYMBOLS.indexOf(finalSymbols[i]);
+    
+    // Ищем этот символ в полосе, начиная с текущей позиции
+    let targetIndex = 0;
+    for (let j=0; j<reels[i].labels.length; j++) {
+        if (reels[i].labels[j].text === finalSymbols[i] && j > r.pos/cellH + 5) {
+            targetIndex = j;
+            break;
+        }
+    }
+    
+    // Если не нашли, берем любой (страховка)
+    if (!targetIndex) targetIndex = (Math.floor(Math.random()*10) + 15);
+    
+    r.stopPos = targetIndex * cellH;
   }
 }
 
@@ -207,7 +291,10 @@ async function api(path, body={}) {
 }
 let state = {};
 async function refresh() {
-  state = await api('/state'); $('bal').textContent = state.balance; $('bonus').disabled = !state.bonus_ready; $('ad').disabled = !state.ad_ready || !state.ad_allowed;
+  state = await api('/state'); 
+  $('bal').textContent = state.balance; 
+  $('bonus').disabled = !state.bonus_ready; 
+  $('ad').disabled = !state.ad_ready || !state.ad_allowed;
 }
 function showMsg(t, win) { const m = $('msg'); m.textContent = t; m.className = 'show ' + (win ? 'win':'lose'); setTimeout(()=> m.className='', 1600); }
 function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); setTimeout(()=> el.classList.remove('show'), 1000); }
@@ -219,11 +306,16 @@ let spinning = false;
 $('spin').onclick = async () => {
   if (spinning) return; SFX.click(); spinning = true; $('spin').disabled = true;
   try {
-    const d = await api('/spin', { bet: currentBet }); startSpin(d.reels);
+    const d = await api('/spin', { bet: currentBet }); 
+    
+    // Сначала запускаем визуал
+    startSpin(d.reels);
+    
+    // Ждем, пока все три барабана не остановятся (примерно 2 секунды)
     setTimeout(() => {
       spinning = false; $('spin').disabled = false; refresh();
       if (d.win > 0) { const big = d.win >= currentBet * 10; big ? SFX.bigWin() : SFX.win(); showMsg(`+${d.win}`, true); toast(`+${d.win}`); } else { SFX.lose(); showMsg('пусто', false); }
-    }, 1700);
+    }, 2000);
   } catch(e) { SFX.lose(); showMsg(e.message, false); spinning = false; $('spin').disabled = false; }
 };
 
