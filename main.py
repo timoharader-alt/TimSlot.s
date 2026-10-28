@@ -9,18 +9,18 @@ app = FastAPI()
 
 def db():
     c = sqlite3.connect("slot.db")
-    c.execute("CREATE TABLE IF NOT EXISTS users(uid INTEGER PRIMARY KEY, balance INTEGER DEFAULT 5000, last_bonus INTEGER DEFAULT 0, last_ad INTEGER DEFAULT 0)")
+    c.execute("CREATE TABLE IF NOT EXISTS users(uid INTEGER PRIMARY KEY, balance INTEGER DEFAULT 5000, wheel_time INTEGER DEFAULT 0, wheel_daily INTEGER DEFAULT 0, wheel_day INTEGER DEFAULT 0)")
     return c
 
 def get_user(uid):
     c = db()
-    row = c.execute("SELECT balance,last_bonus,last_ad FROM users WHERE uid=?", (uid,)).fetchone()
+    row = c.execute("SELECT balance, wheel_time, wheel_daily, wheel_day FROM users WHERE uid=?", (uid,)).fetchone()
     if not row:
         c.execute("INSERT INTO users(uid) VALUES(?)", (uid,))
         c.commit()
-        row = (5000, 0, 0)
+        row = (5000, 0, 0, 0)
     c.close()
-    return {"balance": row[0], "last_bonus": row[1], "last_ad": row[2]}
+    return {"balance": row[0], "wheel_time": row[1], "wheel_daily": row[2], "wheel_day": row[3]}
 
 def set_user(uid, **kw):
     c = db()
@@ -37,21 +37,21 @@ def verify(init_data: str) -> dict:
         raise HTTPException(401, "bad signature")
     return json.loads(p["user"])
 
-# ИСПРАВЛЕНО: ID 99 для скаттера
+# Настройки игр. min_bet - минимальная ставка. pay - множитель (икс).
 GAMES = {
     "fruits": {
-        "cols": 3, "rows": 1, 
-        "symbols": [{"id":0,"pay":5}, {"id":1,"pay":10}, {"id":2,"pay":20}, {"id":3,"pay":50}, {"id":4,"pay":100}, {"id":5,"pay":200}],
+        "cols": 3, "rows": 1, "min_bet": 10,
+        "symbols": [{"id":0,"pay":1.5}, {"id":1,"pay":2.0}, {"id":2,"pay":3.0}, {"id":3,"pay":5.0}, {"id":4,"pay":10.0}, {"id":5,"pay":25.0}],
         "scatter": None
     },
     "space": {
-        "cols": 7, "rows": 3,
-        "symbols": [{"id":0,"pay":2}, {"id":1,"pay":3}, {"id":2,"pay":4}, {"id":3,"pay":6}, {"id":4,"pay":10}, {"id":5,"pay":20}],
+        "cols": 7, "rows": 3, "min_bet": 50,
+        "symbols": [{"id":0,"pay":1.2}, {"id":1,"pay":1.5}, {"id":2,"pay":2.0}, {"id":3,"pay":3.0}, {"id":4,"pay":5.0}, {"id":5,"pay":10.0}],
         "scatter": 99
     },
     "egypt": {
-        "cols": 5, "rows": 3,
-        "symbols": [{"id":0,"pay":5}, {"id":1,"pay":10}, {"id":2,"pay":15}, {"id":3,"pay":25}, {"id":4,"pay":50}, {"id":5,"pay":100}],
+        "cols": 5, "rows": 3, "min_bet": 50,
+        "symbols": [{"id":0,"pay":1.5}, {"id":1,"pay":2.0}, {"id":2,"pay":3.0}, {"id":3,"pay":5.0}, {"id":4,"pay":8.0}, {"id":5,"pay":15.0}],
         "scatter": 99
     }
 }
@@ -77,9 +77,6 @@ def generate_grid(game_key):
     for _ in range(cols):
         col = []
         for _ in range(rows):
-            # ИСПРАВЛЕНО: Шанс 0.5% на ячейку. 
-            # Для 7x3 это ~10% на то, что выпадет хотя бы 1 скаттер, 
-            # и ~1% на то, что их выпадет 3 и больше (бонус).
             if g["scatter"] is not None and random.random() < 0.005:
                 col.append(g["scatter"])
             else:
@@ -94,7 +91,6 @@ def check_win(grid, game_key, bet):
     win_lines = []
     scatters = 0
 
-    # Считаем скаттеры (проверяем именно ID 99)
     if g["scatter"] is not None:
         for col in grid:
             for sym in col:
@@ -102,14 +98,15 @@ def check_win(grid, game_key, bet):
 
     for line_idx, line in enumerate(lines):
         first_sym = grid[0][line[0]]
-        if first_sym == g["scatter"]: continue # Скаттеры не участвуют в линиях
+        if first_sym == g["scatter"]: continue
         count = 1
         for col in range(1, len(grid)):
             if grid[col][line[col]] == first_sym: count += 1
             else: break
         if count >= 3:
             sym_data = next(s for s in g["symbols"] if s["id"] == first_sym)
-            payout = sym_data["pay"] * (bet // 10) * count
+            # Выигрыш = ставка * множитель
+            payout = bet * sym_data["pay"]
             total_win += payout
             win_lines.append({"line": line_idx, "count": count, "win": payout})
     return total_win, win_lines, scatters
@@ -119,48 +116,78 @@ class Req(BaseModel):
 
 @app.post("/state")
 def state(r: Req):
-    u = verify(r.init_data); d = get_user(u["id"]); now = int(time.time())
-    return {"balance": d["balance"], "bonus_ready": now - d["last_bonus"] > 86400, "ad_ready": now - d["last_ad"] > 60, "ad_allowed": d["balance"] < 5000}
+    u = verify(r.init_data); uid = u["id"]; d = get_user(uid); now = int(time.time())
+    today = int(time.strftime("%j")) # День в году
+    
+    # Логика кулдауна бонуса: 1 час и 5 раз в день
+    if d["wheel_day"] != today:
+        set_user(uid, wheel_daily=0, wheel_day=today)
+        d["wheel_daily"] = 0
+
+    can_wheel = (d["wheel_daily"] < 5) and (now >= d["wheel_time"])
+    time_left = max(0, d["wheel_time"] - now)
+
+    return {
+        "balance": d["balance"], 
+        "wheel_ready": can_wheel,
+        "wheel_time_left": time_left,
+        "wheel_daily": d["wheel_daily"],
+        "ad_ready": now - d["wheel_time"] > 60,
+        "ad_allowed": d["balance"] < 5000
+    }
 
 class SpinReq(BaseModel):
     init_data: str
-    bet: int = 10
-    game: str = "fruits"
+    bet: int
+    game: str
 
 @app.post("/spin")
 def spin(r: SpinReq):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
-    if r.bet < 0 or d["balance"] < r.bet: raise HTTPException(400, "мало фишек")
+    
+    game_conf = GAMES[r.game]
+    if r.bet < game_conf["min_bet"]:
+        raise HTTPException(400, f"Минимальная ставка {game_conf['min_bet']} фишек")
+    if d["balance"] < r.bet:
+        raise HTTPException(400, "Недостаточно фишек")
+
     bal = d["balance"] - r.bet
     grid = generate_grid(r.game)
-    calc_bet = r.bet if r.bet > 0 else 10
-    win_amount, win_lines, scatters = check_win(grid, r.game, calc_bet)
+    win_amount, win_lines, scatters = check_win(grid, r.game, r.bet)
+    
     bal += win_amount
     set_user(uid, balance=bal)
+    
     return {"grid": grid, "win": win_amount, "balance": bal, "lines": win_lines, "scatters": scatters}
 
 @app.post("/bonus")
 def bonus(r: Req):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid); now = int(time.time())
-    if now - d["last_bonus"] < 86400: raise HTTPException(400, "бонус уже получен")
+    
+    if d["wheel_daily"] >= 5:
+        raise HTTPException(400, "Лимит 5 круток в день")
+    if now < d["wheel_time"]:
+        raise HTTPException(400, "Кулдаун 1 час")
+
+    # Крутим рулетку (шансы)
     rnd = random.random() * 100
-    if rnd < 2: amount = 1000
-    elif rnd < 7: amount = 500
-    elif rnd < 17: amount = 250
-    elif rnd < 42: amount = 100
-    elif rnd < 72: amount = 50
-    elif rnd < 92: amount = 20
+    if rnd < 1: amount = 1000
+    elif rnd < 4: amount = 500
+    elif rnd < 12: amount = 250
+    elif rnd < 32: amount = 100
+    elif rnd < 62: amount = 50
+    elif rnd < 87: amount = 20
     else: amount = 0
-    set_user(uid, balance=d["balance"] + amount, last_bonus=now)
-    return {"amount": amount, "balance": d["balance"] + amount}
+
+    set_user(uid, balance=d["balance"] + amount, wheel_time=now + 3600, wheel_daily=d["wheel_daily"] + 1)
+    return {"amount": amount, "balance": d["balance"] + amount, "next_wheel": now + 3600}
 
 @app.post("/ad")
 def ad(r: Req):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid); now = int(time.time())
-    if d["balance"] >= 5000: raise HTTPException(400, "реклама недоступна")
-    if now - d["last_ad"] < 60: raise HTTPException(400, "подожди минуту")
+    if d["balance"] >= 5000: raise HTTPException(400, "реклама доступна только при балансе < 5000")
     amount = random.choice([100, 200, 300, 500])
-    set_user(uid, balance=d["balance"] + amount, last_ad=now)
+    set_user(uid, balance=d["balance"] + amount)
     return {"amount": amount, "balance": d["balance"] + amount}
 
 @app.get("/")
