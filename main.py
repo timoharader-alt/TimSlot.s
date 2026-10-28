@@ -37,22 +37,21 @@ def verify(init_data: str) -> dict:
         raise HTTPException(401, "bad signature")
     return json.loads(p["user"])
 
-# Конфигурация игр
 GAMES = {
     "fruits": {
         "cols": 3, "rows": 1, 
-        "symbols": [{"id":0,"pay":2}, {"id":1,"pay":3}, {"id":2,"pay":5}, {"id":3,"pay":10}, {"id":4,"pay":25}, {"id":5,"pay":50}],
+        "symbols": [{"id":0,"pay":5}, {"id":1,"pay":10}, {"id":2,"pay":20}, {"id":3,"pay":50}, {"id":4,"pay":100}, {"id":5,"pay":200}],
         "scatter": None
     },
     "space": {
         "cols": 12, "rows": 3,
         "symbols": [{"id":0,"pay":2}, {"id":1,"pay":3}, {"id":2,"pay":4}, {"id":3,"pay":6}, {"id":4,"pay":10}, {"id":5,"pay":20}],
-        "scatter": 6 # 6-й символ (🪐) - скаттер
+        "scatter": 2
     },
     "egypt": {
         "cols": 5, "rows": 3,
-        "symbols": [{"id":0,"pay":2}, {"id":1,"pay":4}, {"id":2,"pay":6}, {"id":3,"pay":8}, {"id":4,"pay":15}, {"id":5,"pay":30}],
-        "scatter": 5 # 5-й символ (👁️) - скаттер
+        "symbols": [{"id":0,"pay":5}, {"id":1,"pay":10}, {"id":2,"pay":15}, {"id":3,"pay":25}, {"id":4,"pay":50}, {"id":5,"pay":100}],
+        "scatter": 2
     }
 }
 
@@ -70,10 +69,11 @@ LINES = {
 def generate_grid(game_key):
     g = GAMES[game_key]
     cols, rows = g["cols"], g["rows"]
-    weights = [40, 30, 20, 10, 5, 2]
+    # Веса для повышения шанса выигрыша (базовые символы падают чаще)
+    weights = [50, 30, 15, 10, 5, 2]
     pool = [s["id"] for s in g["symbols"] for _ in range(weights[s["id"]])]
     if g["scatter"] is not None:
-        pool.extend([g["scatter"]] * 3) # Скаттер выпадает редко
+        pool.extend([g["scatter"]] * 4) # Скаттер падает почаще
         
     grid = [[random.choice(pool) for _ in range(rows)] for _ in range(cols)]
     return grid
@@ -85,7 +85,6 @@ def check_win(grid, game_key, bet):
     win_lines = []
     scatters = 0
 
-    # Считаем скаттеры
     if g["scatter"] is not None:
         for col in grid:
             for sym in col:
@@ -102,7 +101,8 @@ def check_win(grid, game_key, bet):
             else:
                 break
         
-        min_match = 3 if game_key != "fruits" else 3
+        # Для 3-барабанного - 3 совпадения. Для 5 и 12 - от 3-х.
+        min_match = 3 
         if count >= min_match:
             sym_data = next(s for s in g["symbols"] if s["id"] == first_sym)
             payout = sym_data["pay"] * (bet // 10) * count
@@ -127,11 +127,14 @@ class SpinReq(BaseModel):
 @app.post("/spin")
 def spin(r: SpinReq):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
-    if r.bet <= 0 or d["balance"] < r.bet: raise HTTPException(400, "мало фишек")
     
+    # Разрешаем ставку 0 для фриспинов
+    if r.bet < 0 or d["balance"] < r.bet: 
+        raise HTTPException(400, "мало фишек")
+        
     bal = d["balance"] - r.bet
     grid = generate_grid(r.game)
-    win_amount, win_lines, scatters = check_win(grid, r.game, r.bet)
+    win_amount, win_lines, scatters = check_win(grid, r.game, r.bet if r.bet > 0 else 10) # Считаем выигрыш от минималки, если фриспин
     
     bal += win_amount
     set_user(uid, balance=bal)
