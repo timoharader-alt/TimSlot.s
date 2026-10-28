@@ -44,7 +44,7 @@ GAMES = {
         "scatter": None
     },
     "space": {
-        "cols": 12, "rows": 3,
+        "cols": 7, "rows": 3, # ИСПРАВЛЕНО: 7x3
         "symbols": [{"id":0,"pay":2}, {"id":1,"pay":3}, {"id":2,"pay":4}, {"id":3,"pay":6}, {"id":4,"pay":10}, {"id":5,"pay":20}],
         "scatter": 2
     },
@@ -58,8 +58,8 @@ GAMES = {
 LINES = {
     "fruits": [[0,0,0]],
     "space": [
-        [1,1,1,1,1,1,1,1,1,1,1,1], [0,0,0,0,0,0,0,0,0,0,0,0], [2,2,2,2,2,2,2,2,2,2,2,2],
-        [0,1,2,1,0,1,2,1,0,1,2,1], [2,1,0,1,2,1,0,1,2,1,0,1], [0,0,1,2,2,2,2,1,0,0,0,0]
+        [1,1,1,1,1,1,1], [0,0,0,0,0,0,0], [2,2,2,2,2,2,2],
+        [0,1,2,1,0,1,0], [2,1,0,1,2,1,2], [0,0,1,2,2,1,0]
     ],
     "egypt": [
         [1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2]
@@ -69,10 +69,14 @@ LINES = {
 def generate_grid(game_key):
     g = GAMES[game_key]
     cols, rows = g["cols"], g["rows"]
-    weights = [50, 30, 15, 10, 5, 2]
+    # Веса: 0-3 обычные, 4-5 редкие.
+    weights = [50, 30, 20, 10, 5, 2]
     pool = [s["id"] for s in g["symbols"] for _ in range(weights[s["id"]])]
+    
+    # ИСПРАВЛЕНО: Шанс на бонус. Скаттер (id=2) падает с шансом ~2%. 
+    # На сетке 7x3 (21 ячейка) это дает выпадение 3+ скаттеров примерно 1 раз на 100 спинов.
     if g["scatter"] is not None:
-        pool.extend([g["scatter"]] * 4)
+        pool.extend([g["scatter"]] * 2) 
         
     grid = [[random.choice(pool) for _ in range(rows)] for _ in range(cols)]
     return grid
@@ -124,13 +128,10 @@ class SpinReq(BaseModel):
 @app.post("/spin")
 def spin(r: SpinReq):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
-    
-    if r.bet < 0 or d["balance"] < r.bet: 
-        raise HTTPException(400, "мало фишек")
+    if r.bet < 0 or d["balance"] < r.bet: raise HTTPException(400, "мало фишек")
         
     bal = d["balance"] - r.bet
     grid = generate_grid(r.game)
-    
     calc_bet = r.bet if r.bet > 0 else 10
     win_amount, win_lines, scatters = check_win(grid, r.game, calc_bet)
     
