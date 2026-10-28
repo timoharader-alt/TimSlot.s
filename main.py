@@ -37,6 +37,7 @@ def verify(init_data: str) -> dict:
         raise HTTPException(401, "bad signature")
     return json.loads(p["user"])
 
+# ИСПРАВЛЕНО: ID 99 для скаттера
 GAMES = {
     "fruits": {
         "cols": 3, "rows": 1, 
@@ -46,12 +47,12 @@ GAMES = {
     "space": {
         "cols": 7, "rows": 3,
         "symbols": [{"id":0,"pay":2}, {"id":1,"pay":3}, {"id":2,"pay":4}, {"id":3,"pay":6}, {"id":4,"pay":10}, {"id":5,"pay":20}],
-        "scatter": 2
+        "scatter": 99
     },
     "egypt": {
         "cols": 5, "rows": 3,
         "symbols": [{"id":0,"pay":5}, {"id":1,"pay":10}, {"id":2,"pay":15}, {"id":3,"pay":25}, {"id":4,"pay":50}, {"id":5,"pay":100}],
-        "scatter": 2
+        "scatter": 99
     }
 }
 
@@ -76,8 +77,10 @@ def generate_grid(game_key):
     for _ in range(cols):
         col = []
         for _ in range(rows):
-            # Строгий шанс на скаттер (1.5%)
-            if g["scatter"] is not None and random.random() < 0.015:
+            # ИСПРАВЛЕНО: Шанс 0.5% на ячейку. 
+            # Для 7x3 это ~10% на то, что выпадет хотя бы 1 скаттер, 
+            # и ~1% на то, что их выпадет 3 и больше (бонус).
+            if g["scatter"] is not None and random.random() < 0.005:
                 col.append(g["scatter"])
             else:
                 col.append(random.choice(pool))
@@ -91,6 +94,7 @@ def check_win(grid, game_key, bet):
     win_lines = []
     scatters = 0
 
+    # Считаем скаттеры (проверяем именно ID 99)
     if g["scatter"] is not None:
         for col in grid:
             for sym in col:
@@ -98,7 +102,7 @@ def check_win(grid, game_key, bet):
 
     for line_idx, line in enumerate(lines):
         first_sym = grid[0][line[0]]
-        if first_sym == g["scatter"]: continue
+        if first_sym == g["scatter"]: continue # Скаттеры не участвуют в линиях
         count = 1
         for col in range(1, len(grid)):
             if grid[col][line[col]] == first_sym: count += 1
@@ -139,17 +143,14 @@ def spin(r: SpinReq):
 def bonus(r: Req):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid); now = int(time.time())
     if now - d["last_bonus"] < 86400: raise HTTPException(400, "бонус уже получен")
-    
-    # Рулетка: от 0 до 1000. Шансы подкручены.
     rnd = random.random() * 100
-    if rnd < 2: amount = 1000     # 2% шанс (Джекпот)
-    elif rnd < 7: amount = 500    # 5% шанс
-    elif rnd < 17: amount = 250   # 10% шанс
-    elif rnd < 42: amount = 100   # 25% шанс
-    elif rnd < 72: amount = 50    # 30% шанс
-    elif rnd < 92: amount = 20    # 20% шанс
-    else: amount = 0              # 8% шанс (Пусто)
-
+    if rnd < 2: amount = 1000
+    elif rnd < 7: amount = 500
+    elif rnd < 17: amount = 250
+    elif rnd < 42: amount = 100
+    elif rnd < 72: amount = 50
+    elif rnd < 92: amount = 20
+    else: amount = 0
     set_user(uid, balance=d["balance"] + amount, last_bonus=now)
     return {"amount": amount, "balance": d["balance"] + amount}
 
