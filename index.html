@@ -33,24 +33,25 @@
   #bonus { background:linear-gradient(to bottom, #8a2be2, #4b0082); position:relative;}
   #ad { background:linear-gradient(to bottom, #00c853, #00796b); }
   
-  .betrow { display:flex; gap:4px; justify-content:center; margin-bottom:6px; align-items:center;}
+  .betrow { display:flex; gap:4px; justify-content:center; margin-bottom:6px; align-items:center; flex-wrap: wrap;}
   .betrow button { padding:8px 10px; font-size:12px; background:#111; color:#888; border:1px solid #333; }
   .betrow button.active { background:#d4af37; color:#000; border-color:#fff; }
   
-  /* Поле ввода ставки */
   #custom-bet { width: 80px; padding: 8px; font-size: 14px; font-weight: bold; text-align: center; background: #111; color: #fff; border: 2px solid #333; border-radius: 8px; outline: none; }
   #custom-bet:focus { border-color: #d4af37; }
 
   .toast { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(.8); background:rgba(0,0,0,.9); padding:16px 32px; border-radius:12px; border:2px solid #ffd700; font-size:24px; font-weight:900; opacity:0; pointer-events:none; transition:.25s; z-index:99; color:#ffd700; }
   .toast.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
 
-  /* Рулетка */
   #wheel-modal { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:100; display:none; flex-direction:column; justify-content:center; align-items:center; }
   #wheel-wrapper { position:relative; width: 300px; height: 300px; }
   #wheel-canvas { width: 100%; height: 100%; border-radius: 50%; box-shadow: 0 0 30px #d4af37; border: 4px solid #d4af37; }
   #wheel-arrow { position:absolute; top:-25px; left:50%; transform:translateX(-50%); width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; border-top: 30px solid #ff0000; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8)); z-index: 10; }
   #wheel-result { font-size:32px; font-weight:900; color:#ffd700; text-shadow:0 0 20px #ffd700; margin-top:20px; opacity:0; transition: 0.3s; }
-  #wheel-close { margin-top:20px; padding:12px 24px; font-size:16px; background:#d4af37; color:#000; border-radius:8px; border:none; display:none; font-weight:bold; }
+  .wheel-controls { display:flex; flex-direction:column; align-items:center; margin-top:20px; }
+  #wheel-timer { color:#aaa; font-size:14px; margin-bottom:10px; font-weight:bold; }
+  #wheel-spin-btn { padding:12px 40px; font-size:18px; background:linear-gradient(to bottom, #8a2be2, #4b0082); border-radius:8px; font-weight:900; border:2px solid #d4af37; color:#fff;}
+  #wheel-close { padding:12px 24px; font-size:16px; background:#d4af37; color:#000; border-radius:8px; border:none; display:none; font-weight:bold; margin-top:10px;}
 </style>
 </head>
 <body>
@@ -76,7 +77,7 @@
       <button data-bet="50">50</button>
       <button data-bet="100">100</button>
       <button data-bet="500">500</button>
-      <input type="number" id="custom-bet" placeholder="Своя" min="1">
+      <input type="number" id="custom-bet" placeholder="Своя">
     </div>
     <div class="controls">
       <button id="spin">SPIN</button>
@@ -88,16 +89,18 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<!-- Рулетка -->
 <div id="wheel-modal">
   <div id="wheel-wrapper">
     <div id="wheel-arrow"></div>
     <canvas id="wheel-canvas" width="300" height="300"></canvas>
   </div>
   <div id="wheel-result">0</div>
-  <button id="wheel-close">ЗАБРАТЬ</button>
-  <div style="color:#888; margin-top:10px; font-size:12px;" id="wheel-timer"></div>
-  <button id="wheel-spin-btn" style="margin-top:10px; background:#4b0082; width:200px;">КРУТИТЬ</button>
+  
+  <div class="wheel-controls">
+    <div id="wheel-timer">Загрузка...</div>
+    <button id="wheel-spin-btn">КРУТИТЬ</button>
+    <button id="wheel-close">ЗАБРАТЬ</button>
+  </div>
 </div>
 
 <script>
@@ -157,7 +160,7 @@ let currentGame = 'fruits';
 let app, reels = [], cellW = 0, cellH = 0;
 let freeSpins = 0;
 let currentBet = 10;
-let wheelTimerInt = null;
+let wheelTimerInterval = null;
 
 function startGame(gameKey) {
   currentGame = gameKey;
@@ -168,7 +171,7 @@ function startGame(gameKey) {
   
   currentBet = conf.min_bet;
   $('custom-bet').value = '';
-  $('custom-bet').min = conf.min_bet;
+  $('custom-bet').placeholder = `от ${conf.min_bet}`;
   $('spin').textContent = `SPIN (${currentBet})`;
   [...$('betrow').children].forEach(b=>b.classList.remove('active'));
   
@@ -331,162 +334,6 @@ async function refresh() {
   $('bal').textContent = state.balance; 
   
   if (freeSpins === 0) {
-      // Таймер и статус бонуса
-      if (state.wheel_daily >= 5) {
-          $('bonus').disabled = true;
-          $('bonus').textContent = `БОНУС (0/5)`;
-      } else if (state.wheel_ready) {
-          $('bonus').disabled = false;
-          $('bonus').textContent = `БОНУС (${5 - state.wheel_daily}/5)`;
-      } else {
-          $('bonus').disabled = true;
-          let m = Math.floor(state.wheel_time_left / 60);
-          let s = state.wheel_time_left % 60;
-          $('bonus').textContent = `ЖДАТЬ ${m}:${s < 10 ? '0':''}${s}`;
-      }
-  }
-  $('ad').disabled = !state.ad_ready || !state.ad_allowed || freeSpins > 0;
-}
-
-function showMsg(t, win) { const m = $('msg'); m.textContent = t; m.className = 'show ' + (win ? 'win':'lose'); setTimeout(()=> m.className='', 2000); }
-function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); setTimeout(()=> el.classList.remove('show'), 1500); }
-
-$('betrow').onclick = e => { 
-    if (freeSpins > 0) return;
-    if (e.target.id === 'custom-bet') return;
-
-    if (!e.target.dataset.bet) return; 
-    SFX.click(); 
-    [...$('betrow').children].forEach(b=>b.classList.remove('active')); 
-    e.target.classList.add('active'); 
-    $('custom-bet').value = '';
-    currentBet = +e.target.dataset.bet; 
-    $('spin').textContent = `SPIN (${currentBet})`; 
-};
-
-// Обработка ввода кастомной ставки
-$('custom-bet').oninput = e => {
-    let val = parseInt(e.target.value);
-    let minB = GAME_CONFIG[currentGame].min_bet;
-    if (isNaN(val) || val < minB) {
-        $('spin').textContent = `SPIN (мин. ${minB})`;
-        currentBet = 0; // Флаг, что ставка невалидна
-    } else {
-        $('spin').textContent = `SPIN (${val})`;
-        currentBet = val;
-        [...$('betrow').children].forEach(b=>b.classList.remove('active'));
-    }
-};
-
-let spinning = false;
-async function doSpin(betAmount) {
-  try {
-    const d = await api('/spin', { bet: betAmount, game: currentGame }); 
-    startSpin(d.grid);
-    setTimeout(() => { showResult(d); }, 1000 + GAME_CONFIG[currentGame].cols * 150 + 500);
-  } catch(e) { SFX.lose(); showMsg(e.message, false); spinning = false; $('spin').disabled = false; freeSpins = 0; $('fs-counter').textContent = ''; }
-}
-
-$('spin').onclick = async () => {
-  if (spinning || freeSpins > 0) return; 
-  if (currentBet <= 0) { showMsg('Ставка меньше минимума!', false); return; }
-  SFX.click(); spinning = true; $('spin').disabled = true;
-  doSpin(currentBet);
-};
-
-// ==================== РУЛЕТКА ====================
-const wheelCanvas = $('wheel-canvas');
-const ctx = wheelCanvas.getContext('2d');
-const slices = [
-    { label: '1000', color: '#ff0000' }, { label: '0', color: '#333333' }, 
-    { label: '500', color: '#ffd700' }, { label: '20', color: '#111111' },
-    { label: '250', color: '#8a2be2' }, { label: '50', color: '#111111' },
-    { label: '100', color: '#00c853' }, { label: '0', color: '#333333' }
-];
-const sliceAngle = Math.PI * 2 / slices.length;
-let currentRotation = 0;
-let isSpinningWheel = false;
-const offsetAngle = -Math.PI / 2 - sliceAngle / 2; 
-
-function drawWheel() {
-    ctx.clearRect(0, 0, 300, 300);
-    for (let i = 0; i < slices.length; i++) {
-        const angle = i * sliceAngle + currentRotation + offsetAngle;
-        ctx.beginPath();
-        ctx.fillStyle = slices[i].color;
-        ctx.moveTo(150, 150);
-        ctx.arc(150, 150, 140, angle, angle + sliceAngle);
-        ctx.fill();
-        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
-
-        ctx.save();
-        ctx.translate(150, 150);
-        ctx.rotate(angle + sliceAngle / 2);
-        ctx.textAlign = "right";
-        ctx.fillStyle = "#fff";
-        ctx.font = "bold 20px Arial";
-        ctx.fillText(slices[i].label, 130, 10);
-        ctx.restore();
-    }
-    ctx.beginPath(); ctx.fillStyle = '#d4af37'; ctx.arc(150, 150, 30, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
-}
-
-$('bonus').onclick = async () => {
-  if (isSpinningWheel || freeSpins > 0) return;
-  
-  $('wheel-modal').style.display = 'flex';
-  $('wheel-result').style.opacity = '0';
-  $('wheel-close').style.display = 'none';
-  $('wheel-spin-btn').style.display = 'block';
-  
-  // Показываем таймер и лимит
-  if (state.wheel_ready) {
-      $('wheel-spin-btn').disabled = false;
-      $('wheel-timer').textContent = `Доступно круток: ${5 - state.wheel_daily}/5`;
-  } else {
-      $('wheel-spin-btn').disabled = true;
-      if (state.wheel_daily >= 5) {
-          $('wheel-timer').textContent = `Лимит на сегодня исчерпан (5/5)`;
-      } else {
-          let m = Math.floor(state.wheel_time_left / 60);
-          let s = state.wheel_time_left % 60;
-          $('wheel-timer').textContent = `Ждать: ${m}:${s < 10 ? '0':''}${s}`;
-          if(wheelTimerInt) clearInterval(wheelTimerInt);
-          wheelTimerInt = setInterval(() => {
-             let tl = Math.max(0, state.wheel_time_left - (Date.now() - startWheelTs) / 1000);
-             if (tl <= 0) {
-                 $('wheel-spin-btn').disabled = false;
-                 $('wheel-timer').textContent = `Доступно круток: ${5 - state.wheel_daily}/5`;
-                 clearInterval(wheelTimerInt);
-             } else {
-                 let mm = Math.floor(tl / 60);
-                 let ss = Math.floor(tl % 60);
-                 $('wheel-timer').textContent = `Ждать: ${mm}:${ss
-  if (freeSpins > 0) {
-    freeSpins--;
-    $('fs-counter').textContent = freeSpins > 0 ? `FS: ${freeSpins}` : '';
-    if (freeSpins > 0) {
-      showMsg(`ФРИСПИН (осталось: ${freeSpins})`, true);
-      setTimeout(() => { doSpin(0); }, 2000);
-    } else {
-      $('spin').disabled = false;
-      showMsg(`ФРИСПИНЫ ОКОНЧЕНЫ`, false);
-    }
-  } else { $('spin').disabled = false; }
-}
-
-async function api(path, body={}) {
-  const r = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ init_data: init, ...body }) });
-  const j = await r.json(); if (!r.ok) throw new Error(j.detail || 'ошибка'); return j;
-}
-
-let state = {};
-async function refresh() {
-  state = await api('/state'); 
-  $('bal').textContent = state.balance; 
-  
-  if (freeSpins === 0) {
       if (state.wheel_daily >= 5) {
           $('bonus').disabled = true;
           $('bonus').textContent = `БОНУС (0/5)`;
@@ -621,7 +468,7 @@ $('bonus').onclick = async () => {
              let tl = Math.max(0, state.wheel_time_left - (Date.now() - wheelStartTime) / 1000);
              if (tl <= 0) {
                  $('wheel-spin-btn').disabled = false;
-                 $('wheel-timer').textContent = `Доступно круток: ${5 - state.wheel_daily}/5`;
+                                  $('wheel-timer').textContent = `Доступно круток: ${5 - state.wheel_daily}/5`;
                  clearInterval(wheelTimerInterval);
              } else {
                  let mm = Math.floor(tl / 60);
@@ -686,6 +533,8 @@ $('ad').onclick = async () => {
 };
 
 $('backBtn').onclick = () => { location.reload(); };
+
+// Запуск меню
 $('menu').style.display = 'flex';
 </script>
 </body>
