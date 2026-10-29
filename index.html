@@ -10,43 +10,35 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
   html, body { margin:0; padding:0; background:#000; color:#fff; font-family: 'Montserrat', sans-serif; overflow:hidden; height:100%; }
   
+  /* ПРИВЕТСТВИЕ */
   #welcome-screen {
     position: fixed; inset: 0; z-index: 200; background: radial-gradient(circle at center, #1a1a2e 0%, #000 100%);
-    display: flex; flex-direction: column; justify-content: center; align-items: center;
-    transition: opacity 0.5s;
+    display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s;
   }
-  #welcome-screen h1 { font-size: 42px; color: #ffd700; text-shadow: 0 0 20px #ff8c00; margin-bottom: 10px; text-transform: uppercase; text-align: center; line-height: 1.1; }
+  #welcome-screen h1 { font-size: 42px; color: #ffd700; text-shadow: 0 0 20px #ff8c00; margin-bottom: 10px; text-transform: uppercase; text-align: center; }
   #welcome-screen p { color: #aaa; margin-bottom: 40px; font-size: 14px; }
-  #start-btn { 
-    padding: 20px 60px; font-size: 24px; font-weight: 900; border-radius: 30px; border: none;
-    background: linear-gradient(to right, #ffd700, #ff8c00); color: #000; 
-    box-shadow: 0 0 30px rgba(255, 215, 0, 0.5); cursor: pointer; transition: transform 0.1s;
-  }
+  #start-btn { padding: 20px 60px; font-size: 24px; font-weight: 900; border-radius: 30px; border: none; background: linear-gradient(to right, #ffd700, #ff8c00); color: #000; box-shadow: 0 0 30px rgba(255, 215, 0, 0.5); cursor: pointer; }
   #start-btn:active { transform: scale(0.95); }
 
+  /* ЛОББИ */
   #lobby-screen { position: fixed; inset: 0; z-index: 150; background: #0a0a0c; display: none; flex-direction: column; }
   .lobby-header { padding: 20px; text-align: center; }
   .lobby-header h2 { color: #fff; font-size: 24px; margin: 0; }
-  
-  #games-carousel {
-    display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 20px; padding: 20px;
-    height: 100%; align-items: center;
-  }
+  #games-carousel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 20px; padding: 20px; height: 100%; align-items: center; }
   #games-carousel::-webkit-scrollbar { display: none; }
   .game-card {
     flex: 0 0 80%; scroll-snap-align: center; height: 400px; border-radius: 20px;
     background-size: cover; background-position: center; position: relative;
     border: 2px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-    display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; cursor: pointer;
-    transition: border-color 0.3s;
+    display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; cursor: pointer; transition: border-color 0.3s;
   }
   .game-card.active { border-color: #ffd700; box-shadow: 0 0 30px rgba(255,215,0,0.3); }
   .game-card h3 { font-size: 28px; margin: 0 0 5px 0; text-shadow: 0 2px 4px #000; }
   .game-card p { font-size: 14px; color: #ddd; margin: 0; text-shadow: 0 1px 2px #000; }
   .game-card .min-bet { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.8); padding: 5px 10px; border-radius: 10px; font-weight: bold; border: 1px solid #ffd700; color: #ffd700;}
 
-  #game-screen { position: fixed; inset: 0; z-index: 100; display: none; flex-direction: column; background-size: cover; background-position: center; background-color: #050505;}
-  
+  /* ИГРА */
+  #game-screen { position: fixed; inset: 0; z-index: 100; display: none; flex-direction: column; background-size: cover; background-position: center; background-color: #000; }
   #top-bar { display: flex; justify-content: space-between; align-items: flex-start; padding: 15px; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); z-index: 10; height: 100px; flex-shrink: 0;}
   .profile-info { display: flex; flex-direction: column; gap: 5px; }
   .balance-box { background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 10px; border: 1px solid #ffd700; }
@@ -55,40 +47,49 @@
   .level-box { background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 10px; font-size: 12px; border: 1px solid #444; color: #fff;}
   .level-bar { width: 100px; height: 6px; background: #333; border-radius: 3px; margin-top: 5px; overflow: hidden; }
   .level-fill { height: 100%; background: #00ff88; width: 0%; transition: width 0.3s; }
-
   .menu-btn { background: rgba(0,0,0,0.6); border: 1px solid #555; color: #fff; width: 45px; height: 45px; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 24px; cursor: pointer; font-weight: bold; }
-  .menu-btn:active { background: #333; }
 
+  /* МЕНЮ */
   #dropdown-menu { position: absolute; top: 70px; right: 15px; background: rgba(20,20,25,0.95); border: 1px solid #ffd700; border-radius: 12px; display: none; flex-direction: column; min-width: 180px; z-index: 50; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
   #dropdown-menu button { background: none; border: none; color: #fff; padding: 15px; text-align: left; font-size: 16px; font-weight: bold; border-bottom: 1px solid #333; cursor: pointer; font-family: inherit;}
   #dropdown-menu button:last-child { border-bottom: none; color: #ff3333; }
   #dropdown-menu button:active { background: rgba(255,255,255,0.1); }
 
+  /* ИГРОВОЕ ПОЛЕ */
   #pixi-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 10px; position: relative; overflow: hidden; }
-  #pixi { width: 100%; height: 100%; max-height: 100%; position: relative; }
-  #pixi canvas { border-radius: 12px; box-shadow: 0 0 30px rgba(0,0,0,0.9); border: 2px solid rgba(255,255,255,0.1); display: block; margin: 0 auto; }
+  
+  /* Жесткая привязка пропорций и градиент внутри */
+  #pixi { 
+    width: 100%; 
+    aspect-ratio: 5/3; /* Значение по умолчанию, меняется через JS */
+    border-radius: 12px; 
+    box-shadow: 0 0 30px rgba(0,0,0,0.8); 
+    border: 2px solid rgba(255,255,255,0.1); 
+    position: relative;
+    background: linear-gradient(135deg, rgba(20,20,20,0.8), rgba(0,0,0,0.95));
+    overflow: hidden;
+  }
   
   .win-flash { position: fixed; inset: 0; background: #fff; z-index: 90; pointer-events: none; opacity: 0; transition: opacity 0.1s; }
   .win-flash.active { opacity: 0.8; }
 
+  /* ПАНЕЛЬ УПРАВЛЕНИЯ */
   #controls-panel { background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); padding: 15px; padding-bottom: 25px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; z-index: 10;}
   #msg { min-height: 20px; text-align: center; font-weight: 900; font-size: 16px; color: #ffd700; opacity: 0; transition: 0.2s; text-transform: uppercase; text-shadow: 0 0 10px #000; }
   #msg.show { opacity: 1; }
-  
   .bet-controls { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
   .bet-btn { padding: 8px 12px; background: rgba(255,255,255,0.1); border: 1px solid #444; color: #aaa; border-radius: 10px; font-weight: bold; cursor: pointer; }
   .bet-btn.active { background: #ffd700; color: #000; border-color: #fff; }
   #custom-bet { width: 70px; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid #444; color: #ffd700; border-radius: 10px; text-align: center; font-weight: bold; outline: none; }
-
   .action-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .main-btn { padding: 18px; font-size: 16px; font-weight: 900; border-radius: 16px; border: none; text-transform: uppercase; cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.5); transition: transform 0.1s; font-family: inherit;}
   .main-btn:active { transform: translateY(4px); box-shadow: none; }
   .main-btn:disabled { opacity: 0.5; filter: grayscale(1); }
-  
   #spin-btn { grid-column: 1 / -1; background: linear-gradient(to bottom, #ff3b30, #a30000); color: #fff; font-size: 24px; padding: 20px; box-shadow: 0 6px 0 #600000; }
   #buy-bonus-btn { grid-column: 1 / -1; background: linear-gradient(to bottom, #f1c40f, #b8860b); color: #000; box-shadow: 0 4px 0 #7a5a00; display: none; }
 
-  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 300; display: none; justify-content: center; align-items: center; padding: 20px; }
+  /* МОДАЛКИ (Рулетка и др) */
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 300; display: none; justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
   .modal-content { background: #1a1a2e; width: 100%; max-width: 400px; border-radius: 20px; border: 2px solid #ffd700; padding: 20px; text-align: center; position: relative;}
   .modal-close { position: absolute; top: 15px; right: 15px; font-size: 24px; color: #aaa; cursor: pointer; }
   .modal h2 { color: #ffd700; margin-top: 0; }
@@ -96,6 +97,10 @@
   .copy-btn { width: 100%; padding: 15px; background: #00c853; color: #fff; border: none; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer; }
   #toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); background: rgba(0,0,0,0.9); color: #ffd700; padding: 15px 30px; border-radius: 15px; border: 2px solid #ffd700; font-size: 24px; font-weight: 900; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 999; }
   #toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+  /* ФИКС РУЛЕТКИ (Центрирование) */
+  #wheel-wrapper { position:relative; width:300px; height:300px; margin: 0 auto; }
+  #wheel-canvas { border-radius:50%; border:4px solid #ffd700; box-shadow:0 0 40px #ffd700; width: 100%; height: 100%; display: block;}
 </style>
 </head>
 <body>
@@ -174,9 +179,9 @@
 </div>
 
 <div class="modal" id="wheel-modal" style="backdrop-filter: blur(5px);">
-  <div style="position:relative; width:300px; height:300px;">
+  <div id="wheel-wrapper">
     <div style="position:absolute; top:-20px; left:50%; transform:translateX(-50%); width:0; height:0; border-left:20px solid transparent; border-right:20px solid transparent; border-top:30px solid #ff0000; z-index:10; filter:drop-shadow(0 4px 4px rgba(0,0,0,0.8));"></div>
-    <canvas id="wheel-canvas" width="300" height="300" style="border-radius:50%; border:4px solid #ffd700; box-shadow:0 0 40px #ffd700;"></canvas>
+    <canvas id="wheel-canvas" width="300" height="300"></canvas>
   </div>
   <div id="wheel-result" style="font-size:40px; font-weight:900; color:#ffd700; margin:20px 0; text-shadow:0 0 20px #ffd700; opacity:0; transition:0.3s;">0</div>
   <div style="text-align:center;">
@@ -184,14 +189,13 @@
     <button class="main-btn" id="wheel-spin-btn" style="background:linear-gradient(to bottom, #9b59b6, #5e2c76); width:200px; padding:15px;">КРУТИТЬ</button>
     <button class="main-btn" id="wheel-close" style="background:#ffd700; color:#000; width:200px; padding:15px; display:none; margin-top:10px;">ЗАБРАТЬ</button>
   </div>
-  </div>
-  <script>
+</div>
+<script>
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 const init = tg?.initData || '';
 const $ = id => document.getElementById(id);
 
-// Определяем ID пользователя из initData для реф-системы
 let myId = 0;
 try {
     if (init) {
@@ -201,7 +205,6 @@ try {
     }
 } catch(e) {}
 
-// --- СИСТЕМА ЗВУКОВ (WebAudio) ---
 const AC = window.AudioContext || window.webkitAudioContext;
 let actx = null;
 function audioCtx() { if (!AC) return null; if (!actx) actx = new AC(); if (actx.state === 'suspended') actx.resume(); return actx; }
@@ -233,7 +236,6 @@ const SFX = {
   lose: () => tone(200,.3,'sawtooth',.05,0),
 };
 
-// --- КОНФИГ ИГР ---
 const GAME_CONFIG = {
   fruits: { 
       cols: 3, rows: 1, min_bet: 10, 
@@ -277,7 +279,6 @@ let spinning = false;
 let winLinesGraphics = null;
 let currentFishCaught = 0;
 
-// --- ЛОББИ И СТАРТ ---
 window.addEventListener('load', () => {
     const carousel = $('games-carousel');
     const games = [
@@ -298,7 +299,7 @@ window.addEventListener('load', () => {
 });
 
 $('start-btn').onclick = () => {
-    audioCtx(); // Инициализируем звук при клике
+    audioCtx();
     SFX.click();
     $('welcome-screen').style.opacity = '0';
     setTimeout(() => {
@@ -307,7 +308,6 @@ $('start-btn').onclick = () => {
     }, 500);
 };
 
-// --- ЗАПУСК ИГРЫ И ИНИЦИАЛИЗАЦИЯ PIXI ---
 function startGame(gameKey) {
   currentGame = gameKey;
   const conf = GAME_CONFIG[gameKey];
@@ -321,6 +321,9 @@ function startGame(gameKey) {
   $('custom-bet').placeholder = `от ${conf.min_bet}`;
   $('spin-btn').textContent = `SPIN (${currentBet})`;
   
+  // Меняем пропорции контейнера под игру
+  $('pixi').style.aspectRatio = `${conf.cols}/${conf.rows}`;
+
   [...$('betrow').children].forEach(b=>b.classList.remove('active'));
   $('betrow').querySelector('[data-bet="10"]').classList.add('active');
 
@@ -331,22 +334,19 @@ function startGame(gameKey) {
       $('buy-bonus-btn').style.display = 'none';
   }
   
-  // Ждем 100мс, чтобы контейнер получил размеры
-  setTimeout(() => { initPixi(); refresh(); }, 100);
+  setTimeout(() => { initPixi(); refresh(); }, 50);
 }
 
 function initPixi() {
   if (app) { app.destroy(true, { children: true }); }
-  $('pixi').innerHTML = ''; // Очищаем старый канвас
+  $('pixi').innerHTML = '';
 
   const container = $('pixi');
   const rect = container.getBoundingClientRect();
   const conf = GAME_CONFIG[currentGame];
   
-  // Вычисляем высоту на основе ширины и пропорций игры
   const w = rect.width;
-  const h = w / (conf.cols / conf.rows);
-  container.style.height = h + 'px';
+  const h = rect.height;
 
   app = new PIXI.Application();
   app.init({ width: w, height: h, backgroundAlpha: 0, antialias: true, resolution: window.devicePixelRatio || 1 }).then(() => {
@@ -368,7 +368,6 @@ function initPixi() {
         strip.addChild(t); labels.push(t);
       }
 
-      // Маска строго по размеру колонки
       const mask = new PIXI.Graphics().rect(i * cellW, 0, cellW, h).fill(0xffffff);
       app.stage.addChild(mask);
       strip.mask = mask;
@@ -378,13 +377,13 @@ function initPixi() {
       reels.push({ cont, strip, labels, yOffset: 0, speed: 0, spinning: false });
     }
 
-    for (let i=1;i<conf.cols;i++) { app.stage.addChild(new PIXI.Graphics().rect(i*cellW, 0, 1, h).fill({color:0x000000, alpha:0.3})); }
-    for (let i=1;i<conf.rows;i++) { app.stage.addChild(new PIXI.Graphics().rect(0, i*cellH, w, 1).fill({color:0x000000, alpha:0.3})); }
+    for (let i=1;i<conf.cols;i++) { app.stage.addChild(new PIXI.Graphics().rect(i*cellW, 0, 1, h).fill({color:0xffffff, alpha:0.1})); }
+    for (let i=1;i<conf.rows;i++) { app.stage.addChild(new PIXI.Graphics().rect(0, i*cellH, w, 1).fill({color:0xffffff, alpha:0.1})); }
 
     app.ticker.add(tick);
   });
 }
-    function tick() {
+  function tick() {
   for (let i=0;i<reels.length;i++) {
     const r = reels[i];
     if (r.spinning) {
@@ -414,7 +413,7 @@ function startSpin(finalGrid) {
   for (let i=0;i<conf.cols;i++) {
     const r = reels[i];
     r.spinning = true; 
-    r.speed = 40 + Math.random() * 15; // Разная скорость для каждого
+    r.speed = 40 + Math.random() * 15; 
     r.labels.forEach((l, idx) => { 
         l.text = conf.syms[Math.floor(Math.random()*conf.syms.length)]; 
         l.y = idx * cellH + cellH/2; 
@@ -585,7 +584,7 @@ function updateUIState(level, xp, nextXp = null) {
 
 function showMsg(t, win) { const m = $('msg'); m.textContent = t; m.className = 'show ' + (win ? 'win':'lose'); setTimeout(()=> m.className='', 2000); }
 function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); setTimeout(()=> el.classList.remove('show'), 1500); }
-    // --- ОБРАБОТЧИКИ КНОПОК ---
+  // --- ОБРАБОТЧИКИ КНОПОК ---
 $('betrow').onclick = e => { 
     if (freeSpins > 0) return;
     if (e.target.id === 'custom-bet') return;
