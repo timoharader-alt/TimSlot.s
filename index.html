@@ -25,7 +25,7 @@
   .game-card p { font-size: 14px; color: #ddd; margin: 0; text-shadow: 0 1px 2px #000; }
   .game-card .min-bet { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.8); padding: 5px 10px; border-radius: 10px; font-weight: bold; border: 1px solid #ffd700; color: #ffd700;}
 
-  /* ФОНЫ ИГР */
+  /* ФОНЫ ИГР (КАРТИНКИ) */
   .bg-fruits { background-image: url('https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=600&auto=format&fit=crop'); background-size: cover; background-position: center; }
   .bg-space { background-image: url('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=600&auto=format&fit=crop'); background-size: cover; background-position: center; }
   .bg-egypt { background-image: url('https://images.unsplash.com/photo-1539650116574-75c0c6d73f6e?q=80&w=600&auto=format&fit=crop'); background-size: cover; background-position: center; }
@@ -192,7 +192,8 @@
     <button class="main-btn" id="wheel-spin-btn" style="background:linear-gradient(to bottom, #9b59b6, #5e2c76); width:200px; padding:15px;">КРУТИТЬ</button>
     <button class="main-btn" id="wheel-close" style="background:#ffd700; color:#000; width:200px; padding:15px; display:none; margin-top:10px;">ЗАБРАТЬ</button>
   </div>
-</div><script>
+</div>
+<script>
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 const init = tg?.initData || '';
@@ -472,36 +473,31 @@ function handleSpinResult(d) {
     const conf = GAME_CONFIG[currentGame];
     let hasScatters = false;
 
-    // Сначала очищаем все старые эффекты и восстанавливаем текст, если был кэш
+    // Сначала сбрасываем эффекты и ставим базовые эмодзи
     for(let col=0; col<conf.cols; col++) {
         for(let row=0; row<conf.rows; row++) {
             const cell = columns[col].strip.children[row];
             cell.style.boxShadow = 'none';
             cell.style.color = '#fff';
             cell.style.fontWeight = 'normal';
-            cell.style.fontSize = '32px'; // Базовый размер шрифта
-            // Восстанавливаем эмодзи, если там был текст (кэш)
-            const idx = d.grid[col][row];
-            cell.textContent = conf.syms[idx];
+            cell.style.fontSize = '32px';
+            cell.textContent = conf.syms[d.grid[col][row]];
         }
     }
 
-    // 1. Подсветка скаттеров и рыбаков, сбор кэша
+    // 1. Подсветка скаттеров, рыбаков и вывод кэша
     for(let col=0; col<conf.cols; col++) {
         for(let row=0; row<conf.rows; row++) {
             const idx = d.grid[col][row];
             const cell = columns[col].strip.children[row];
 
-            // Скаттеры (Египет/Космос)
             if (conf.scatter !== null && idx === conf.scatter) {
                 cell.style.boxShadow = '0 0 15px #ffd700';
                 hasScatters = true;
             }
-            // Рыбак (Рыбалка)
             if (currentGame === 'fishing' && idx === conf.wild) {
                 cell.style.boxShadow = '0 0 15px #00ff88';
             }
-            // Кэш на рыбках
             if (d.fish_data && d.fish_data.length > 0) {
                 const fish = d.fish_data.find(f => f.col === col && f.row === row);
                 if (fish) {
@@ -549,13 +545,13 @@ function handleSpinResult(d) {
         showMsg('пусто', false);
     }
 
-    // 3. Синхронизация прогресса
+    // 3. Синхронизация
     freeSpins = d.free_spins_left;
     currentFishCaught = d.fish_caught;
     spinning = false;
     updateUIState(d.level, d.xp);
 
-    // 4. Обновление шкалы рыбака
+    // 4. Шкала рыбака
     if (currentGame === 'fishing' && freeSpins > 0) {
         $('fisher-scale').style.display = 'block';
         let lvl = Math.floor(currentFishCaught / 3);
