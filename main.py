@@ -67,12 +67,10 @@ def generate_grid(game_key, is_bonus=False):
             for r in range(rows):
                 rand = random.random()
                 if rand < 0.01: grid[c][r] = g["scatter"]
-                # Рыбок в бонусе 35%, вне 10%
                 elif rand < (0.35 if is_bonus else 0.10): grid[c][r] = random.choice(g["fish_cash"])
                 else: grid[c][r] = random.choice(range(10))
         return grid
 
-    # ПОВЫШЕННЫЕ ШАНСЫ: больше базовых символов
     weights = [70, 60, 50, 40, 20, 5]
     pool = [s["id"] for s in g["symbols"] for _ in range(weights[s["id"]] if s["id"] < len(weights) else 1)]
     for _ in range(cols):
@@ -83,7 +81,7 @@ def generate_grid(game_key, is_bonus=False):
         grid[_] = col
     return grid
 
-def check_win(grid, game_key, bet, is_bonus=False, fish_caught=0):
+def check_win(grid, game_key, bet, fish_caught=0):
     g = GAMES[game_key]
     lines = LINES[game_key]
     total_win = 0
@@ -101,7 +99,7 @@ def check_win(grid, game_key, bet, is_bonus=False, fish_caught=0):
         wild_coords = [(c, r) for c in range(len(grid)) for r in range(len(grid[c])) if grid[c][r] == g["wild"]]
         wilds_count = len(wild_coords)
         
-        if wilds_count >= 1 and is_bonus:
+        if wilds_count >= 1:
             mult = 1
             if fish_caught >= 9: mult = 10
             elif fish_caught >= 6: mult = 5
@@ -111,7 +109,6 @@ def check_win(grid, game_key, bet, is_bonus=False, fish_caught=0):
             for c in range(len(grid)):
                 for r in range(len(grid[c])):
                     if grid[c][r] in g["fish_cash"]:
-                        # УВЕЛИЧЕННЫЙ КЭШ НА РЫБКАХ (от 5 до 200 ставок)
                         val = random.choice([5, 10, 20, 50, 100, 200]) * bet
                         total_win += val * mult
                         fish_data.append({"col": c, "row": r, "val": val, "mult": mult})
@@ -185,7 +182,6 @@ def spin(r: SpinReq):
         grid[1][0] = game_conf["scatter"]; grid[3][1] = game_conf["scatter"]; grid[2][2] = game_conf["scatter"]
         scatters = 3
         
-        # ГАРАНТИРОВАННЫЙ РЫБАК ПРИ ПОКУПКЕ
         if r.game == "fishing":
             grid[2][1] = game_conf["wild"]
             grid[1][1] = game_conf["fish_cash"][0]
@@ -201,13 +197,12 @@ def spin(r: SpinReq):
                 for row in range(len(grid[c])):
                     if grid[c][row] == game_conf.get("scatter"): grid[c][row] = 0
              
-             # ГАРАНТИРОВАННЫЙ РЫБАК НА ПЕРВОМ СПИНЕ СЛУЧАЙНОГО БОНУСА
              if d["free_spins"] == 10 and r.game == "fishing":
                  grid[2][1] = game_conf["wild"]
                  grid[1][1] = game_conf["fish_cash"][0]
                  grid[3][1] = game_conf["fish_cash"][1]
 
-    win_amount, win_lines, scatters_nat, fish_data, wilds_count = check_win(grid, r.game, r.bet, is_fs or r.bonus_buy, r.fish_caught)
+    win_amount, win_lines, scatters_nat, fish_data, wilds_count = check_win(grid, r.game, r.bet, r.fish_caught)
     if not r.bonus_buy and not is_fs: scatters = scatters_nat
     
     new_free_spins = d["free_spins"]
