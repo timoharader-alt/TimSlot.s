@@ -9,38 +9,28 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
   html, body { margin:0; padding:0; background:#000; color:#fff; font-family: 'Montserrat', sans-serif; overflow:hidden; height:100%; }
   
-  /* ПРИВЕТСТВИЕ */
   #welcome-screen { position: fixed; inset: 0; z-index: 200; background: radial-gradient(circle at center, #1a1a2e 0%, #000 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s; }
   #welcome-screen h1 { font-size: 42px; color: #ffd700; text-shadow: 0 0 20px #ff8c00; margin-bottom: 10px; text-transform: uppercase; text-align: center; }
   #welcome-screen p { color: #aaa; margin-bottom: 40px; font-size: 14px; }
   #start-btn { padding: 20px 60px; font-size: 24px; font-weight: 900; border-radius: 30px; border: none; background: linear-gradient(to right, #ffd700, #ff8c00); color: #000; box-shadow: 0 0 30px rgba(255, 215, 0, 0.5); cursor: pointer; }
   
-  /* ЛОББИ */
   #lobby-screen { position: fixed; inset: 0; z-index: 150; background: #0a0a0c; display: none; flex-direction: column; }
   .lobby-header { padding: 20px; text-align: center; }
   .lobby-header h2 { color: #fff; font-size: 24px; margin: 0; }
   #games-carousel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 20px; padding: 20px; height: 100%; align-items: center; }
   #games-carousel::-webkit-scrollbar { display: none; }
   
-  .game-card { 
-    flex: 0 0 80%; scroll-snap-align: center; height: 400px; border-radius: 20px; 
-    background-size: cover; background-position: center; position: relative; 
-    border: 2px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.8); 
-    display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; cursor: pointer; 
-    background-color: #111;
-  }
+  .game-card { flex: 0 0 80%; scroll-snap-align: center; height: 400px; border-radius: 20px; background-size: cover; background-position: center; position: relative; border: 2px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; cursor: pointer; background-color: #111; }
   .game-card h3 { font-size: 28px; margin: 0 0 5px 0; text-shadow: 0 2px 4px #000; }
   .game-card p { font-size: 14px; color: #ddd; margin: 0; text-shadow: 0 1px 2px #000; }
   .game-card .min-bet { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.8); padding: 5px 10px; border-radius: 10px; font-weight: bold; border: 1px solid #ffd700; color: #ffd700;}
 
-  /* ФОНЫ ИГР (КАРТИНКИ) */
-  .bg-fruits { background-image: url('https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=600&auto=format&fit=crop'); }
-  .bg-space { background-image: url('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=600&auto=format&fit=crop'); }
-  /* НОВЫЙ ФОН ЕГИПТА (ПИРАМИДЫ) */
-  .bg-egypt { background-image: url('https://images.unsplash.com/photo-1539650116574-75c0c6d73f6e?q=80&w=600&auto=format&fit=crop'); }
-  .bg-fishing { background-image: url('https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=600&auto=format&fit=crop'); }
+  /* CSS-ФОНЫ */
+  .bg-fruits { background: linear-gradient(135deg, #4a0000, #1a0000); }
+  .bg-space { background: linear-gradient(135deg, #001133, #000511); }
+  .bg-egypt { background: linear-gradient(135deg, #d4af37, #8b5a2b, #3d2600); } /* Пирамидный градиент */
+  .bg-fishing { background: linear-gradient(135deg, #003d4d, #001a1a); }
 
-  /* ИГРА */
   #game-screen { position: fixed; inset: 0; z-index: 100; display: none; flex-direction: column; background-size: cover; background-position: center; }
   #top-bar { display: flex; justify-content: space-between; align-items: flex-start; padding: 15px; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); z-index: 10; height: 100px; flex-shrink: 0;}
   .profile-info { display: flex; flex-direction: column; gap: 5px; }
@@ -56,44 +46,26 @@
   #dropdown-menu button { background: none; border: none; color: #fff; padding: 15px; text-align: left; font-size: 16px; font-weight: bold; border-bottom: 1px solid #333; cursor: pointer; font-family: inherit;}
   #dropdown-menu button:last-child { border-bottom: none; color: #ff3333; }
 
-  /* СЛОТ-ГРИД (HTML/CSS) */
+  /* СЛОТ-ГРИД */
   #pixi-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 10px; position: relative; overflow: hidden; min-height: 0; }
-  
-  #slot-grid { 
-    width: 100%; max-width: 100%; max-height: 100%;
-    aspect-ratio: var(--aspect, 5/3); 
-    border-radius: 12px; 
-    box-shadow: 0 0 30px rgba(0,0,0,0.9); 
-    border: 3px solid rgba(255,215,0,0.3); 
-    position: relative;
-    background: rgba(0,0,0,0.6); /* Полупрозрачный фон, чтобы видеть задник */
-    overflow: hidden;
-    display: flex;
-  }
+  #slot-grid { width: 100%; max-width: 100%; max-height: 100%; aspect-ratio: var(--aspect, 5/3); border-radius: 12px; box-shadow: 0 0 30px rgba(0,0,0,0.9); border: 3px solid rgba(255,215,0,0.3); position: relative; background: rgba(0,0,0,0.6); overflow: hidden; display: flex; }
 
-  .reel-col {
-    display: flex; flex-direction: column; flex: 1; height: 100%;
-    overflow: hidden; position: relative; border-right: 1px solid rgba(255,255,255,0.1);
-  }
+  .reel-col { display: flex; flex-direction: column; flex: 1; height: 100%; overflow: hidden; position: relative; border-right: 1px solid rgba(255,255,255,0.1); }
   .reel-col:last-child { border-right: none; }
   
-  .reel-strip {
-    display: flex; flex-direction: column; width: 100%; height: 100%;
-    transition: none;
-  }
+  .reel-strip { display: flex; flex-direction: column; width: 100%; height: 100%; transition: none; }
 
-  .cell {
+  /* ЖЕСТКАЯ ФИКСАЦИЯ ЯЧЕЙКИ, ЧТОБЫ НЕ БЫЛО ПУСТОТЫ */
+  .cell { 
     display: flex; justify-content: center; align-items: center;
-    width: 100%; flex: 1; /* Равномерно делим высоту */
+    width: 100%; 
+    height: calc(100% / var(--rows, 3)); /* Высота зависит от количества рядов */
+    flex-shrink: 0;
     text-align: center;
-    font-size: 32px; /* Возвращаем размер для эмодзи */
+    font-size: 32px; 
   }
 
-  .win-cell {
-    background: rgba(255, 215, 0, 0.3) !important;
-    box-shadow: inset 0 0 15px #ffd700;
-    border-radius: 8px;
-  }
+  .win-cell { background: rgba(255, 215, 0, 0.3) !important; box-shadow: inset 0 0 15px #ffd700; border-radius: 8px; }
 
   .win-flash { position: fixed; inset: 0; background: #fff; z-index: 90; pointer-events: none; opacity: 0; transition: opacity 0.1s; }
   .win-flash.active { opacity: 0.8; }
@@ -228,8 +200,8 @@
     <button class="main-btn" id="wheel-spin-btn" style="background:linear-gradient(to bottom, #9b59b6, #5e2c76); width:200px; padding:15px;">КРУТИТЬ</button>
     <button class="main-btn" id="wheel-close" style="background:#ffd700; color:#000; width:200px; padding:15px; display:none; margin-top:10px;">ЗАБРАТЬ</button>
   </div>
-  </div>
-  <script>
+    </div>
+    <script>
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 const init = tg?.initData || '';
@@ -304,7 +276,6 @@ function stopBackgroundMusic() {
     if (musicTimer) clearTimeout(musicTimer);
 }
 
-// ВОЗВРАЩАЕМ ЭМОДЗИ
 const GAME_CONFIG = {
   fruits: { cols: 3, rows: 1, min_bet: 10, syms: ['🍒','🍋','🫐','🍊','🍉','🍇','🔔','7️⃣'], bg: 'bg-fruits', scatter: null },
   space: { cols: 7, rows: 3, min_bet: 10, syms: ['👽','🚀','⭐','🌌','☄️','🔮', '🪐'], bg: 'bg-space', scatter: 6 },
@@ -361,7 +332,7 @@ function startGame(gameKey) {
   const conf = GAME_CONFIG[gameKey];
   $('lobby-screen').style.display = 'none';
   $('game-screen').style.display = 'flex';
-  $('game-screen').className = conf.bg; // Меняем фон
+  $('game-screen').className = conf.bg;
   
   currentBet = conf.min_bet;
   $('custom-bet').value = '';
@@ -369,11 +340,13 @@ function startGame(gameKey) {
   $('spin-btn').textContent = `SPIN (${currentBet})`;
   
   $('slot-grid').style.setProperty('--aspect', `${conf.cols}/${conf.rows}`);
+  $('slot-grid').style.setProperty('--rows', conf.rows);
 
   [...$('betrow').children].forEach(b=>b.classList.remove('active'));
   $('betrow').querySelector('[data-bet="10"]').classList.add('active');
 
-  if (gameKey === 'egypt' || gameKey === 'fishing') {
+  // Покупка бонуса для Египта, Космоса и Рыбалки
+  if (gameKey === 'egypt' || gameKey === 'fishing' || gameKey === 'space') {
       $('buy-bonus-btn').style.display = 'block';
       $('buy-bonus-btn').textContent = `КУПИТЬ БОНУС (${currentBet * 15})`;
   } else {
@@ -419,8 +392,10 @@ function startSpin(finalGrid) {
     document.querySelectorAll('.cell').forEach(el => el.style.boxShadow = 'none');
 
     columns.forEach((col, i) => {
+        // Сбрасываем скорость
         col.speed = 40 + Math.random() * 15;
         
+        // Включаем анимацию через requestAnimationFrame
         const animate = () => {
             if (!spinning) return;
             
@@ -442,23 +417,30 @@ function startSpin(finalGrid) {
         setTimeout(() => {
             const col = columns[i];
             col.speed = 0;
-            col.offset = 0;
-            col.strip.style.transform = `translateY(0%)`;
+            
+            // Плавная остановка: добавляем CSS transition и выставляем конечные символы
+            col.strip.style.transition = 'transform 0.3s ease-out';
             
             const cells = col.strip.children;
             for(let row = 0; row < conf.rows; row++) {
                 cells[row].textContent = conf.syms[finalGrid[i][row]];
             }
             
+            col.offset = 0;
+            col.strip.style.transform = `translateY(0%)`;
+            
             SFX.reelStop();
             
+            // Убираем transition после завершения анимации
+            setTimeout(() => { col.strip.style.transition = 'none'; }, 300);
+            
             if (i === conf.cols - 1) {
-                setTimeout(() => showResult(finalGrid), 300);
+                setTimeout(() => showResult(finalGrid), 400);
             }
         }, 800 + i * 150);
     }
 }
-    async function api(path, body={}) {
+      async function api(path, body={}) {
   const r = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ init_data: init, ...body }) });
   const j = await r.json(); if (!r.ok) throw new Error(j.detail || 'ошибка'); return j;
 }
@@ -493,7 +475,8 @@ async function doSpin(betAmount, buyBonus = false) {
   try {
     const d = await api('/spin', { bet: betAmount, game: currentGame, bonus_buy: buyBonus, free_spins: freeSpins, fish_caught: currentFishCaught }); 
     startSpin(d.grid);
-    setTimeout(() => { handleSpinResult(d); }, 800 + GAME_CONFIG[currentGame].cols * 150 + 300);
+    // Ждем окончания анимации (800мс старт + 150мс на колонку + 400мс пауза)
+    setTimeout(() => { handleSpinResult(d); }, 800 + GAME_CONFIG[currentGame].cols * 150 + 400);
   } catch(e) { 
       SFX.lose(); 
       showMsg(e.message, false); 
@@ -508,7 +491,7 @@ function handleSpinResult(d) {
     const conf = GAME_CONFIG[currentGame];
     let hasScatters = false;
 
-    // 1. Подсветка скаттеров и сбор рыбок (в HTML)
+    // 1. Подсветка скаттеров и сбор рыбок
     for(let col=0; col<conf.cols; col++) {
         for(let row=0; row<conf.rows; row++) {
             const cellVal = d.grid[col][row];
@@ -635,7 +618,7 @@ $('betrow').onclick = e => {
     $('custom-bet').value = '';
     currentBet = +e.target.dataset.bet; 
     $('spin-btn').textContent = `SPIN (${currentBet})`; 
-    if (currentGame === 'egypt' || currentGame === 'fishing') {
+    if (currentGame === 'egypt' || currentGame === 'fishing' || currentGame === 'space') {
         $('buy-bonus-btn').textContent = `КУПИТЬ БОНУС (${currentBet * 15})`;
     }
 };
@@ -650,7 +633,7 @@ $('custom-bet').oninput = e => {
         $('spin-btn').textContent = `SPIN (${val})`;
         currentBet = val;
         [...$('betrow').children].forEach(b=>b.classList.remove('active'));
-        if (currentGame === 'egypt' || currentGame === 'fishing') {
+        if (currentGame === 'egypt' || currentGame === 'fishing' || currentGame === 'space') {
             $('buy-bonus-btn').textContent = `КУПИТЬ БОНУС (${currentBet * 15})`;
         }
     }
