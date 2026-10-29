@@ -36,6 +36,7 @@
   /* ФОНЫ ИГР (КАРТИНКИ) */
   .bg-fruits { background-image: url('https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=600&auto=format&fit=crop'); }
   .bg-space { background-image: url('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=600&auto=format&fit=crop'); }
+  /* НОВЫЙ ФОН ЕГИПТА (ПИРАМИДЫ) */
   .bg-egypt { background-image: url('https://images.unsplash.com/photo-1539650116574-75c0c6d73f6e?q=80&w=600&auto=format&fit=crop'); }
   .bg-fishing { background-image: url('https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=600&auto=format&fit=crop'); }
 
@@ -65,7 +66,7 @@
     box-shadow: 0 0 30px rgba(0,0,0,0.9); 
     border: 3px solid rgba(255,215,0,0.3); 
     position: relative;
-    background: rgba(0,0,0,0.7); /* Полупрозрачный фон, чтобы видеть задник */
+    background: rgba(0,0,0,0.6); /* Полупрозрачный фон, чтобы видеть задник */
     overflow: hidden;
     display: flex;
   }
@@ -85,11 +86,7 @@
     display: flex; justify-content: center; align-items: center;
     width: 100%; flex: 1; /* Равномерно делим высоту */
     text-align: center;
-  }
-
-  .cell img {
-    width: 80%; height: 80%; object-fit: contain;
-    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+    font-size: 32px; /* Возвращаем размер для эмодзи */
   }
 
   .win-cell {
@@ -307,52 +304,12 @@ function stopBackgroundMusic() {
     if (musicTimer) clearTimeout(musicTimer);
 }
 
-// НАСТОЯЩИЕ КАРТИНКИ ВМЕСТО ЭМОДЗИ
-const IMG = {
-    // Fruits
-    cherry: 'https://cdn-icons-png.flaticon.com/512/291/291531.png',
-    lemon: 'https://cdn-icons-png.flaticon.com/512/291/291514.png',
-    plum: 'https://cdn-icons-png.flaticon.com/512/291/291529.png',
-    orange: 'https://cdn-icons-png.flaticon.com/512/135/135620.png',
-    melon: 'https://cdn-icons-png.flaticon.com/512/291/291542.png',
-    grape: 'https://cdn-icons-png.flaticon.com/512/291/291525.png',
-    bell: 'https://cdn-icons-png.flaticon.com/512/3003/3003156.png',
-    seven: 'https://cdn-icons-png.flaticon.com/512/3514/3514316.png',
-    // Space
-    alien: 'https://cdn-icons-png.flaticon.com/512/2926/2926154.png',
-    rocket: 'https://cdn-icons-png.flaticon.com/512/1356/1356479.png',
-    star: 'https://cdn-icons-png.flaticon.com/512/1828/1828884.png',
-    galaxy: 'https://cdn-icons-png.flaticon.com/512/3239/3239388.png',
-    comet: 'https://cdn-icons-png.flaticon.com/512/3129/3129666.png',
-    crystal: 'https://cdn-icons-png.flaticon.com/512/3004/3004406.png',
-    planet: 'https://cdn-icons-png.flaticon.com/512/3213/3213359.png',
-    // Egypt
-    cat: 'https://cdn-icons-png.flaticon.com/512/616/616430.png',
-    snake: 'https://cdn-icons-png.flaticon.com/512/616/616515.png',
-    vase: 'https://cdn-icons-png.flaticon.com/512/2933/2933777.png',
-    anubis: 'https://cdn-icons-png.flaticon.com/512/1124/1124271.png',
-    scarab: 'https://cdn-icons-png.flaticon.com/512/3069/3069178.png',
-    eye: 'https://cdn-icons-png.flaticon.com/512/1239/1239109.png',
-    // Fishing
-    ten: 'https://cdn-icons-png.flaticon.com/512/483/483249.png',
-    j: 'https://cdn-icons-png.flaticon.com/512/483/483245.png',
-    q: 'https://cdn-icons-png.flaticon.com/512/483/483256.png',
-    k: 'https://cdn-icons-png.flaticon.com/512/483/483261.png',
-    a: 'https://cdn-icons-png.flaticon.com/512/483/483242.png',
-    fish: 'https://cdn-icons-png.flaticon.com/512/3095/3095095.png',
-    box: 'https://cdn-icons-png.flaticon.com/512/3081/3081841.png',
-    fly: 'https://cdn-icons-png.flaticon.com/512/1998/1998706.png',
-    rod: 'https://cdn-icons-png.flaticon.com/512/3081/3081661.png',
-    sparkle: 'https://cdn-icons-png.flaticon.com/512/1828/1828961.png',
-    shark: 'https://cdn-icons-png.flaticon.com/512/3438/3438403.png',
-    fisherman: 'https://cdn-icons-png.flaticon.com/512/194/194938.png'
-};
-
+// ВОЗВРАЩАЕМ ЭМОДЗИ
 const GAME_CONFIG = {
-  fruits: { cols: 3, rows: 1, min_bet: 10, syms: [IMG.cherry, IMG.lemon, IMG.plum, IMG.orange, IMG.melon, IMG.grape, IMG.bell, IMG.seven], bg: 'bg-fruits', scatter: null },
-  space: { cols: 7, rows: 3, min_bet: 10, syms: [IMG.alien, IMG.rocket, IMG.star, IMG.galaxy, IMG.comet, IMG.crystal, IMG.planet], bg: 'bg-space', scatter: 6 },
-  egypt: { cols: 5, rows: 3, min_bet: 10, syms: [IMG.cat, IMG.snake, IMG.vase, IMG.anubis, IMG.scarab, IMG.eye], bg: 'bg-egypt', scatter: 5 },
-  fishing: { cols: 5, rows: 3, min_bet: 10, syms: [IMG.ten, IMG.j, IMG.q, IMG.k, IMG.a, IMG.fish, IMG.box, IMG.fly, IMG.rod, IMG.sparkle, IMG.shark, IMG.fisherman], bg: 'bg-fishing', scatter: 10, wild: 11 }
+  fruits: { cols: 3, rows: 1, min_bet: 10, syms: ['🍒','🍋','🫐','🍊','🍉','🍇','🔔','7️⃣'], bg: 'bg-fruits', scatter: null },
+  space: { cols: 7, rows: 3, min_bet: 10, syms: ['👽','🚀','⭐','🌌','☄️','🔮', '🪐'], bg: 'bg-space', scatter: 6 },
+  egypt: { cols: 5, rows: 3, min_bet: 10, syms: ['🐈','🐍','🏺','⚱️','🔺','🔱', '👁️'], bg: 'bg-egypt', scatter: 6 },
+  fishing: { cols: 5, rows: 3, min_bet: 10, syms: ['10','J','Q','K','A','🐟','🧰','🪰','🎣','✨','🦈','🧔','🐠','🐡','🐠'], bg: 'bg-fishing', scatter: 10, wild: 11 }
 };
 
 const LINES = {
@@ -404,7 +361,7 @@ function startGame(gameKey) {
   const conf = GAME_CONFIG[gameKey];
   $('lobby-screen').style.display = 'none';
   $('game-screen').style.display = 'flex';
-  $('game-screen').className = `bg-${gameKey}`;
+  $('game-screen').className = conf.bg; // Меняем фон
   
   currentBet = conf.min_bet;
   $('custom-bet').value = '';
@@ -445,9 +402,7 @@ function initSlotGrid() {
         for (let j = 0; j < conf.rows + 2; j++) {
             const cell = document.createElement('div');
             cell.className = 'cell';
-            const img = document.createElement('img');
-            img.src = conf.syms[Math.floor(Math.random() * conf.syms.length)];
-            cell.appendChild(img);
+            cell.textContent = conf.syms[Math.floor(Math.random() * conf.syms.length)];
             strip.appendChild(cell);
         }
         
@@ -461,6 +416,7 @@ function startSpin(finalGrid) {
     const conf = GAME_CONFIG[currentGame];
     spinning = true;
     document.querySelectorAll('.win-cell').forEach(el => el.classList.remove('win-cell'));
+    document.querySelectorAll('.cell').forEach(el => el.style.boxShadow = 'none');
 
     columns.forEach((col, i) => {
         col.speed = 40 + Math.random() * 15;
@@ -473,7 +429,7 @@ function startSpin(finalGrid) {
                 col.offset -= (100 / conf.rows);
                 const firstCell = col.strip.firstElementChild;
                 col.strip.appendChild(firstCell); 
-                firstCell.querySelector('img').src = conf.syms[Math.floor(Math.random() * conf.syms.length)];
+                firstCell.textContent = conf.syms[Math.floor(Math.random() * conf.syms.length)];
             }
             
             col.strip.style.transform = `translateY(-${col.offset}%)`;
@@ -491,7 +447,7 @@ function startSpin(finalGrid) {
             
             const cells = col.strip.children;
             for(let row = 0; row < conf.rows; row++) {
-                cells[row].querySelector('img').src = conf.syms[finalGrid[i][row]];
+                cells[row].textContent = conf.syms[finalGrid[i][row]];
             }
             
             SFX.reelStop();
@@ -537,7 +493,7 @@ async function doSpin(betAmount, buyBonus = false) {
   try {
     const d = await api('/spin', { bet: betAmount, game: currentGame, bonus_buy: buyBonus, free_spins: freeSpins, fish_caught: currentFishCaught }); 
     startSpin(d.grid);
-    setTimeout(() => { handleSpinResult(d); }, 1500 + GAME_CONFIG[currentGame].cols * 150);
+    setTimeout(() => { handleSpinResult(d); }, 800 + GAME_CONFIG[currentGame].cols * 150 + 300);
   } catch(e) { 
       SFX.lose(); 
       showMsg(e.message, false); 
@@ -565,12 +521,10 @@ function handleSpinResult(d) {
                 const fish = d.fish_data.find(f => f.col === col && f.row === row);
                 if (fish) {
                     const cell = columns[col].strip.children[row];
-                    const img = cell.querySelector('img');
-                    if (img) img.style.display = 'none'; // Скрываем картинку рыбки
-                    const label = document.createElement('div');
-                    label.textContent = `${fish.val}₽`;
-                    label.style.cssText = 'color:#ffd700;font-weight:900;font-size:14px;text-shadow:0 0 5px #000;';
-                    cell.appendChild(label);
+                    cell.textContent = `${fish.val}₽`;
+                    cell.style.fontSize = '14px'; 
+                    cell.style.color = '#ffd700';
+                    cell.style.fontWeight = '900';
                 }
             }
         }
