@@ -11,10 +11,7 @@
   html, body { margin:0; padding:0; background:#000; color:#fff; font-family: 'Montserrat', sans-serif; overflow:hidden; height:100%; }
   
   /* ПРИВЕТСТВИЕ */
-  #welcome-screen {
-    position: fixed; inset: 0; z-index: 200; background: radial-gradient(circle at center, #1a1a2e 0%, #000 100%);
-    display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s;
-  }
+  #welcome-screen { position: fixed; inset: 0; z-index: 200; background: radial-gradient(circle at center, #1a1a2e 0%, #000 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s; }
   #welcome-screen h1 { font-size: 42px; color: #ffd700; text-shadow: 0 0 20px #ff8c00; margin-bottom: 10px; text-transform: uppercase; text-align: center; }
   #welcome-screen p { color: #aaa; margin-bottom: 40px; font-size: 14px; }
   #start-btn { padding: 20px 60px; font-size: 24px; font-weight: 900; border-radius: 30px; border: none; background: linear-gradient(to right, #ffd700, #ff8c00); color: #000; box-shadow: 0 0 30px rgba(255, 215, 0, 0.5); cursor: pointer; }
@@ -26,12 +23,7 @@
   .lobby-header h2 { color: #fff; font-size: 24px; margin: 0; }
   #games-carousel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 20px; padding: 20px; height: 100%; align-items: center; }
   #games-carousel::-webkit-scrollbar { display: none; }
-  .game-card {
-    flex: 0 0 80%; scroll-snap-align: center; height: 400px; border-radius: 20px;
-    background-size: cover; background-position: center; position: relative;
-    border: 2px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-    display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; cursor: pointer; transition: border-color 0.3s;
-  }
+  .game-card { flex: 0 0 80%; scroll-snap-align: center; height: 400px; border-radius: 20px; background-size: cover; background-position: center; position: relative; border: 2px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; cursor: pointer; transition: border-color 0.3s; }
   .game-card.active { border-color: #ffd700; box-shadow: 0 0 30px rgba(255,215,0,0.3); }
   .game-card h3 { font-size: 28px; margin: 0 0 5px 0; text-shadow: 0 2px 4px #000; }
   .game-card p { font-size: 14px; color: #ddd; margin: 0; text-shadow: 0 1px 2px #000; }
@@ -55,26 +47,20 @@
   #dropdown-menu button:last-child { border-bottom: none; color: #ff3333; }
   #dropdown-menu button:active { background: rgba(255,255,255,0.1); }
 
-  /* ИГРОВОЕ ПОЛЕ (ФИКС РАЗМЕРА) */
+  /* ИГРОВОЕ ПОЛЕ */
   #pixi-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 10px; position: relative; overflow: hidden; min-height: 0; }
-  #pixi { 
-    width: 100%; 
-    max-width: 100%;
-    max-height: 100%;
-    aspect-ratio: 5/3; /* Меняется через JS */
-    border-radius: 12px; 
-    box-shadow: 0 0 30px rgba(0,0,0,0.8); 
-    border: 2px solid rgba(255,255,255,0.1); 
-    position: relative;
-    background: linear-gradient(135deg, rgba(20,20,20,0.6), rgba(0,0,0,0.9));
-    overflow: hidden;
-    /* Убираем растягивание */
-    margin: auto;
-  }
+  #pixi { width: 100%; max-height: 100%; aspect-ratio: 5/3; border-radius: 12px; box-shadow: 0 0 30px rgba(0,0,0,0.8); border: 2px solid rgba(255,255,255,0.1); position: relative; background: linear-gradient(135deg, rgba(20,20,20,0.6), rgba(0,0,0,0.9)); overflow: hidden; margin: auto; }
   #pixi canvas { width: 100% !important; height: 100% !important; display: block; }
   
   .win-flash { position: fixed; inset: 0; background: #fff; z-index: 90; pointer-events: none; opacity: 0; transition: opacity 0.1s; }
   .win-flash.active { opacity: 0.8; }
+
+  /* ШКАЛА РЫБАКА */
+  #fisher-scale { display: none; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); border: 2px solid #ffd700; border-radius: 20px; padding: 5px 15px; z-index: 20; text-align: center; box-shadow: 0 0 20px rgba(255,215,0,0.5); }
+  .fisher-icons { display: flex; gap: 5px; justify-content: center; margin-top: 5px; }
+  .fisher-icon { width: 25px; height: 25px; border-radius: 50%; background: #333; border: 2px solid #555; display: flex; justify-content: center; align-items: center; font-size: 14px; filter: grayscale(1); }
+  .fisher-icon.active { background: #00c853; border-color: #fff; filter: none; box-shadow: 0 0 10px #00c853; }
+  #fisher-mult { font-size: 18px; font-weight: 900; color: #ffd700; margin-top: 5px; text-shadow: 0 0 10px #ffd700;}
 
   /* ПАНЕЛЬ УПРАВЛЕНИЯ */
   #controls-panel { background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); padding: 15px; padding-bottom: 25px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; z-index: 10;}
@@ -143,6 +129,15 @@
   </div>
 
   <div id="pixi-container">
+    <div id="fisher-scale">
+        <div class="fisher-icons">
+            <div class="fisher-icon" id="fi-1">🧔</div>
+            <div class="fisher-icon" id="fi-2">🧔</div>
+            <div class="fisher-icon" id="fi-3">🧔</div>
+            <div class="fisher-icon" id="fi-4">🧔</div>
+        </div>
+        <div id="fisher-mult">x1</div>
+    </div>
     <div id="pixi"></div>
   </div>
 
@@ -180,6 +175,19 @@
     <p style="color:#aaa; margin-top:50px; margin-bottom:50px;">Скоро здесь появится таблица лидеров...</p>
   </div>
 </div>
+
+<div class="modal" id="wheel-modal" style="backdrop-filter: blur(5px);">
+  <div id="wheel-wrapper">
+    <div style="position:absolute; top:-20px; left:50%; transform:translateX(-50%); width:0; height:0; border-left:20px solid transparent; border-right:20px solid transparent; border-top:30px solid #ff0000; z-index:10; filter:drop-shadow(0 4px 4px rgba(0,0,0,0.8));"></div>
+    <canvas id="wheel-canvas" width="300" height="300"></canvas>
+  </div>
+  <div id="wheel-result" style="font-size:40px; font-weight:900; color:#ffd700; margin:20px 0; text-shadow:0 0 20px #ffd700; opacity:0; transition:0.3s;">0</div>
+  <div style="text-align:center;">
+    <div id="wheel-timer" style="color:#aaa; margin-bottom:10px;">Загрузка...</div>
+    <button class="main-btn" id="wheel-spin-btn" style="background:linear-gradient(to bottom, #9b59b6, #5e2c76); width:200px; padding:15px;">КРУТИТЬ</button>
+    <button class="main-btn" id="wheel-close" style="background:#ffd700; color:#000; width:200px; padding:15px; display:none; margin-top:10px;">ЗАБРАТЬ</button>
+  </div>
+  </div>
   <script>
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
@@ -237,16 +245,15 @@ const SFX = {
   lose: () => tone(200,.3,'sawtooth',.05,0),
 };
 
-// Генератор фоновой музыки (простая мелодия, чтобы не тянуть файлы)
 function playBackgroundMusic() {
     if (!isMusicPlaying) return;
     const melody = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63, 261.63, 196.00];
     let i = 0;
     function playNote() {
         if (!isMusicPlaying) return;
-        tone(melody[i], 0.4, 'sine', 0.02); // Тихая музыка
+        tone(melody[i], 0.4, 'sine', 0.02);
         i = (i + 1) % melody.length;
-        musicTimer = setTimeout(playNote, 500); // Темп
+        musicTimer = setTimeout(playNote, 500);
     }
     playNote();
 }
@@ -272,6 +279,7 @@ const GAME_CONFIG = {
   egypt: { 
       cols: 5, rows: 3, min_bet: 10, 
       syms: ['🐈','🐍','🏺','⚱️','🔺','🔱', '👁️'], 
+      // Рабочая ссылка на Египет
       bg: 'url("https://images.unsplash.com/photo-1539650116574-75c0c6d73f6e?q=80&w=1000&auto=format&fit=crop")', 
       scatter: 6 
   },
@@ -320,7 +328,7 @@ window.addEventListener('load', () => {
 
 $('start-btn').onclick = () => {
     audioCtx();
-    playBackgroundMusic(); // Включаем музыку
+    playBackgroundMusic();
     SFX.click();
     $('welcome-screen').style.opacity = '0';
     setTimeout(() => {
@@ -342,7 +350,6 @@ function startGame(gameKey) {
   $('custom-bet').placeholder = `от ${conf.min_bet}`;
   $('spin-btn').textContent = `SPIN (${currentBet})`;
   
-  // Меняем пропорции контейнера под игру
   $('pixi').style.aspectRatio = `${conf.cols}/${conf.rows}`;
 
   [...$('betrow').children].forEach(b=>b.classList.remove('active'));
@@ -355,7 +362,10 @@ function startGame(gameKey) {
       $('buy-bonus-btn').style.display = 'none';
   }
   
-  setTimeout(() => { initPixi(); refresh(); }, 50);
+  // Убираем шкалу рыбака при старте игры
+  $('fisher-scale').style.display = 'none';
+  
+  setTimeout(() => { initPixi(); refresh(); }, 100);
 }
 
 function initPixi() {
@@ -413,11 +423,10 @@ function initPixi() {
         r.yOffset -= cellH;
         r.strip.y -= cellH;
         
-        // Берем самый верхний элемент и кидаем его вниз
         const topLabel = r.labels.reduce((a, b) => a.y < b.y ? a : b);
         topLabel.y += 5 * cellH;
         topLabel.text = GAME_CONFIG[currentGame].syms[Math.floor(Math.random() * GAME_CONFIG[currentGame].syms.length)];
-        topLabel.style.fontSize = cellH * 0.65; // Сброс шрифта, если было кэш-значение
+        topLabel.style.fontSize = cellH * 0.65;
         topLabel.style.fill = 0xffffff;
         
         if (Math.random() < 0.1) SFX.reelTick();
@@ -444,7 +453,6 @@ function startSpin(finalGrid) {
     r.yOffset = 0; r.strip.y = 0;
   }
 
-  // Останавливаем барабаны по очереди
   for (let i=0;i<conf.cols;i++) {
     setTimeout(() => {
       const r = reels[i];
@@ -483,7 +491,7 @@ function showResult(d) {
           const lbl = reels[f.col].labels[f.row];
           lbl.text = `${f.val}₽`;
           lbl.style.fill = 0xffd700;
-          lbl.style.fontSize = cellH * 0.3; // Уменьшаем шрифт для кэша
+          lbl.style.fontSize = cellH * 0.3;
       });
   }
 
@@ -530,6 +538,25 @@ function showResult(d) {
   spinning = false;
   
   updateUIState(d.level, d.xp);
+
+  // Показ шкалы рыбака
+  if (currentGame === 'fishing' && freeSpins > 0) {
+      $('fisher-scale').style.display = 'block';
+      let lvl = Math.floor(currentFishCaught / 3);
+      let mult = 1;
+      if (lvl >= 4) mult = 10;
+      else if (lvl >= 3) mult = 5;
+      else if (lvl >= 2) mult = 3;
+      else if (lvl >= 1) mult = 2;
+
+      $('fisher-mult').textContent = `x${mult}`;
+      for (let i=1; i<=4; i++) {
+          if (i <= lvl) $('fi-'+i).classList.add('active');
+          else $('fi-'+i).classList.remove('active');
+      }
+  } else {
+      $('fisher-scale').style.display = 'none';
+  }
 
   if (freeSpins > 0) {
     if (currentGame === 'fishing') {
@@ -835,17 +862,3 @@ $('wheel-close').onclick = () => { $('wheel-modal').style.display = 'none'; };
 </script>
 </body>
 </html>
-
-<div class="modal" id="wheel-modal" style="backdrop-filter: blur(5px);">
-  <div id="wheel-wrapper">
-    <div style="position:absolute; top:-20px; left:50%; transform:translateX(-50%); width:0; height:0; border-left:20px solid transparent; border-right:20px solid transparent; border-top:30px solid #ff0000; z-index:10; filter:drop-shadow(0 4px 4px rgba(0,0,0,0.8));"></div>
-    <canvas id="wheel-canvas" width="300" height="300"></canvas>
-  </div>
-  <div id="wheel-result" style="font-size:40px; font-weight:900; color:#ffd700; margin:20px 0; text-shadow:0 0 20px #ffd700; opacity:0; transition:0.3s;">0</div>
-  <div style="text-align:center;">
-    <div id="wheel-timer" style="color:#aaa; margin-bottom:10px;">Загрузка...</div>
-    <button class="main-btn" id="wheel-spin-btn" style="background:linear-gradient(to bottom, #9b59b6, #5e2c76); width:200px; padding:15px;">КРУТИТЬ</button>
-    <button class="main-btn" id="wheel-close" style="background:#ffd700; color:#000; width:200px; padding:15px; display:none; margin-top:10px;">ЗАБРАТЬ</button>
-  </div>
-  </div>
-  
