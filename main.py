@@ -43,7 +43,6 @@ def verify(init_data: str) -> dict:
         raise HTTPException(401, "bad signature")
     return json.loads(p["user"])
 
-# КЛАССИКА 3x1
 GAMES = {
     "fruits": {"cols": 3, "rows": 1, "min_bet": 10, "symbols": [{"id":0, "pay":[0, 10, 30]}, {"id":1, "pay":[0, 15, 50]}, {"id":2, "pay":[0, 20, 100]}, {"id":3, "pay":[0, 50, 200]}, {"id":4, "pay":[0, 100, 500]}, {"id":5, "pay":[0, 200, 1000]}], "scatter": None},
     "space": {"cols": 7, "rows": 3, "min_bet": 10, "symbols": [{"id":0, "pay":[1.2, 2, 5]}, {"id":1, "pay":[1.5, 3, 6]}, {"id":2, "pay":[2, 4, 8]}, {"id":3, "pay":[3, 6, 12]}, {"id":4, "pay":[5, 10, 20]}, {"id":5, "pay":[10, 20, 50]}], "scatter": 99},
@@ -58,9 +57,7 @@ LINES = {
     "fishing": [[1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2], [0,0,1,2,2], [2,2,1,0,0], [0,1,2,2,2], [2,1,0,0,0], [0,0,1,0,0]]
 }
 
-FISH_CASH_VALUES = [2, 5, 10, 15, 20, 25, 50, 200]
-
-def generate_grid(game_key):
+def generate_grid(game_key, is_bonus=False):
     g = GAMES[game_key]
     cols, rows = g["cols"], g["rows"]
     grid = [[None]*rows for _ in range(cols)]
@@ -69,9 +66,8 @@ def generate_grid(game_key):
         for c in range(cols):
             for r in range(rows):
                 rand = random.random()
-                # ШАНС РЫБОК 15% (увеличен для окупаемости бонуса)
                 if rand < 0.01: grid[c][r] = g["scatter"]
-                elif rand < 0.15: grid[c][r] = random.choice(g["fish_cash"])
+                elif rand < (0.20 if is_bonus else 0.06): grid[c][r] = random.choice(g["fish_cash"])
                 else: grid[c][r] = random.choice(range(10))
         return grid
 
@@ -85,7 +81,7 @@ def generate_grid(game_key):
         grid[_] = col
     return grid
 
-def check_win(grid, game_key, bet, free_spins=0, fish_caught=0):
+def check_win(grid, game_key, bet, is_bonus=False, fish_caught=0):
     g = GAMES[game_key]
     lines = LINES[game_key]
     total_win = 0
@@ -103,7 +99,7 @@ def check_win(grid, game_key, bet, free_spins=0, fish_caught=0):
         wild_coords = [(c, r) for c in range(len(grid)) for r in range(len(grid[c])) if grid[c][r] == g["wild"]]
         wilds_count = len(wild_coords)
         
-        if wilds_count >= 1 and free_spins > 0:
+        if wilds_count >= 1 and is_bonus:
             mult = 1
             if fish_caught >= 9: mult = 10
             elif fish_caught >= 6: mult = 5
@@ -176,7 +172,7 @@ def spin(r: SpinReq):
     if d["balance"] < cost: raise HTTPException(400, "Недостаточно фишек")
 
     bal = d["balance"] - cost
-    grid = generate_grid(r.game)
+    grid = generate_grid(r.game, is_fs or r.bonus_buy)
     scatters = 0
     
     if r.bonus_buy:
@@ -195,7 +191,7 @@ def spin(r: SpinReq):
                 for row in range(len(grid[c])):
                     if grid[c][row] == game_conf.get("scatter"): grid[c][row] = 0
 
-    win_amount, win_lines, scatters_nat, fish_data, wilds_count = check_win(grid, r.game, r.bet, d["free_spins"], r.fish_caught)
+    win_amount, win_lines, scatters_nat, fish_data, wilds_count = check_win(grid, r.game, r.bet, is_fs or r.bonus_buy, r.fish_caught)
     if not r.bonus_buy and not is_fs: scatters = scatters_nat
     
     new_free_spins = d["free_spins"]
@@ -228,7 +224,7 @@ def spin(r: SpinReq):
     elif new_fish_caught >= 3: ui_mult = 3
     elif new_fish_caught >= 1: ui_mult = 2
 
-    return {"grid": grid, "win": win_amount, "balance": bal, "lines": win_lines, "scatters": scatters, "bonus_mult": ui_mult, "fish_data": fish_data, "is_free_spin": is_fs, "free_spins_left": new_free_spins, "fish_caught": new_fish_caught, "level": new_level, "xp": new_xp}
+    return {"grid": grid, "win": win_amount, "balance": bal, "lines": win_lines, "scatters": scatters, "bonus_mult": ui_mult, "fish_data": fish_data, "is_free_spin": is_fs, "free_spins_left": new_free_spins, "fish_caught": new_fish_caught, "level": new_level, "xp": new_xp, "wilds_count": wilds_count}
 
 @app.post("/referral")
 def referral(r: RefReq):
