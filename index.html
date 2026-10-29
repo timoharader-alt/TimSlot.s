@@ -4,26 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pixi.js@8/dist/pixi.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&display=swap');
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
   html, body { margin:0; padding:0; background:#000; color:#fff; font-family: 'Montserrat', sans-serif; overflow:hidden; height:100%; }
   
-  /* ... СТИЛИ ОСТАЛЬНЫЕ ... */
+  /* ... СТИЛИ (оставил как было, чтобы не ломать дизайн) ... */
   #welcome-screen { position: fixed; inset: 0; z-index: 200; background: radial-gradient(circle at center, #1a1a2e 0%, #000 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s; }
   #welcome-screen h1 { font-size: 42px; color: #ffd700; text-shadow: 0 0 20px #ff8c00; margin-bottom: 10px; text-transform: uppercase; text-align: center; }
   #welcome-screen p { color: #aaa; margin-bottom: 40px; font-size: 14px; }
   #start-btn { padding: 20px 60px; font-size: 24px; font-weight: 900; border-radius: 30px; border: none; background: linear-gradient(to right, #ffd700, #ff8c00); color: #000; box-shadow: 0 0 30px rgba(255, 215, 0, 0.5); cursor: pointer; }
-  #start-btn:active { transform: scale(0.95); }
-
+  
   #lobby-screen { position: fixed; inset: 0; z-index: 150; background: #0a0a0c; display: none; flex-direction: column; }
   .lobby-header { padding: 20px; text-align: center; }
   .lobby-header h2 { color: #fff; font-size: 24px; margin: 0; }
   #games-carousel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 20px; padding: 20px; height: 100%; align-items: center; }
   #games-carousel::-webkit-scrollbar { display: none; }
-  .game-card { flex: 0 0 80%; scroll-snap-align: center; height: 400px; border-radius: 20px; background-size: cover; background-position: center; position: relative; border: 2px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; cursor: pointer; transition: border-color 0.3s; }
-  .game-card.active { border-color: #ffd700; box-shadow: 0 0 30px rgba(255,215,0,0.3); }
+  .game-card { flex: 0 0 80%; scroll-snap-align: center; height: 400px; border-radius: 20px; background-size: cover; background-position: center; position: relative; border: 2px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; cursor: pointer; }
   .game-card h3 { font-size: 28px; margin: 0 0 5px 0; text-shadow: 0 2px 4px #000; }
   .game-card p { font-size: 14px; color: #ddd; margin: 0; text-shadow: 0 1px 2px #000; }
   .game-card .min-bet { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.8); padding: 5px 10px; border-radius: 10px; font-weight: bold; border: 1px solid #ffd700; color: #ffd700;}
@@ -47,28 +44,50 @@
   #dropdown-menu { position: absolute; top: 70px; right: 15px; background: rgba(20,20,25,0.95); border: 1px solid #ffd700; border-radius: 12px; display: none; flex-direction: column; min-width: 200px; z-index: 50; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
   #dropdown-menu button { background: none; border: none; color: #fff; padding: 15px; text-align: left; font-size: 16px; font-weight: bold; border-bottom: 1px solid #333; cursor: pointer; font-family: inherit;}
   #dropdown-menu button:last-child { border-bottom: none; color: #ff3333; }
-  #dropdown-menu button:active { background: rgba(255,255,255,0.1); }
 
-  /* ЖЕСТКИЙ ФИКС ДЛЯ PIXI */
+  /* НОВОЕ ИГРОВОЕ ПОЛЕ НА CSS */
   #pixi-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 10px; position: relative; overflow: hidden; min-height: 0; }
-  #pixi { 
+  
+  #slot-grid { 
     width: 100%; 
     max-width: 100%; 
-    height: 100%; 
-    aspect-ratio: 5/3; /* Меняется через JS */
+    max-height: 100%;
+    aspect-ratio: var(--aspect, 5/3); 
     border-radius: 12px; 
     box-shadow: 0 0 30px rgba(0,0,0,0.8); 
     border: 2px solid rgba(255,255,255,0.1); 
     position: relative;
-    background: rgba(0,0,0,0.5);
+    background: linear-gradient(135deg, rgba(20,20,20,0.8), rgba(0,0,0,0.9));
     overflow: hidden;
-    margin: auto;
     display: flex;
     justify-content: center;
     align-items: center;
   }
-  #pixi canvas { display: block; width: 100% !important; height: 100% !important; }
+
+  .reel-col {
+    display: flex; flex-direction: column; width: 100%; height: 100%;
+    overflow: hidden; position: relative; border-right: 1px solid rgba(255,255,255,0.05);
+  }
+  .reel-col:last-child { border-right: none; }
   
+  .reel-strip {
+    display: flex; flex-direction: column; width: 100%;
+    transition: none; /* Анимация управляется JS */
+  }
+
+  .cell {
+    display: flex; justify-content: center; align-items: center;
+    width: 100%; font-weight: bold; text-align: center;
+    text-shadow: 0 2px 4px #000;
+    flex-shrink: 0;
+  }
+
+  .win-cell {
+    background: rgba(255, 215, 0, 0.3) !important;
+    box-shadow: inset 0 0 10px #ffd700;
+    border-radius: 8px;
+  }
+
   .win-flash { position: fixed; inset: 0; background: #fff; z-index: 90; pointer-events: none; opacity: 0; transition: opacity 0.1s; }
   .win-flash.active { opacity: 0.8; }
 
@@ -152,7 +171,11 @@
         </div>
         <div id="fisher-mult">x1</div>
     </div>
-    <div id="pixi"></div>
+    
+    <!-- НОВЫЙ СЛОТ -->
+    <div id="slot-grid">
+        <!-- Колонки генерируются JS -->
+    </div>
   </div>
 
   <div id="controls-panel">
@@ -201,400 +224,8 @@
     <button class="main-btn" id="wheel-spin-btn" style="background:linear-gradient(to bottom, #9b59b6, #5e2c76); width:200px; padding:15px;">КРУТИТЬ</button>
     <button class="main-btn" id="wheel-close" style="background:#ffd700; color:#000; width:200px; padding:15px; display:none; margin-top:10px;">ЗАБРАТЬ</button>
   </div>
-</div>
-<script>
-const tg = window.Telegram?.WebApp;
-if (tg) { tg.ready(); tg.expand(); }
-const init = tg?.initData || '';
-const $ = id => document.getElementById(id);
-
-let myId = 0;
-try {
-    if (init) {
-        const urlParams = new URLSearchParams(init);
-        const userStr = urlParams.get('user');
-        if (userStr) myId = JSON.parse(userStr).id;
-    }
-} catch(e) {}
-
-const AC = window.AudioContext || window.webkitAudioContext;
-let actx = null;
-let isMusicPlaying = true;
-let musicTimer = null;
-
-function audioCtx() { 
-    if (!AC) return null; 
-    if (!actx) actx = new AC(); 
-    if (actx.state === 'suspended') actx.resume(); 
-    return actx; 
-}
-
-function tone(freq, dur, type='sine', vol=0.06, when=0) {
-  const ctx = audioCtx(); if (!ctx) return;
-  const t = ctx.currentTime + when;
-  const o = ctx.createOscillator(), g = ctx.createGain();
-  o.type = type; o.frequency.setValueAtTime(freq, t);
-  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + dur + 0.02);
-}
-
-function noise(dur=0.05, vol=0.04) {
-  const ctx = audioCtx(); if (!ctx) return;
-  const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
-  const d = buf.getChannelData(0); for (let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * (1 - i/d.length);
-  const src = ctx.createBufferSource(); src.buffer = buf;
-  const g = ctx.createGain(); g.gain.value = vol;
-  const f = ctx.createBiquadFilter(); f.type='highpass'; f.frequency.value=800;
-  src.connect(f); f.connect(g); g.connect(ctx.destination); src.start();
-}
-
-const SFX = {
-  click: () => tone(800, .05, 'square', .05),
-  reelTick: () => noise(.02, .03),
-  reelStop: () => { tone(150, .15, 'square', .1); noise(.1,.05); },
-  win: () => { [523,659,784,1046].forEach((f,i)=>tone(f,.15,'triangle',.08,i*.08)); },
-  bigWin: () => { [523,659,784,1046,1318,1568].forEach((f,i)=>tone(f,.2,'square',.08,i*.06)); },
-  scatter: () => { [800, 1000, 1200, 1600].forEach((f,i)=>tone(f,.15,'sine',.1,i*.1)); },
-  fish: () => { [400, 600, 800].forEach((f,i)=>tone(f,.1,'triangle',.1,i*.1)); },
-  lose: () => tone(200,.3,'sawtooth',.05,0),
-};
-
-function playBackgroundMusic() {
-    if (!isMusicPlaying) return;
-    const melody = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63, 261.63, 196.00];
-    let i = 0;
-    function playNote() {
-        if (!isMusicPlaying) return;
-        tone(melody[i], 0.4, 'sine', 0.02);
-        i = (i + 1) % melody.length;
-        musicTimer = setTimeout(playNote, 500);
-    }
-    playNote();
-}
-
-function stopBackgroundMusic() {
-    isMusicPlaying = false;
-    if (musicTimer) clearTimeout(musicTimer);
-}
-
-const GAME_CONFIG = {
-  fruits: { cols: 3, rows: 1, min_bet: 10, syms: ['🍒','🍋','🫐','🍊','🍉','🍇','🔔','7️⃣'], bg: 'linear-gradient(135deg, #4a0000, #1a0000)', scatter: null },
-  space: { cols: 7, rows: 3, min_bet: 10, syms: ['👽','🚀','⭐','🌌','☄️','🔮', '🪐'], bg: 'linear-gradient(135deg, #001133, #000511)', scatter: 6 },
-  egypt: { cols: 5, rows: 3, min_bet: 10, syms: ['🐈','🐍','🏺','⚱️','🔺','🔱', '👁️'], bg: 'linear-gradient(135deg, #3d2600, #1a0f00)', scatter: 6 },
-  fishing: { cols: 5, rows: 3, min_bet: 10, syms: ['10','J','Q','K','A','🐟','🧰','🪰','🎣','✨','🦈','🧔','🐠','🐡','🐠'], bg: 'linear-gradient(135deg, #003d4d, #001a1a)', scatter: 10, wild: 11 }
-};
-
-const LINES = {
-  fruits: [[0,0,0]],
-  space: [[1,1,1,1,1,1,1], [0,0,0,0,0,0,0], [2,2,2,2,2,2,2], [0,1,2,1,0,1,0], [2,1,0,1,2,1,2], [0,0,1,2,2,1,0]],
-  egypt: [[1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2]],
-  fishing: [[1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2], [0,0,1,2,2], [2,2,1,0,0], [0,1,2,2,2], [2,1,0,0,0], [0,0,1,0,0]]
-};
-
-let currentGame = 'fruits';
-let app, reels = [], cellW = 0, cellH = 0;
-let freeSpins = 0;
-let currentBet = 10;
-let wheelTimerInterval = null;
-let spinning = false;
-let winLinesGraphics = null;
-let currentFishCaught = 0;
-
-window.addEventListener('load', () => {
-    const carousel = $('games-carousel');
-    const games = [
-        { id: 'fruits', title: 'Классика', desc: '3 барабана, 1 линия', cls: 'bg-fruits' },
-        { id: 'space', title: 'Космос', desc: '7x3, 6 линий', cls: 'bg-space' },
-        { id: 'egypt', title: 'Египет', desc: '5x3, 5 линий', cls: 'bg-egypt' },
-        { id: 'fishing', title: 'Рыбалка', desc: 'Бонусная игра', cls: 'bg-fishing' }
-    ];
-
-    games.forEach(g => {
-        const card = document.createElement('div');
-        card.className = `game-card ${g.cls}`;
-        card.innerHTML = `<h3>${g.title}</h3><p>${g.desc}</p><span class="min-bet">от 10 ₽</span>`;
-        card.onclick = () => { SFX.click(); startGame(g.id); };
-        carousel.appendChild(card);
-    });
-});
-
-$('start-btn').onclick = () => {
-    audioCtx();
-    playBackgroundMusic();
-    SFX.click();
-    $('welcome-screen').style.opacity = '0';
-    setTimeout(() => {
-        $('welcome-screen').style.display = 'none';
-        $('lobby-screen').style.display = 'flex';
-    }, 500);
-};
-
-function startGame(gameKey) {
-  currentGame = gameKey;
-  const conf = GAME_CONFIG[gameKey];
-  $('lobby-screen').style.display = 'none';
-  $('game-screen').style.display = 'flex';
-  $('game-screen').style.background = conf.bg;
-  
-  currentBet = conf.min_bet;
-  $('custom-bet').value = '';
-  $('custom-bet').placeholder = `от ${conf.min_bet}`;
-  $('spin-btn').textContent = `SPIN (${currentBet})`;
-  
-  // Пропорции
-  $('pixi').style.aspectRatio = `${conf.cols}/${conf.rows}`;
-
-  [...$('betrow').children].forEach(b=>b.classList.remove('active'));
-  $('betrow').querySelector('[data-bet="10"]').classList.add('active');
-
-  if (gameKey === 'egypt' || gameKey === 'fishing') {
-      $('buy-bonus-btn').style.display = 'block';
-      $('buy-bonus-btn').textContent = `КУПИТЬ БОНУС (${currentBet * 15})`; 
-  } else {
-      $('buy-bonus-btn').style.display = 'none';
-  }
-  
-  $('fisher-scale').style.display = 'none';
-  
-  // Ждем 300мс, чтобы контейнер точно получил размеры
-  setTimeout(() => { initPixi(); refresh(); }, 300);
-}
-
-function initPixi() {
-  if (app) { app.destroy(true, { children: true }); }
-  $('pixi').innerHTML = '';
-
-  const container = $('pixi');
-  // Принудительно задаем размеры, если они нулевые
-  if (container.clientWidth === 0) {
-      container.style.width = window.innerWidth - 20 + 'px';
-  }
-  
-  const rect = container.getBoundingClientRect();
-  const conf = GAME_CONFIG[currentGame];
-  
-  const w = rect.width;
-  const h = rect.height;
-
-  if (w === 0 || h === 0) {
-      console.warn("Контейнер не получил размеры, повтор...");
-      setTimeout(initPixi, 100);
-      return;
-  }
-
-  app = new PIXI.Application();
-  app.init({ width: w, height: h, backgroundAlpha: 0, antialias: true, resolution: window.devicePixelRatio || 1 }).then(() => {
-    container.appendChild(app.canvas);
-    
-    cellW = w / conf.cols;
-    cellH = h / conf.rows;
-    reels = [];
-
-    for (let i=0;i<conf.cols;i++) {
-      const cont = new PIXI.Container();
-      cont.x = i * cellW; 
-      const strip = new PIXI.Container();
-      const labels = [];
-
-      for (let j=0;j<5;j++) {
-        const t = new PIXI.Text({ text: conf.syms[j % conf.syms.length], style:{ fontFamily:'Arial', fontSize: cellH * 0.65, align:'center', fontWeight: 'bold', dropShadow: { alpha: 0.5, blur: 4, color: 0x000000, distance: 3 } } });
-        t.anchor.set(0.5); t.x = cellW / 2; t.y = j*cellH + cellH/2;
-        strip.addChild(t); labels.push(t);
-      }
-
-      const mask = new PIXI.Graphics().rect(i * cellW, 0, cellW, h).fill(0xffffff);
-      app.stage.addChild(mask);
-      strip.mask = mask;
-      
-      cont.addChild(strip);
-      app.stage.addChild(cont);
-      reels.push({ cont, strip, labels, yOffset: 0, speed: 0, spinning: false });
-    }
-
-    for (let i=1;i<conf.cols;i++) { app.stage.addChild(new PIXI.Graphics().rect(i*cellW, 0, 1, h).fill({color:0xffffff, alpha:0.1})); }
-    for (let i=1;i<conf.rows;i++) { app.stage.addChild(new PIXI.Graphics().rect(0, i*cellH, w, 1).fill({color:0xffffff, alpha:0.1})); }
-
-    app.ticker.add(tick);
-  });
-}
-
-function tick() {
-  for (let i=0;i<reels.length;i++) {
-    const r = reels[i];
-    if (r.spinning) {
-      r.yOffset += r.speed * (app.ticker.deltaMS / 16.6);
-      if (r.yOffset >= cellH) {
-        r.yOffset -= cellH;
-        r.strip.y -= cellH;
-        
-        const topLabel = r.labels.reduce((a, b) => a.y < b.y ? a : b);
-        topLabel.y += 5 * cellH;
-        topLabel.text = GAME_CONFIG[currentGame].syms[Math.floor(Math.random() * GAME_CONFIG[currentGame].syms.length)];
-        topLabel.style.fontSize = cellH * 0.65;
-        topLabel.style.fill = 0xffffff;
-        
-        if (Math.random() < 0.1) SFX.reelTick();
-      }
-      r.strip.y = -r.yOffset - (r.labels[0].y - cellH/2); 
-    }
-  }
-}
-
-function startSpin(finalGrid) {
-  if (winLinesGraphics) { app.stage.removeChild(winLinesGraphics); winLinesGraphics = null; }
-  const conf = GAME_CONFIG[currentGame];
-
-  for (let i=0;i<conf.cols;i++) {
-    const r = reels[i];
-    r.spinning = true; 
-    r.speed = 40 + Math.random() * 15; 
-    r.labels.forEach((l, idx) => { 
-        l.text = conf.syms[Math.floor(Math.random()*conf.syms.length)]; 
-        l.y = idx * cellH + cellH/2; 
-        l.style.fill = 0xffffff;
-        l.style.fontSize = cellH * 0.65;
-    });
-    r.yOffset = 0; r.strip.y = 0;
-  }
-
-  for (let i=0;i<conf.cols;i++) {
-    setTimeout(() => {
-      const r = reels[i];
-      r.speed = 0; r.spinning = false; r.yOffset = 0; r.strip.y = 0;
-      SFX.reelStop();
-      
-      for(let row=0; row<conf.rows; row++) {
-        r.labels[row].text = conf.syms[finalGrid[i][row]];
-        r.labels[row].y = row * cellH + cellH/2;
-        r.labels[row].style.fill = 0xffffff;
-        r.labels[row].style.fontSize = cellH * 0.65;
-      }
-    }, 800 + i * 120);
-  }
-}
-  function showResult(d) {
-  const conf = GAME_CONFIG[currentGame];
-  let hasScatters = false;
-
-  // 1. Подсветка скаттеров
-  if (conf.scatter !== null) {
-    for(let col=0; col<conf.cols; col++) {
-      for(let row=0; row<conf.rows; row++) {
-        if (d.grid[col][row] === conf.scatter) {
-          reels[col].labels[row].style.fill = 0xffd700;
-          hasScatters = true;
-        }
-      }
-    }
-  }
-
-  // 2. Вывод сумм на рыбках (кэш)
-  if (d.is_free_spin && d.fish_data && d.fish_data.length > 0) {
-      d.fish_data.forEach(f => {
-          const lbl = reels[f.col].labels[f.row];
-          lbl.text = `${f.val}₽`;
-          lbl.style.fill = 0xffd700;
-          lbl.style.fontSize = cellH * 0.3;
-      });
-  }
-
-  // 3. Запуск бонуса
-  if (hasScatters && d.scatters >= 3 && !d.is_free_spin) {
-    SFX.scatter();
-    currentFishCaught = 0;
-    $('top-bar').style.boxShadow = "0 0 50px #ffd700";
-    showMsg(`БОНУС! +10 ФРИСПИНОВ`, true);
-    toast(`SCATTER x${d.scatters}!`);
-    if (d.win > 0) setTimeout(() => { showMsg(`+${d.win}`, true); toast(`+${d.win}`); }, 1500);
-  } 
-  // 4. Показ выигрыша
-  else if (d.win > 0 || (d.fish_data && d.fish_data.length > 0)) {
-    let actualWin = d.win;
-    const big = actualWin >= currentBet * 20;
-    if (big) { SFX.bigWin(); triggerWinFlash(); } else { SFX.win(); }
-    
-    showMsg(`+${actualWin}`, true);
-    toast(`+${actualWin}`);
-
-    if (d.lines && d.lines.length > 0) {
-        winLinesGraphics = new PIXI.Graphics();
-        d.lines.forEach(l => {
-        const lineData = LINES[currentGame][l.line];
-        for(let col=0; col<l.count; col++) { reels[col].labels[lineData[col]].style.fill = 0xffd700; }
-        winLinesGraphics.moveTo(cellW/2, lineData[0]*cellH + cellH/2);
-        for(let col=1; col<l.count; col++) { winLinesGraphics.lineTo(col*cellW + cellW/2, lineData[col]*cellH + cellH/2); }
-        winLinesGraphics.stroke({ width: 4, color: 0xffd700, alpha: 1 });
-        });
-        app.stage.addChild(winLinesGraphics);
-    }
-
-    if (currentGame === 'fishing' && d.fish_data && d.fish_data.length > 0) {
-        setTimeout(() => { SFX.fish(); showMsg(`РЫБАК ПОЙМАЛ: +${d.win}`, true); }, 1000);
-    }
-  } else {
-    SFX.lose();
-    showMsg('пусто', false);
-  }
-
-  freeSpins = d.free_spins_left;
-  currentFishCaught = d.fish_caught;
-  spinning = false;
-  
-  updateUIState(d.level, d.xp);
-
-  // Шкала рыбака
-  if (currentGame === 'fishing' && freeSpins > 0) {
-      $('fisher-scale').style.display = 'block';
-      let lvl = Math.floor(currentFishCaught / 3);
-      let mult = 1;
-      if (lvl >= 4) mult = 10;
-      else if (lvl >= 3) mult = 5;
-      else if (lvl >= 2) mult = 3;
-      else if (lvl >= 1) mult = 2;
-
-      $('fisher-mult').textContent = `x${mult}`;
-      for (let i=1; i<=4; i++) {
-          if (i <= lvl) $('fi-'+i).classList.add('active');
-          else $('fi-'+i).classList.remove('active');
-      }
-  } else {
-      $('fisher-scale').style.display = 'none';
-  }
-
-  if (freeSpins > 0) {
-    if (currentGame === 'fishing') {
-        let mult = 1;
-        if (currentFishCaught >= 9) mult = 10;
-        else if (currentFishCaught >= 6) mult = 5;
-        else if (currentFishCaught >= 3) mult = 3;
-        else if (currentFishCaught >= 1) mult = 2;
-        
-        if (mult > 1) showMsg(`ФРИСПИН! МНОЖИТЕЛЬ x${mult}`, true);
-        else showMsg(`ФРИСПИН (осталось: ${freeSpins})`, false);
-    } else {
-        showMsg(`ФРИСПИН (осталось: ${freeSpins})`, false);
-    }
-    setTimeout(() => { doSpin(0); }, 2500); 
-  } else {
-    $('top-bar').style.boxShadow = "none";
-    $('spin-btn').disabled = false;
-    $('buy-bonus-btn').disabled = false;
-    if (d.is_free_spin) showMsg(`ФРИСПИНЫ ОКОНЧЕНЫ`, false);
-  }
-  
-  refresh();
-}
-
-function triggerWinFlash() {
-    const flash = $('win-flash');
-    flash.classList.add('active');
-    setTimeout(() => flash.classList.remove('active'), 150);
-    $('pixi-container').style.transform = "translate(5px, 5px)";
-    setTimeout(() => $('pixi-container').style.transform = "translate(-5px, -5px)", 50);
-    setTimeout(() => $('pixi-container').style.transform = "translate(0, 0)", 100);
-}
-
-async function api(path, body={}) {
+      </div>
+  async function api(path, body={}) {
   const r = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ init_data: init, ...body }) });
   const j = await r.json(); if (!r.ok) throw new Error(j.detail || 'ошибка'); return j;
 }
@@ -622,21 +253,123 @@ async function refresh() {
     }
     $('menu-ad').disabled = !state.ad_ready || !state.ad_allowed || freeSpins > 0;
     $('ref-count').textContent = state.ref_count || 0;
-  } catch(e) { console.error(e); }
+  } catch(e) { console.error("Ошибка стейта:", e); }
 }
 
-function updateUIState(level, xp, nextXp = null) {
-    $('lvl-text').textContent = level;
-    if (nextXp === null) nextXp = level * 15000;
-    let percent = (xp / nextXp) * 100;
-    if (percent > 100) percent = 100;
-    $('lvl-fill').style.width = `${percent}%`;
+async function doSpin(betAmount, buyBonus = false) {
+  try {
+    const d = await api('/spin', { bet: betAmount, game: currentGame, bonus_buy: buyBonus, free_spins: freeSpins, fish_caught: currentFishCaught }); 
+    startSpin(d.grid); // Запускаем HTML-анимацию
+    setTimeout(() => { handleSpinResult(d); }, 1500); // Ждем окончания анимации
+  } catch(e) { 
+      SFX.lose(); 
+      showMsg(e.message, false); 
+      spinning = false; 
+      $('spin-btn').disabled = false; 
+      freeSpins = 0; 
+      $('buy-bonus-btn').disabled = false;
+  }
 }
 
-function showMsg(t, win) { const m = $('msg'); m.textContent = t; m.className = 'show ' + (win ? 'win':'lose'); setTimeout(()=> m.className='', 2000); }
-function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); setTimeout(()=> el.classList.remove('show'), 1500); }
+function handleSpinResult(d) {
+    const conf = GAME_CONFIG[currentGame];
+    let hasScatters = false;
 
-// --- КНОПКИ СТАВОК ---
+    // 1. Подсветка скаттеров и сбор рыбок (в HTML)
+    for(let col=0; col<conf.cols; col++) {
+        for(let row=0; row<conf.rows; row++) {
+            const cellVal = d.grid[col][row];
+            if (conf.scatter !== null && cellVal === conf.scatter) {
+                columns[col].strip.children[row].style.color = '#ffd700'; // Подсветка
+                hasScatters = true;
+            }
+            // Отрисовка кэша на рыбках
+            if (d.is_free_spin && d.fish_data) {
+                const fish = d.fish_data.find(f => f.col === col && f.row === row);
+                if (fish) {
+                    columns[col].strip.children[row].textContent = `${fish.val}₽`;
+                    columns[col].strip.children[row].style.fontSize = '14px';
+                    columns[col].strip.children[row].style.color = '#ffd700';
+                }
+            }
+        }
+    }
+
+    // 2. Логика бонуса и выигрышей
+    if (hasScatters && d.scatters >= 3 && !d.is_free_spin) {
+        SFX.scatter();
+        currentFishCaught = 0;
+        $('top-bar').style.boxShadow = "0 0 50px #ffd700";
+        showMsg(`БОНУС! +10 ФРИСПИНОВ`, true);
+        toast(`SCATTER x${d.scatters}!`);
+        if (d.win > 0) setTimeout(() => { showMsg(`+${d.win}`, true); toast(`+${d.win}`); }, 1500);
+    } 
+    else if (d.win > 0 || (d.fish_data && d.fish_data.length > 0)) {
+        let actualWin = d.win;
+        const big = actualWin >= currentBet * 20;
+        if (big) { SFX.bigWin(); triggerWinFlash(); } else { SFX.win(); }
+        
+        showMsg(`+${actualWin}`, true);
+        toast(`+${actualWin}`);
+
+        // Подсветка линий
+        if (d.lines && d.lines.length > 0) {
+            d.lines.forEach(l => {
+                const lineData = LINES[currentGame][l.line];
+                for(let col=0; col<l.count; col++) {
+                    columns[col].strip.children[lineData[col]].classList.add('win-cell');
+                }
+            });
+        }
+
+        if (currentGame === 'fishing' && d.fish_data && d.fish_data.length > 0) {
+            setTimeout(() => { SFX.fish(); showMsg(`РЫБАК ПОЙМАЛ: +${d.win}`, true); }, 1000);
+        }
+    } else {
+        SFX.lose();
+        showMsg('пусто', false);
+    }
+
+    // 3. Синхронизация
+    freeSpins = d.free_spins_left;
+    currentFishCaught = d.fish_caught;
+    spinning = false;
+    updateUIState(d.level, d.xp);
+
+    // 4. Шкала рыбака
+    if (currentGame === 'fishing' && freeSpins > 0) {
+        $('fisher-scale').style.display = 'block';
+        let lvl = Math.floor(currentFishCaught / 3);
+        let mult = 1;
+        if (lvl >= 4) mult = 10;
+        else if (lvl >= 3) mult = 5;
+        else if (lvl >= 2) mult = 3;
+        else if (lvl >= 1) mult = 2;
+
+        $('fisher-mult').textContent = `x${mult}`;
+        for (let i=1; i<=4; i++) {
+            if (i <= lvl) $('fi-'+i).classList.add('active');
+            else $('fi-'+i).classList.remove('active');
+        }
+    } else {
+        $('fisher-scale').style.display = 'none';
+    }
+
+    // 5. Продолжение или конец фриспинов
+    if (freeSpins > 0) {
+        showMsg(`ФРИСПИН (осталось: ${freeSpins})`, false);
+        setTimeout(() => { doSpin(0); }, 2500); 
+    } else {
+        $('top-bar').style.boxShadow = "none";
+        $('spin-btn').disabled = false;
+        $('buy-bonus-btn').disabled = false;
+        if (d.is_free_spin) showMsg(`ФРИСПИНЫ ОКОНЧЕНЫ`, false);
+    }
+    
+    refresh();
+}
+
+// --- УПРАВЛЕНИЕ КНОПКАМИ ---
 $('betrow').onclick = e => { 
     if (freeSpins > 0) return;
     if (e.target.id === 'custom-bet') return;
@@ -668,21 +401,6 @@ $('custom-bet').oninput = e => {
         }
     }
 };
-
-async function doSpin(betAmount, buyBonus = false) {
-  try {
-    const d = await api('/spin', { bet: betAmount, game: currentGame, bonus_buy: buyBonus, free_spins: freeSpins, fish_caught: currentFishCaught }); 
-    startSpin(d.grid);
-    setTimeout(() => { showResult(d); }, 800 + GAME_CONFIG[currentGame].cols * 120 + 400);
-  } catch(e) { 
-      SFX.lose(); 
-      showMsg(e.message, false); 
-      spinning = false; 
-      $('spin-btn').disabled = false; 
-      freeSpins = 0; 
-      $('buy-bonus-btn').disabled = false;
-  }
-}
 
 $('spin-btn').onclick = async () => {
   if (spinning || freeSpins > 0) return; 
@@ -847,6 +565,264 @@ $('wheel-spin-btn').onclick = async () => {
 };
 
 $('wheel-close').onclick = () => { $('wheel-modal').style.display = 'none'; };
+      <script>
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+const init = tg?.initData || '';
+const $ = id => document.getElementById(id);
+
+let myId = 0;
+try {
+    if (init) {
+        const urlParams = new URLSearchParams(init);
+        const userStr = urlParams.get('user');
+        if (userStr) myId = JSON.parse(userStr).id;
+    }
+} catch(e) {}
+
+const AC = window.AudioContext || window.webkitAudioContext;
+let actx = null;
+let isMusicPlaying = true;
+let musicTimer = null;
+
+function audioCtx() { 
+    if (!AC) return null; 
+    if (!actx) actx = new AC(); 
+    if (actx.state === 'suspended') actx.resume(); 
+    return actx; 
+}
+
+function tone(freq, dur, type='sine', vol=0.06, when=0) {
+  const ctx = audioCtx(); if (!ctx) return;
+  const t = ctx.currentTime + when;
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+
+function noise(dur=0.05, vol=0.04) {
+  const ctx = audioCtx(); if (!ctx) return;
+  const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+  const d = buf.getChannelData(0); for (let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * (1 - i/d.length);
+  const src = ctx.createBufferSource(); src.buffer = buf;
+  const g = ctx.createGain(); g.gain.value = vol;
+  const f = ctx.createBiquadFilter(); f.type='highpass'; f.frequency.value=800;
+  src.connect(f); f.connect(g); g.connect(ctx.destination); src.start();
+}
+
+const SFX = {
+  click: () => tone(800, .05, 'square', .05),
+  reelTick: () => noise(.02, .03),
+  reelStop: () => { tone(150, .15, 'square', .1); noise(.1,.05); },
+  win: () => { [523,659,784,1046].forEach((f,i)=>tone(f,.15,'triangle',.08,i*.08)); },
+  bigWin: () => { [523,659,784,1046,1318,1568].forEach((f,i)=>tone(f,.2,'square',.08,i*.06)); },
+  scatter: () => { [800, 1000, 1200, 1600].forEach((f,i)=>tone(f,.15,'sine',.1,i*.1)); },
+  fish: () => { [400, 600, 800].forEach((f,i)=>tone(f,.1,'triangle',.1,i*.1)); },
+  lose: () => tone(200,.3,'sawtooth',.05,0),
+};
+
+function playBackgroundMusic() {
+    if (!isMusicPlaying) return;
+    const melody = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63, 261.63, 196.00];
+    let i = 0;
+    function playNote() {
+        if (!isMusicPlaying) return;
+        tone(melody[i], 0.4, 'sine', 0.02);
+        i = (i + 1) % melody.length;
+        musicTimer = setTimeout(playNote, 500);
+    }
+    playNote();
+}
+
+function stopBackgroundMusic() {
+    isMusicPlaying = false;
+    if (musicTimer) clearTimeout(musicTimer);
+}
+
+const GAME_CONFIG = {
+  fruits: { cols: 3, rows: 1, min_bet: 10, syms: ['🍒','🍋','🫐','🍊','🍉','🍇','🔔','7️⃣'], bg: 'linear-gradient(135deg, #4a0000, #1a0000)', scatter: null },
+  space: { cols: 7, rows: 3, min_bet: 10, syms: ['👽','🚀','⭐','🌌','☄️','🔮', '🪐'], bg: 'linear-gradient(135deg, #001133, #000511)', scatter: 6 },
+  egypt: { cols: 5, rows: 3, min_bet: 10, syms: ['🐈','🐍','🏺','⚱️','🔺','🔱', '👁️'], bg: 'linear-gradient(135deg, #3d2600, #1a0f00)', scatter: 6 },
+  fishing: { cols: 5, rows: 3, min_bet: 10, syms: ['10','J','Q','K','A','🐟','🧰','🪰','🎣','✨','🦈','🧔','🐠','🐡','🐠'], bg: 'linear-gradient(135deg, #003d4d, #001a1a)', scatter: 10, wild: 11 }
+};
+
+const LINES = {
+  fruits: [[0,0,0]],
+  space: [[1,1,1,1,1,1,1], [0,0,0,0,0,0,0], [2,2,2,2,2,2,2], [0,1,2,1,0,1,0], [2,1,0,1,2,1,2], [0,0,1,2,2,1,0]],
+  egypt: [[1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2]],
+  fishing: [[1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2], [0,0,1,2,2], [2,2,1,0,0], [0,1,2,2,2], [2,1,0,0,0], [0,0,1,0,0]]
+};
+
+let currentGame = 'fruits';
+let columns = []; // Массив колонок (DOM-элементов)
+let freeSpins = 0;
+let currentBet = 10;
+let wheelTimerInterval = null;
+let spinning = false;
+let currentFishCaught = 0;
+
+window.addEventListener('load', () => {
+    const carousel = $('games-carousel');
+    const games = [
+        { id: 'fruits', title: 'Классика', desc: '3 барабана, 1 линия', cls: 'bg-fruits' },
+        { id: 'space', title: 'Космос', desc: '7x3, 6 линий', cls: 'bg-space' },
+        { id: 'egypt', title: 'Египет', desc: '5x3, 5 линий', cls: 'bg-egypt' },
+        { id: 'fishing', title: 'Рыбалка', desc: 'Бонусная игра', cls: 'bg-fishing' }
+    ];
+
+    games.forEach(g => {
+        const card = document.createElement('div');
+        card.className = `game-card ${g.cls}`;
+        card.innerHTML = `<h3>${g.title}</h3><p>${g.desc}</p><span class="min-bet">от 10 ₽</span>`;
+        card.onclick = () => { SFX.click(); startGame(g.id); };
+        carousel.appendChild(card);
+    });
+});
+
+$('start-btn').onclick = () => {
+    audioCtx();
+    playBackgroundMusic();
+    SFX.click();
+    $('welcome-screen').style.opacity = '0';
+    setTimeout(() => {
+        $('welcome-screen').style.display = 'none';
+        $('lobby-screen').style.display = 'flex';
+    }, 500);
+};
+
+function startGame(gameKey) {
+  currentGame = gameKey;
+  const conf = GAME_CONFIG[gameKey];
+  $('lobby-screen').style.display = 'none';
+  $('game-screen').style.display = 'flex';
+  $('game-screen').style.background = conf.bg;
+  
+  currentBet = conf.min_bet;
+  $('custom-bet').value = '';
+  $('custom-bet').placeholder = `от ${conf.min_bet}`;
+  $('spin-btn').textContent = `SPIN (${currentBet})`;
+  
+  // Устанавливаем пропорции
+  $('slot-grid').style.setProperty('--aspect', `${conf.cols}/${conf.rows}`);
+
+  [...$('betrow').children].forEach(b=>b.classList.remove('active'));
+  $('betrow').querySelector('[data-bet="10"]').classList.add('active');
+
+  if (gameKey === 'egypt' || gameKey === 'fishing') {
+      $('buy-bonus-btn').style.display = 'block';
+      $('buy-bonus-btn').textContent = `КУПИТЬ БОНУС (${currentBet * 15})`;
+  } else {
+      $('buy-bonus-btn').style.display = 'none';
+  }
+  
+  $('fisher-scale').style.display = 'none';
+  
+  initSlotGrid();
+  refresh();
+}
+
+// Генерация HTML-сетки
+function initSlotGrid() {
+    const conf = GAME_CONFIG[currentGame];
+    const grid = $('slot-grid');
+    grid.innerHTML = '';
+    columns = [];
+
+    for (let i = 0; i < conf.cols; i++) {
+        const col = document.createElement('div');
+        col.className = 'reel-col';
+        
+        const strip = document.createElement('div');
+        strip.className = 'reel-strip';
+        
+        // Создаем 3 видимых + 2 запасных символа
+        for (let j = 0; j < conf.rows + 2; j++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.textContent = conf.syms[Math.floor(Math.random() * conf.syms.length)];
+            cell.style.height = `${100 / conf.rows}%`; // Каждая ячейка это доля от высоты
+            cell.style.fontSize = `calc(${100 / conf.rows}vh * 0.6)`; // Шрифт зависит от высоты
+            strip.appendChild(cell);
+        }
+        
+        col.appendChild(strip);
+        grid.appendChild(col);
+        columns.push({ el: col, strip: strip, offset: 0, speed: 0 });
+    }
+}
+
+function startSpin(finalGrid) {
+    const conf = GAME_CONFIG[currentGame];
+    spinning = true;
+
+    // Сбрасываем подсветку
+    document.querySelectorAll('.win-cell').forEach(el => el.classList.remove('win-cell'));
+
+    columns.forEach((col, i) => {
+        // Запускаем анимацию прокрутки для каждой колонки
+        col.speed = 40 + Math.random() * 15;
+        
+        const animate = () => {
+            if (!spinning) return;
+            
+            col.offset += col.speed;
+            // Когда прокрутили на 1 ячейку, переносим верхнюю вниз
+            if (col.offset >= (100 / conf.rows)) {
+                col.offset -= (100 / conf.rows);
+                const firstCell = col.strip.firstElementChild;
+                col.strip.appendChild(firstCell); // Переносим в конец
+                firstCell.textContent = conf.syms[Math.floor(Math.random() * conf.syms.length)];
+            }
+            
+            col.strip.style.transform = `translateY(-${col.offset}%)`;
+            requestAnimationFrame(animate);
+        };
+        requestAnimationFrame(animate);
+    });
+
+    // Останавливаем колонки по очереди
+    for (let i = 0; i < conf.cols; i++) {
+        setTimeout(() => {
+            const col = columns[i];
+            col.speed = 0;
+            // Выравниваем позицию (сбрасываем в 0 для ровного отображения)
+            col.offset = 0;
+            col.strip.style.transform = `translateY(0%)`;
+            
+            // Устанавливаем финальные символы
+            const cells = col.strip.children;
+            for(let row = 0; row < conf.rows; row++) {
+                cells[row].textContent = conf.syms[finalGrid[i][row]];
+            }
+            
+            SFX.reelStop();
+            
+            // Если это последняя колонка — показываем результат
+            if (i === conf.cols - 1) {
+                setTimeout(() => showResult(finalGrid), 300);
+            }
+        }, 800 + i * 150);
+    }
+}
+
+function showResult(grid) {
+    // Заглушка для результата (будет доработана в Части 3)
+    spinning = false;
+    SFX.lose();
+    showMsg('Крутка завершена', false);
+}
+
+function updateUIState(level, xp, nextXp = null) {
+    $('lvl-text').textContent = level;
+    if (nextXp === null) nextXp = level * 15000;
+    let percent = (xp / nextXp) * 100;
+    if (percent > 100) percent = 100;
+    $('lvl-fill').style.width = `${percent}%`;
+}
+
+function showMsg(t, win) { const m = $('msg'); m.textContent = t; m.className = 'show ' + (win ? 'win':'lose'); setTimeout(()=> m.className='', 2000); }
+function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); setTimeout(()=> el.classList.remove('show'), 1500); }
 </script>
 </body>
 </html>
