@@ -72,13 +72,13 @@ def generate_grid(game_key):
                 else: grid[c][r] = random.choice(range(10))
         return grid
 
-    # ПОВЫШЕННЫЕ ШАНСЫ: Базовые символы падают чаще
-    weights = [50, 40, 30, 20, 10, 5]
+    # ВЫСОКИЕ ШАНСЫ: Символы падают часто
+    weights = [60, 50, 40, 30, 15, 5]
     pool = [s["id"] for s in g["symbols"] for _ in range(weights[s["id"]] if s["id"] < len(weights) else 1)]
     for _ in range(cols):
         col = []
         for _ in range(rows):
-            if g["scatter"] is not None and random.random() < 0.01: col.append(g["scatter"])
+            if g["scatter"] is not None and random.random() < 0.015: col.append(g["scatter"])
             else: col.append(random.choice(pool))
         grid[_] = col
     return grid
@@ -98,6 +98,7 @@ def check_win(grid, game_key, bet, free_spins=0, fish_caught=0):
                 if sym == g["scatter"]: scatters += 1
 
     if game_key == "fishing":
+        # Ищем рыбака (wild = 11)
         wild_coords = [(c, r) for c in range(len(grid)) for r in range(len(grid[c])) if grid[c][r] == g["wild"]]
         wilds_count = len(wild_coords)
         
@@ -169,7 +170,7 @@ def spin(r: SpinReq):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
     game_conf = GAMES[r.game]
     is_fs = d["free_spins"] > 0
-    cost = 0 if is_fs else (r.bet * 100 if r.bonus_buy else r.bet)
+    cost = 0 if is_fs else (r.bet * 15 if r.bonus_buy else r.bet) # БОНУС ТЕПЕРЬ 15х
     
     if not is_fs and r.bet < game_conf["min_bet"]: raise HTTPException(400, f"Мин. ставка {game_conf['min_bet']}")
     if d["balance"] < cost: raise HTTPException(400, "Недостаточно фишек")
