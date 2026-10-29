@@ -7,166 +7,48 @@
 <script src="https://cdn.jsdelivr.net/npm/pixi.js@8/dist/pixi.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&display=swap');
-
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  
-  html, body { 
-    margin:0; padding:0; background:#0a0a0c; color:#fff; 
-    font-family: 'Montserrat', sans-serif; overflow:hidden; height:100%; 
-    background-image: radial-gradient(circle at 50% 0%, #1a1a24 0%, #0a0a0c 70%);
-  }
-  
-  #app { 
-    position:relative; z-index:1; max-width:600px; margin:0 auto; padding:12px; 
-    display:flex; flex-direction:column; height:100vh; 
-  }
-  
-  /* Верхняя панель (Баланс) */
-  #top { 
-    display:flex; justify-content:space-between; align-items:center; 
-    margin-bottom:12px; background:linear-gradient(90deg, #1f1f2b, #15151d); 
-    padding:12px 20px; border-radius:16px; 
-    border: 1px solid rgba(212, 175, 55, 0.3);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-  }
+  html, body { margin:0; padding:0; background:#0a0a0c; color:#fff; font-family: 'Montserrat', sans-serif; overflow:hidden; height:100%; background-image: radial-gradient(circle at 50% 0%, #1a1a24 0%, #0a0a0c 70%); }
+  #app { position:relative; z-index:1; max-width:600px; margin:0 auto; padding:12px; display:flex; flex-direction:column; height:100vh; }
+  #top { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; background:linear-gradient(90deg, #1f1f2b, #15151d); padding:12px 20px; border-radius:16px; border: 1px solid rgba(212, 175, 55, 0.3); box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
   .balance-label { font-size:12px; color:#888; text-transform:uppercase; letter-spacing:1px; }
   #bal { font-size:26px; font-weight:900; color:#ffd700; text-shadow:0 0 15px rgba(255, 215, 0, 0.4); }
-  
-  /* Меню выбора игр */
-  #menu { 
-    position:absolute; inset:0; background:rgba(5, 5, 8, 0.98); z-index:10; 
-    display:flex; flex-direction:column; justify-content:center; align-items:center; padding:20px; 
-  }
-  #menu h1 { 
-    color:#fff; margin-bottom:30px; font-size:28px; text-align:center; 
-    font-weight:900; text-transform:uppercase; letter-spacing:2px;
-    text-shadow:0 0 20px rgba(255, 215, 0, 0.5);
-  }
-  .game-btn { 
-    width:100%; max-width:320px; padding:20px; margin:10px 0; border-radius:16px; 
-    border:2px solid rgba(212, 175, 55, 0.4); 
-    background:linear-gradient(135deg, #1f1f2b, #15151d); color:#fff; 
-    font-size:18px; font-weight:700; text-align:left; 
-    display:flex; justify-content:space-between; align-items:center; 
-    transition: all 0.2s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-  }
-  .game-btn:active { 
-    background:linear-gradient(135deg, #2a2a3a, #1f1f2b); 
-    transform:scale(0.97); border-color:#ffd700;
-  }
-  .game-btn span.badge { 
-    font-size:12px; background:rgba(255, 215, 0, 0.15); color:#ffd700; 
-    padding:4px 8px; border-radius:8px; border:1px solid rgba(255, 215, 0, 0.3); 
-  }
-  
-  /* Сообщения и Тосты */
-  #msg { 
-    min-height:24px; text-align:center; font-weight:900; font-size:15px; 
-    transition:opacity 0.3s; opacity:0; margin-bottom: 8px; color: #ffd700;
-    text-transform: uppercase; letter-spacing: 1px; text-shadow:0 0 10px rgba(255,215,0,0.5);
-  }
+  #menu { position:absolute; inset:0; background:rgba(5, 5, 8, 0.98); z-index:10; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:20px; }
+  #menu h1 { color:#fff; margin-bottom:30px; font-size:28px; text-align:center; font-weight:900; text-transform:uppercase; letter-spacing:2px; text-shadow:0 0 20px rgba(255, 215, 0, 0.5); }
+  .game-btn { width:100%; max-width:320px; padding:20px; margin:10px 0; border-radius:16px; border:2px solid rgba(212, 175, 55, 0.4); background:linear-gradient(135deg, #1f1f2b, #15151d); color:#fff; font-size:18px; font-weight:700; text-align:left; display:flex; justify-content:space-between; align-items:center; transition: all 0.2s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+  .game-btn:active { background:linear-gradient(135deg, #2a2a3a, #1f1f2b); transform:scale(0.97); border-color:#ffd700; }
+  .game-btn span.badge { font-size:12px; background:rgba(255, 215, 0, 0.15); color:#ffd700; padding:4px 8px; border-radius:8px; border:1px solid rgba(255, 215, 0, 0.3); }
+  #msg { min-height:24px; text-align:center; font-weight:900; font-size:15px; transition:opacity 0.3s; opacity:0; margin-bottom: 8px; color: #ffd700; text-transform: uppercase; letter-spacing: 1px; text-shadow:0 0 10px rgba(255,215,0,0.5); }
   #msg.show { opacity:1; }
   #msg.win { color:#00ff88; text-shadow:0 0 15px rgba(0, 255, 136, 0.6); }
   #msg.lose { color:#ff3366; text-shadow:0 0 15px rgba(255, 51, 102, 0.6); }
-  
-  .toast { 
-    position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(0.8); 
-    background:linear-gradient(135deg, #1f1f2b, #0a0a0c); padding:20px 40px; 
-    border-radius:20px; border:2px solid #ffd700; font-size:28px; font-weight:900; 
-    opacity:0; pointer-events:none; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-    z-index:99; color:#ffd700; box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 30px rgba(255,215,0,0.3);
-  }
+  .toast { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(0.8); background:linear-gradient(135deg, #1f1f2b, #0a0a0c); padding:20px 40px; border-radius:20px; border:2px solid #ffd700; font-size:28px; font-weight:900; opacity:0; pointer-events:none; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index:99; color:#ffd700; box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 30px rgba(255,215,0,0.3); }
   .toast.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
-
-  /* Игровое поле */
-  #pixi-wrapper {
-    position: relative; border-radius:16px; padding: 6px;
-    background: linear-gradient(135deg, rgba(255,215,0,0.4), rgba(255,215,0,0.1), rgba(255,215,0,0.4));
-    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-  }
-  #pixi { 
-    width:100%; border-radius:12px; overflow:hidden; background:#000; 
-    position:relative; transition: aspect-ratio 0.3s; 
-    border: 2px solid #000;
-  }
-  
-  #bonus-mult-display { 
-    position:absolute; top:15px; right:15px; background:rgba(0,0,0,0.85); 
-    border:2px solid #ffd700; padding:6px 16px; border-radius:12px; 
-    color:#ffd700; font-size:22px; font-weight:900; display:none; z-index:5;
-    box-shadow: 0 0 20px rgba(255,215,0,0.5); text-shadow: 0 0 10px #ffd700;
-  }
-
-  /* Кнопки управления */
+  #pixi-wrapper { position: relative; border-radius:16px; padding: 6px; background: linear-gradient(135deg, rgba(255,215,0,0.4), rgba(255,215,0,0.1), rgba(255,215,0,0.4)); box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+  #pixi { width:100%; border-radius:12px; overflow:hidden; background:#000; position:relative; transition: aspect-ratio 0.3s; border: 2px solid #000; }
+  #bonus-mult-display { position:absolute; top:15px; right:15px; background:rgba(0,0,0,0.85); border:2px solid #ffd700; padding:6px 16px; border-radius:12px; color:#ffd700; font-size:22px; font-weight:900; display:none; z-index:5; box-shadow: 0 0 20px rgba(255,215,0,0.5); text-shadow: 0 0 10px #ffd700; }
   .controls { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:auto; margin-bottom:12px; }
-  button { 
-    padding:16px 8px; font-size:15px; font-weight:900; border-radius:14px; 
-    border:none; cursor:pointer; transition: transform 0.1s, filter 0.2s; 
-    text-transform:uppercase; letter-spacing:1px; font-family: inherit;
-    box-shadow: 0 4px 0 rgba(0,0,0,0.5);
-  }
+  button { padding:16px 8px; font-size:15px; font-weight:900; border-radius:14px; border:none; cursor:pointer; transition: transform 0.1s, filter 0.2s; text-transform:uppercase; letter-spacing:1px; font-family: inherit; box-shadow: 0 4px 0 rgba(0,0,0,0.5); }
   button:active { transform:translateY(4px); box-shadow: none; }
   button:disabled { opacity:0.4; filter:grayscale(1); cursor:not-allowed; transform:translateY(4px); box-shadow:none;}
-  
-  #spin { 
-    grid-column:1 / -1; padding:22px; font-size:24px; 
-    background:linear-gradient(to bottom, #ff3b30, #990000); color:#fff;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.5); box-shadow: 0 6px 0 #660000;
-  }
+  #spin { grid-column:1 / -1; padding:22px; font-size:24px; background:linear-gradient(to bottom, #ff3b30, #990000); color:#fff; text-shadow: 0 2px 4px rgba(0,0,0,0.5); box-shadow: 0 6px 0 #660000; }
   #bonus { background:linear-gradient(to bottom, #9b59b6, #5e2c76); color:#fff; box-shadow: 0 4px 0 #3e1b4f; }
   #buy-bonus { background:linear-gradient(to bottom, #f1c40f, #b8860b); color:#000; box-shadow: 0 4px 0 #7a5a00; display: none;}
   #ad { background:linear-gradient(to bottom, #2ecc71, #1e8449); color:#fff; box-shadow: 0 4px 0 #145a32;}
-  
-  /* Панель ставок */
   .betrow { display:flex; gap:6px; justify-content:center; margin-bottom:10px; flex-wrap: wrap;}
-  .betrow button { 
-    padding:10px 14px; font-size:13px; background:#1f1f2b; color:#aaa; 
-    border:1px solid #333; box-shadow: 0 3px 0 #111;
-  }
-  .betrow button.active { 
-    background:#ffd700; color:#000; border-color:#fff; box-shadow: 0 3px 0 #b8860b;
-  }
-  
-  #custom-bet { 
-    width: 80px; padding: 10px; font-size: 14px; font-weight: 900; text-align: center; 
-    background: #111; color: #ffd700; border: 2px solid #333; border-radius: 10px; 
-    outline: none; font-family: inherit;
-  }
+  .betrow button { padding:10px 14px; font-size:13px; background:#1f1f2b; color:#aaa; border:1px solid #333; box-shadow: 0 3px 0 #111; }
+  .betrow button.active { background:#ffd700; color:#000; border-color:#fff; box-shadow: 0 3px 0 #b8860b; }
+  #custom-bet { width: 80px; padding: 10px; font-size: 14px; font-weight: 900; text-align: center; background: #111; color: #ffd700; border: 2px solid #333; border-radius: 10px; outline: none; font-family: inherit; }
   #custom-bet:focus { border-color: #ffd700; box-shadow: 0 0 10px rgba(255,215,0,0.3); }
-
-  /* Рулетка */
-  #wheel-modal { 
-    position:fixed; inset:0; background:rgba(5,5,8,0.95); z-index:100; 
-    display:none; flex-direction:column; justify-content:center; align-items:center; 
-    backdrop-filter: blur(5px);
-  }
+  #wheel-modal { position:fixed; inset:0; background:rgba(5,5,8,0.95); z-index:100; display:none; flex-direction:column; justify-content:center; align-items:center; backdrop-filter: blur(5px); }
   #wheel-wrapper { position:relative; width: 320px; height: 320px; }
-  #wheel-canvas { 
-    width: 100%; height: 100%; border-radius: 50%; 
-    box-shadow: 0 0 50px rgba(255, 215, 0, 0.3), inset 0 0 20px rgba(0,0,0,0.8); 
-    border: 6px solid #ffd700; background: #000;
-  }
-  #wheel-arrow { 
-    position:absolute; top:-30px; left:50%; transform:translateX(-50%); 
-    width: 0; height: 0; border-left: 25px solid transparent; border-right: 25px solid transparent; 
-    border-top: 40px solid #ff3366; filter: drop-shadow(0 6px 8px rgba(0,0,0,0.8)); z-index: 10; 
-  }
-  #wheel-result { 
-    font-size:40px; font-weight:900; color:#ffd700; text-shadow:0 0 30px #ffd700; 
-    margin-top:30px; opacity:0; transition: 0.3s; 
-  }
+  #wheel-canvas { width: 100%; height: 100%; border-radius: 50%; box-shadow: 0 0 50px rgba(255, 215, 0, 0.3), inset 0 0 20px rgba(0,0,0,0.8); border: 6px solid #ffd700; background: #000; }
+  #wheel-arrow { position:absolute; top:-30px; left:50%; transform:translateX(-50%); width: 0; height: 0; border-left: 25px solid transparent; border-right: 25px solid transparent; border-top: 40px solid #ff3366; filter: drop-shadow(0 6px 8px rgba(0,0,0,0.8)); z-index: 10; }
+  #wheel-result { font-size:40px; font-weight:900; color:#ffd700; text-shadow:0 0 30px #ffd700; margin-top:30px; opacity:0; transition: 0.3s; }
   .wheel-controls { display:flex; flex-direction:column; align-items:center; margin-top:30px; width: 100%; max-width: 300px;}
   #wheel-timer { color:#aaa; font-size:16px; margin-bottom:15px; font-weight:700; text-align: center;}
-  #wheel-spin-btn { 
-    width: 100%; padding:18px; font-size:20px; 
-    background:linear-gradient(to bottom, #9b59b6, #5e2c76); color:#fff; 
-    border-radius:14px; border:none; box-shadow: 0 6px 0 #3e1b4f;
-  }
-  #wheel-close { 
-    width: 100%; padding:16px; font-size:18px; 
-    background:linear-gradient(to bottom, #ffd700, #b8860b); color:#000; 
-    border-radius:14px; border:none; display:none; font-weight:900; margin-top:15px; box-shadow: 0 6px 0 #7a5a00;
-  }
+  #wheel-spin-btn { width: 100%; padding:18px; font-size:20px; background:linear-gradient(to bottom, #9b59b6, #5e2c76); color:#fff; border-radius:14px; border:none; box-shadow: 0 6px 0 #3e1b4f; }
+  #wheel-close { width: 100%; padding:16px; font-size:18px; background:linear-gradient(to bottom, #ffd700, #b8860b); color:#000; border-radius:14px; border:none; display:none; font-weight:900; margin-top:15px; box-shadow: 0 6px 0 #7a5a00; }
 </style>
 </head>
 <body>
@@ -402,13 +284,10 @@ function startSpin(finalGrid) {
   }
 }
 
-// === ОСТАЛЬНАЯ ЛОГИКА БУДЕТ В ЧАСТИ 3 ===
-</script>
 function showResult(d) {
   const conf = GAME_CONFIG[currentGame];
   let hasScatters = false;
 
-  // 1. Подсветка скаттеров
   if (conf.scatter !== null) {
     for(let col=0; col<conf.cols; col++) {
       for(let row=0; row<conf.rows; row++) {
@@ -420,7 +299,6 @@ function showResult(d) {
     }
   }
 
-  // 2. Запуск нового бонуса (если выпало 3+ скаттера и это не фриспин)
   if (hasScatters && d.scatters >= 3 && !d.is_free_spin) {
     SFX.scatter();
     freeSpins = 10;
@@ -437,7 +315,6 @@ function showResult(d) {
       setTimeout(() => { showMsg(`+${d.win}`, true); toast(`+${d.win}`); }, 1500);
     }
   } 
-  // 3. Показ выигрыша по линиям или рыбкам
   else if (d.win > 0 || d.fish_win > 0) {
     let actualWin = d.win;
     if (d.is_free_spin) {
@@ -473,7 +350,6 @@ function showResult(d) {
   refresh();
   spinning = false;
   
-  // 4. Логика фриспинов
   if (d.is_free_spin) {
     freeSpins--;
     $('fs-counter').textContent = freeSpins > 0 ? `FS: ${freeSpins}` : '';
@@ -505,24 +381,32 @@ async function api(path, body={}) {
 
 let state = {};
 async function refresh() {
-  state = await api('/state'); 
-  $('bal').textContent = state.balance; 
-  
-  if (freeSpins === 0) {
-      if (state.wheel_daily >= 5) {
-          $('bonus').disabled = true;
-          $('bonus').textContent = `БОНУС (0/5)`;
-      } else if (state.wheel_ready) {
-          $('bonus').disabled = false;
-          $('bonus').textContent = `РУЛЕТКА (${5 - state.wheel_daily}/5)`;
-      } else {
-          $('bonus').disabled = true;
-          let m = Math.floor(state.wheel_time_left / 60);
-          let s = state.wheel_time_left % 60;
-          $('bonus').textContent = `ЖДАТЬ ${m}:${s < 10 ? '0':''}${s}`;
-      }
+  try {
+    state = await api('/state'); 
+    $('bal').textContent = state.balance; 
+    
+    if (freeSpins === 0) {
+        if (state.wheel_daily >= 5) {
+            $('bonus').disabled = true;
+            $('bonus').textContent = `БОНУС (0/5)`;
+        } else if (state.wheel_ready) {
+            $('bonus').disabled = false;
+            $('bonus').textContent = `РУЛЕТКА (${5 - state.wheel_daily}/5)`;
+        } else {
+            $('bonus').disabled = true;
+            let m = Math.floor(state.wheel_time_left / 60);
+            let s = state.wheel_time_left % 60;
+            $('bonus').textContent = `ЖДАТЬ ${m}:${s < 10 ? '0':''}${s}`;
+        }
+    }
+    $('ad').disabled = !state.ad_ready || !state.ad_allowed || freeSpins > 0;
+  } catch(e) {
+    console.error("Ошибка обновления:", e);
+    $('spin').disabled = true;
+    $('bonus').disabled = true;
+    $('ad').disabled = true;
+    $('buy-bonus').disabled = true;
   }
-  $('ad').disabled = !state.ad_ready || !state.ad_allowed || freeSpins > 0;
 }
 
 function showMsg(t, win) { const m = $('msg'); m.textContent = t; m.className = 'show ' + (win ? 'win':'lose'); setTimeout(()=> m.className='', 2000); }
@@ -722,4 +606,4 @@ $('backBtn').onclick = () => { location.reload(); };
 $('menu').style.display = 'flex';
 </script>
 </body>
-            </html>
+</html>
