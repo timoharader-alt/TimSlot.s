@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
+# Токен берется из переменных окружения Render (Environment Variables)
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 app = FastAPI()
 
@@ -233,4 +234,42 @@ def spin(r: SpinReq):
 
     return {"grid": grid, "win": win_amount, "balance": bal, "lines": win_lines, "scatters": scatters, "bonus_mult": ui_mult, "fish_data": fish_data, "is_free_spin": is_fs, "free_spins_left": new_free_spins, "fish_caught": new_fish_caught, "level": new_level, "xp": new_xp}
 
-# ... ОСТАЛЬНЫЕ ЭНДПОИНТЫ (referral, bonus, ad, index) ОСТАЮТСЯ БЕЗ ИЗМЕНЕНИЙ, КАК В ПРОШЛОМ СООБЩЕНИИ ...
+@app.post("/referral")
+def referral(r: RefReq):
+    u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
+    if uid == r.referrer_id or d["referrer_id"] != 0: return {"status": "error"}
+    c = db()
+    ref_row = c.execute("SELECT uid FROM users WHERE uid=?", (r.referrer_id,)).fetchone()
+    if not ref_row: c.close(); return {"status": "error"}
+    c.execute("UPDATE users SET referrer_id=?, balance=balance+1000 WHERE uid=?", (r.referrer_id, uid))
+    c.execute("UPDATE users SET ref_count=ref_count+1, balance=balance+2000 WHERE uid=?", (r.referrer_id,))
+    c.commit(); c.close()
+    return {"status": "success"}
+
+@app.post("/bonus")
+def bonus(r: Req):
+    u = verify(r.init_data); uid = u["id"]; d = get_user(uid); now = int(time.time())
+    if d["wheel_daily"] >= 5: raise HTTPException(400, "Лимит 5 круток")
+    if now < d["wheel_time"]: raise HTTPException(400, "Кулдаун 1 час")
+    rnd = random.random() * 100
+    if rnd < 1: amount = 1000
+    elif rnd < 4: amount = 500
+    elif rnd < 12: amount = 250
+    elif rnd < 32: amount = 100
+    elif rnd < 62: amount = 50
+    elif rnd < 87: amount = 20
+    else: amount = 0
+    set_user(uid, balance=d["balance"] + amount, wheel_time=now + 3600, wheel_daily=d["wheel_daily"] + 1)
+    return {"amount": amount, "balance": d["balance"] + amount}
+
+@app.post("/ad")
+def ad(r: Req):
+    u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
+    if d["balance"] >= 5000: raise HTTPException(400, "реклама доступна только при балансе < 5000")
+    amount = random.choice([100, 200, 300, 500])
+    set_user(uid, balance=d["balance"] + amount)
+    return {"amount": amount, "balance": d["balance"] + amount}
+
+@app.get("/")
+def index():
+    return FileResponse("index.html")
