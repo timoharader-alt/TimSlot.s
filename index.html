@@ -10,14 +10,13 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
   html, body { margin:0; padding:0; background:#000; color:#fff; font-family: 'Montserrat', sans-serif; overflow:hidden; height:100%; }
   
-  /* ПРИВЕТСТВИЕ */
+  /* ... СТИЛИ ОСТАЛЬНЫЕ ... */
   #welcome-screen { position: fixed; inset: 0; z-index: 200; background: radial-gradient(circle at center, #1a1a2e 0%, #000 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s; }
   #welcome-screen h1 { font-size: 42px; color: #ffd700; text-shadow: 0 0 20px #ff8c00; margin-bottom: 10px; text-transform: uppercase; text-align: center; }
   #welcome-screen p { color: #aaa; margin-bottom: 40px; font-size: 14px; }
   #start-btn { padding: 20px 60px; font-size: 24px; font-weight: 900; border-radius: 30px; border: none; background: linear-gradient(to right, #ffd700, #ff8c00); color: #000; box-shadow: 0 0 30px rgba(255, 215, 0, 0.5); cursor: pointer; }
   #start-btn:active { transform: scale(0.95); }
 
-  /* ЛОББИ */
   #lobby-screen { position: fixed; inset: 0; z-index: 150; background: #0a0a0c; display: none; flex-direction: column; }
   .lobby-header { padding: 20px; text-align: center; }
   .lobby-header h2 { color: #fff; font-size: 24px; margin: 0; }
@@ -29,8 +28,12 @@
   .game-card p { font-size: 14px; color: #ddd; margin: 0; text-shadow: 0 1px 2px #000; }
   .game-card .min-bet { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.8); padding: 5px 10px; border-radius: 10px; font-weight: bold; border: 1px solid #ffd700; color: #ffd700;}
 
-  /* ИГРА */
-  #game-screen { position: fixed; inset: 0; z-index: 100; display: none; flex-direction: column; background-size: cover; background-position: center; background-color: #000; }
+  .bg-fruits { background: linear-gradient(135deg, #4a0000, #1a0000); }
+  .bg-space { background: linear-gradient(135deg, #001133, #000511); }
+  .bg-egypt { background: linear-gradient(135deg, #3d2600, #1a0f00); }
+  .bg-fishing { background: linear-gradient(135deg, #003d4d, #001a1a); }
+
+  #game-screen { position: fixed; inset: 0; z-index: 100; display: none; flex-direction: column; background-color: #000; }
   #top-bar { display: flex; justify-content: space-between; align-items: flex-start; padding: 15px; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); z-index: 10; height: 100px; flex-shrink: 0;}
   .profile-info { display: flex; flex-direction: column; gap: 5px; }
   .balance-box { background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 10px; border: 1px solid #ffd700; }
@@ -41,28 +44,40 @@
   .level-fill { height: 100%; background: #00ff88; width: 0%; transition: width 0.3s; }
   .menu-btn { background: rgba(0,0,0,0.6); border: 1px solid #555; color: #fff; width: 45px; height: 45px; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 24px; cursor: pointer; font-weight: bold; }
 
-  /* МЕНЮ (3 ТОЧКИ) */
   #dropdown-menu { position: absolute; top: 70px; right: 15px; background: rgba(20,20,25,0.95); border: 1px solid #ffd700; border-radius: 12px; display: none; flex-direction: column; min-width: 200px; z-index: 50; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
   #dropdown-menu button { background: none; border: none; color: #fff; padding: 15px; text-align: left; font-size: 16px; font-weight: bold; border-bottom: 1px solid #333; cursor: pointer; font-family: inherit;}
   #dropdown-menu button:last-child { border-bottom: none; color: #ff3333; }
   #dropdown-menu button:active { background: rgba(255,255,255,0.1); }
 
-  /* ИГРОВОЕ ПОЛЕ */
+  /* ЖЕСТКИЙ ФИКС ДЛЯ PIXI */
   #pixi-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 10px; position: relative; overflow: hidden; min-height: 0; }
-  #pixi { width: 100%; max-height: 100%; aspect-ratio: 5/3; border-radius: 12px; box-shadow: 0 0 30px rgba(0,0,0,0.8); border: 2px solid rgba(255,255,255,0.1); position: relative; background: linear-gradient(135deg, rgba(20,20,20,0.6), rgba(0,0,0,0.9)); overflow: hidden; margin: auto; }
-  #pixi canvas { width: 100% !important; height: 100% !important; display: block; }
+  #pixi { 
+    width: 100%; 
+    max-width: 100%; 
+    height: 100%; 
+    aspect-ratio: 5/3; /* Меняется через JS */
+    border-radius: 12px; 
+    box-shadow: 0 0 30px rgba(0,0,0,0.8); 
+    border: 2px solid rgba(255,255,255,0.1); 
+    position: relative;
+    background: rgba(0,0,0,0.5);
+    overflow: hidden;
+    margin: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  #pixi canvas { display: block; width: 100% !important; height: 100% !important; }
   
   .win-flash { position: fixed; inset: 0; background: #fff; z-index: 90; pointer-events: none; opacity: 0; transition: opacity 0.1s; }
   .win-flash.active { opacity: 0.8; }
 
-  /* ШКАЛА РЫБАКА */
   #fisher-scale { display: none; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); border: 2px solid #ffd700; border-radius: 20px; padding: 5px 15px; z-index: 20; text-align: center; box-shadow: 0 0 20px rgba(255,215,0,0.5); }
   .fisher-icons { display: flex; gap: 5px; justify-content: center; margin-top: 5px; }
   .fisher-icon { width: 25px; height: 25px; border-radius: 50%; background: #333; border: 2px solid #555; display: flex; justify-content: center; align-items: center; font-size: 14px; filter: grayscale(1); }
   .fisher-icon.active { background: #00c853; border-color: #fff; filter: none; box-shadow: 0 0 10px #00c853; }
   #fisher-mult { font-size: 18px; font-weight: 900; color: #ffd700; margin-top: 5px; text-shadow: 0 0 10px #ffd700;}
 
-  /* ПАНЕЛЬ УПРАВЛЕНИЯ */
   #controls-panel { background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); padding: 15px; padding-bottom: 25px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; z-index: 10;}
   #msg { min-height: 20px; text-align: center; font-weight: 900; font-size: 16px; color: #ffd700; opacity: 0; transition: 0.2s; text-transform: uppercase; text-shadow: 0 0 10px #000; }
   #msg.show { opacity: 1; }
@@ -77,7 +92,6 @@
   #spin-btn { grid-column: 1 / -1; background: linear-gradient(to bottom, #ff3b30, #a30000); color: #fff; font-size: 24px; padding: 20px; box-shadow: 0 6px 0 #600000; }
   #buy-bonus-btn { grid-column: 1 / -1; background: linear-gradient(to bottom, #f1c40f, #b8860b); color: #000; box-shadow: 0 4px 0 #7a5a00; display: none; }
 
-  /* МОДАЛКИ */
   .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 300; display: none; justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
   .modal-content { background: #1a1a2e; width: 100%; max-width: 400px; border-radius: 20px; border: 2px solid #ffd700; padding: 20px; text-align: center; position: relative;}
   .modal-close { position: absolute; top: 15px; right: 15px; font-size: 24px; color: #aaa; cursor: pointer; }
@@ -187,8 +201,8 @@
     <button class="main-btn" id="wheel-spin-btn" style="background:linear-gradient(to bottom, #9b59b6, #5e2c76); width:200px; padding:15px;">КРУТИТЬ</button>
     <button class="main-btn" id="wheel-close" style="background:#ffd700; color:#000; width:200px; padding:15px; display:none; margin-top:10px;">ЗАБРАТЬ</button>
   </div>
-  </div>
-  <script>
+</div>
+<script>
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 const init = tg?.initData || '';
@@ -264,31 +278,10 @@ function stopBackgroundMusic() {
 }
 
 const GAME_CONFIG = {
-  fruits: { 
-      cols: 3, rows: 1, min_bet: 10, 
-      syms: ['🍒','🍋','🫐','🍊','🍉','🍇','🔔','7️⃣'], 
-      bg: 'url("https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=1000&auto=format&fit=crop")', 
-      scatter: null 
-  },
-  space: { 
-      cols: 7, rows: 3, min_bet: 10, 
-      syms: ['👽','🚀','⭐','🌌','☄️','🔮', '🪐'], 
-      bg: 'url("https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=1000&auto=format&fit=crop")', 
-      scatter: 6 
-  },
-  egypt: { 
-      cols: 5, rows: 3, min_bet: 10, 
-      syms: ['🐈','🐍','🏺','⚱️','🔺','🔱', '👁️'], 
-      // Рабочая ссылка на Египет
-      bg: 'url("https://images.unsplash.com/photo-1539650116574-75c0c6d73f6e?q=80&w=1000&auto=format&fit=crop")', 
-      scatter: 6 
-  },
-  fishing: { 
-      cols: 5, rows: 3, min_bet: 10, 
-      syms: ['10','J','Q','K','A','🐟','🧰','🪰','🎣','✨','🦈','🧔','🐠','🐡','🐠'], 
-      bg: 'url("https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=1000&auto=format&fit=crop")', 
-      scatter: 10, wild: 11 
-  }
+  fruits: { cols: 3, rows: 1, min_bet: 10, syms: ['🍒','🍋','🫐','🍊','🍉','🍇','🔔','7️⃣'], bg: 'linear-gradient(135deg, #4a0000, #1a0000)', scatter: null },
+  space: { cols: 7, rows: 3, min_bet: 10, syms: ['👽','🚀','⭐','🌌','☄️','🔮', '🪐'], bg: 'linear-gradient(135deg, #001133, #000511)', scatter: 6 },
+  egypt: { cols: 5, rows: 3, min_bet: 10, syms: ['🐈','🐍','🏺','⚱️','🔺','🔱', '👁️'], bg: 'linear-gradient(135deg, #3d2600, #1a0f00)', scatter: 6 },
+  fishing: { cols: 5, rows: 3, min_bet: 10, syms: ['10','J','Q','K','A','🐟','🧰','🪰','🎣','✨','🦈','🧔','🐠','🐡','🐠'], bg: 'linear-gradient(135deg, #003d4d, #001a1a)', scatter: 10, wild: 11 }
 };
 
 const LINES = {
@@ -310,16 +303,15 @@ let currentFishCaught = 0;
 window.addEventListener('load', () => {
     const carousel = $('games-carousel');
     const games = [
-        { id: 'fruits', title: 'Классика', desc: '3 барабана, 1 линия', img: GAME_CONFIG.fruits.bg },
-        { id: 'space', title: 'Космос', desc: '7x3, 6 линий', img: GAME_CONFIG.space.bg },
-        { id: 'egypt', title: 'Египет', desc: '5x3, 5 линий', img: GAME_CONFIG.egypt.bg },
-        { id: 'fishing', title: 'Рыбалка', desc: 'Бонусная игра', img: GAME_CONFIG.fishing.bg }
+        { id: 'fruits', title: 'Классика', desc: '3 барабана, 1 линия', cls: 'bg-fruits' },
+        { id: 'space', title: 'Космос', desc: '7x3, 6 линий', cls: 'bg-space' },
+        { id: 'egypt', title: 'Египет', desc: '5x3, 5 линий', cls: 'bg-egypt' },
+        { id: 'fishing', title: 'Рыбалка', desc: 'Бонусная игра', cls: 'bg-fishing' }
     ];
 
     games.forEach(g => {
         const card = document.createElement('div');
-        card.className = 'game-card';
-        card.style.backgroundImage = g.img;
+        card.className = `game-card ${g.cls}`;
         card.innerHTML = `<h3>${g.title}</h3><p>${g.desc}</p><span class="min-bet">от 10 ₽</span>`;
         card.onclick = () => { SFX.click(); startGame(g.id); };
         carousel.appendChild(card);
@@ -342,14 +334,14 @@ function startGame(gameKey) {
   const conf = GAME_CONFIG[gameKey];
   $('lobby-screen').style.display = 'none';
   $('game-screen').style.display = 'flex';
-  $('game-screen').style.backgroundImage = conf.bg;
-  $('game-screen').style.backgroundSize = 'cover';
+  $('game-screen').style.background = conf.bg;
   
   currentBet = conf.min_bet;
   $('custom-bet').value = '';
   $('custom-bet').placeholder = `от ${conf.min_bet}`;
   $('spin-btn').textContent = `SPIN (${currentBet})`;
   
+  // Пропорции
   $('pixi').style.aspectRatio = `${conf.cols}/${conf.rows}`;
 
   [...$('betrow').children].forEach(b=>b.classList.remove('active'));
@@ -357,15 +349,15 @@ function startGame(gameKey) {
 
   if (gameKey === 'egypt' || gameKey === 'fishing') {
       $('buy-bonus-btn').style.display = 'block';
-      $('buy-bonus-btn').textContent = `КУПИТЬ БОНУС (${currentBet * 100})`;
+      $('buy-bonus-btn').textContent = `КУПИТЬ БОНУС (${currentBet * 15})`; 
   } else {
       $('buy-bonus-btn').style.display = 'none';
   }
   
-  // Убираем шкалу рыбака при старте игры
   $('fisher-scale').style.display = 'none';
   
-  setTimeout(() => { initPixi(); refresh(); }, 100);
+  // Ждем 300мс, чтобы контейнер точно получил размеры
+  setTimeout(() => { initPixi(); refresh(); }, 300);
 }
 
 function initPixi() {
@@ -373,11 +365,22 @@ function initPixi() {
   $('pixi').innerHTML = '';
 
   const container = $('pixi');
+  // Принудительно задаем размеры, если они нулевые
+  if (container.clientWidth === 0) {
+      container.style.width = window.innerWidth - 20 + 'px';
+  }
+  
   const rect = container.getBoundingClientRect();
   const conf = GAME_CONFIG[currentGame];
   
   const w = rect.width;
   const h = rect.height;
+
+  if (w === 0 || h === 0) {
+      console.warn("Контейнер не получил размеры, повтор...");
+      setTimeout(initPixi, 100);
+      return;
+  }
 
   app = new PIXI.Application();
   app.init({ width: w, height: h, backgroundAlpha: 0, antialias: true, resolution: window.devicePixelRatio || 1 }).then(() => {
@@ -414,7 +417,8 @@ function initPixi() {
     app.ticker.add(tick);
   });
 }
-    function tick() {
+
+function tick() {
   for (let i=0;i<reels.length;i++) {
     const r = reels[i];
     if (r.spinning) {
@@ -468,8 +472,7 @@ function startSpin(finalGrid) {
     }, 800 + i * 120);
   }
 }
-
-function showResult(d) {
+  function showResult(d) {
   const conf = GAME_CONFIG[currentGame];
   let hasScatters = false;
 
@@ -539,7 +542,7 @@ function showResult(d) {
   
   updateUIState(d.level, d.xp);
 
-  // Показ шкалы рыбака
+  // Шкала рыбака
   if (currentGame === 'fishing' && freeSpins > 0) {
       $('fisher-scale').style.display = 'block';
       let lvl = Math.floor(currentFishCaught / 3);
@@ -619,7 +622,7 @@ async function refresh() {
     }
     $('menu-ad').disabled = !state.ad_ready || !state.ad_allowed || freeSpins > 0;
     $('ref-count').textContent = state.ref_count || 0;
-  } catch(e) { console.error("Ошибка стейта:", e); }
+  } catch(e) { console.error(e); }
 }
 
 function updateUIState(level, xp, nextXp = null) {
@@ -632,7 +635,8 @@ function updateUIState(level, xp, nextXp = null) {
 
 function showMsg(t, win) { const m = $('msg'); m.textContent = t; m.className = 'show ' + (win ? 'win':'lose'); setTimeout(()=> m.className='', 2000); }
 function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); setTimeout(()=> el.classList.remove('show'), 1500); }
-    // --- ОБРАБОТЧИКИ КНОПОК ---
+
+// --- КНОПКИ СТАВОК ---
 $('betrow').onclick = e => { 
     if (freeSpins > 0) return;
     if (e.target.id === 'custom-bet') return;
@@ -645,7 +649,7 @@ $('betrow').onclick = e => {
     currentBet = +e.target.dataset.bet; 
     $('spin-btn').textContent = `SPIN (${currentBet})`; 
     if (currentGame === 'egypt' || currentGame === 'fishing') {
-        $('buy-bonus-btn').textContent = `КУПИТЬ БОНУС (${currentBet * 100})`;
+        $('buy-bonus-btn').textContent = `КУПИТЬ БОНУС (${currentBet * 15})`;
     }
 };
 
@@ -660,7 +664,7 @@ $('custom-bet').oninput = e => {
         currentBet = val;
         [...$('betrow').children].forEach(b=>b.classList.remove('active'));
         if (currentGame === 'egypt' || currentGame === 'fishing') {
-            $('buy-bonus-btn').textContent = `КУПИТЬ БОНУС (${currentBet * 100})`;
+            $('buy-bonus-btn').textContent = `КУПИТЬ БОНУС (${currentBet * 15})`;
         }
     }
 };
@@ -694,32 +698,18 @@ $('buy-bonus-btn').onclick = async () => {
   doSpin(currentBet, true);
 };
 
-// --- МЕНЮ (3 ТОЧКИ) ---
-$('menu-toggle').onclick = () => {
-    const menu = $('dropdown-menu');
-    menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
-};
-
+// --- МЕНЮ ---
+$('menu-toggle').onclick = () => { const menu = $('dropdown-menu'); menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex'; };
 $('menu-music').onclick = () => {
-    if (isMusicPlaying) {
-        stopBackgroundMusic();
-        $('menu-music').textContent = '🎵 Музыка: ВЫКЛ';
-    } else {
-        isMusicPlaying = true;
-        playBackgroundMusic();
-        $('menu-music').textContent = '🎵 Музыка: ВКЛ';
-    }
+    if (isMusicPlaying) { stopBackgroundMusic(); $('menu-music').textContent = '🎵 Музыка: ВЫКЛ'; }
+    else { isMusicPlaying = true; playBackgroundMusic(); $('menu-music').textContent = '🎵 Музыка: ВКЛ'; }
 };
-
 $('menu-back').onclick = () => { location.reload(); };
-
 $('menu-ref').onclick = () => {
-    $('dropdown-menu').style.display = 'none';
-    SFX.click();
+    $('dropdown-menu').style.display = 'none'; SFX.click();
     $('ref-link').textContent = `https://t.me/Tim_slot_bot/slot?startapp=ref_${myId}`;
     $('ref-modal').style.display = 'flex';
 };
-
 $('copy-ref-btn').onclick = () => {
     const link = $('ref-link').textContent;
     navigator.clipboard.writeText(link).then(() => {
@@ -727,9 +717,7 @@ $('copy-ref-btn').onclick = () => {
         setTimeout(() => $('copy-ref-btn').textContent = 'КОПИРОВАТЬ', 2000);
     });
 };
-
 $('menu-rating').onclick = () => { $('dropdown-menu').style.display = 'none'; SFX.click(); $('rating-modal').style.display = 'flex'; };
-
 $('menu-ad').onclick = async () => {
   $('dropdown-menu').style.display = 'none';
   SFX.click(); $('menu-ad').disabled = true; showMsg('показ рекламы…', false);
