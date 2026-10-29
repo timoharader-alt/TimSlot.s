@@ -49,26 +49,29 @@
   .level-fill { height: 100%; background: #00ff88; width: 0%; transition: width 0.3s; }
   .menu-btn { background: rgba(0,0,0,0.6); border: 1px solid #555; color: #fff; width: 45px; height: 45px; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 24px; cursor: pointer; font-weight: bold; }
 
-  /* МЕНЮ */
-  #dropdown-menu { position: absolute; top: 70px; right: 15px; background: rgba(20,20,25,0.95); border: 1px solid #ffd700; border-radius: 12px; display: none; flex-direction: column; min-width: 180px; z-index: 50; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+  /* МЕНЮ (3 ТОЧКИ) */
+  #dropdown-menu { position: absolute; top: 70px; right: 15px; background: rgba(20,20,25,0.95); border: 1px solid #ffd700; border-radius: 12px; display: none; flex-direction: column; min-width: 200px; z-index: 50; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
   #dropdown-menu button { background: none; border: none; color: #fff; padding: 15px; text-align: left; font-size: 16px; font-weight: bold; border-bottom: 1px solid #333; cursor: pointer; font-family: inherit;}
   #dropdown-menu button:last-child { border-bottom: none; color: #ff3333; }
   #dropdown-menu button:active { background: rgba(255,255,255,0.1); }
 
-  /* ИГРОВОЕ ПОЛЕ */
-  #pixi-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 10px; position: relative; overflow: hidden; }
-  
-  /* Жесткая привязка пропорций и градиент внутри */
+  /* ИГРОВОЕ ПОЛЕ (ФИКС РАЗМЕРА) */
+  #pixi-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 10px; position: relative; overflow: hidden; min-height: 0; }
   #pixi { 
     width: 100%; 
-    aspect-ratio: 5/3; /* Значение по умолчанию, меняется через JS */
+    max-width: 100%;
+    max-height: 100%;
+    aspect-ratio: 5/3; /* Меняется через JS */
     border-radius: 12px; 
     box-shadow: 0 0 30px rgba(0,0,0,0.8); 
     border: 2px solid rgba(255,255,255,0.1); 
     position: relative;
-    background: linear-gradient(135deg, rgba(20,20,20,0.8), rgba(0,0,0,0.95));
+    background: linear-gradient(135deg, rgba(20,20,20,0.6), rgba(0,0,0,0.9));
     overflow: hidden;
+    /* Убираем растягивание */
+    margin: auto;
   }
+  #pixi canvas { width: 100% !important; height: 100% !important; display: block; }
   
   .win-flash { position: fixed; inset: 0; background: #fff; z-index: 90; pointer-events: none; opacity: 0; transition: opacity 0.1s; }
   .win-flash.active { opacity: 0.8; }
@@ -88,7 +91,7 @@
   #spin-btn { grid-column: 1 / -1; background: linear-gradient(to bottom, #ff3b30, #a30000); color: #fff; font-size: 24px; padding: 20px; box-shadow: 0 6px 0 #600000; }
   #buy-bonus-btn { grid-column: 1 / -1; background: linear-gradient(to bottom, #f1c40f, #b8860b); color: #000; box-shadow: 0 4px 0 #7a5a00; display: none; }
 
-  /* МОДАЛКИ (Рулетка и др) */
+  /* МОДАЛКИ */
   .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 300; display: none; justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
   .modal-content { background: #1a1a2e; width: 100%; max-width: 400px; border-radius: 20px; border: 2px solid #ffd700; padding: 20px; text-align: center; position: relative;}
   .modal-close { position: absolute; top: 15px; right: 15px; font-size: 24px; color: #aaa; cursor: pointer; }
@@ -98,7 +101,6 @@
   #toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); background: rgba(0,0,0,0.9); color: #ffd700; padding: 15px 30px; border-radius: 15px; border: 2px solid #ffd700; font-size: 24px; font-weight: 900; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 999; }
   #toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 
-  /* ФИКС РУЛЕТКИ (Центрирование) */
   #wheel-wrapper { position:relative; width:300px; height:300px; margin: 0 auto; }
   #wheel-canvas { border-radius:50%; border:4px solid #ffd700; box-shadow:0 0 40px #ffd700; width: 100%; height: 100%; display: block;}
 </style>
@@ -132,6 +134,7 @@
   </div>
 
   <div id="dropdown-menu">
+    <button id="menu-music">🎵 Музыка: ВКЛ</button>
     <button id="menu-bonus">🎰 Рулетка</button>
     <button id="menu-ad">🎬 Реклама</button>
     <button id="menu-rating">🏆 Рейтинг</button>
@@ -177,20 +180,7 @@
     <p style="color:#aaa; margin-top:50px; margin-bottom:50px;">Скоро здесь появится таблица лидеров...</p>
   </div>
 </div>
-
-<div class="modal" id="wheel-modal" style="backdrop-filter: blur(5px);">
-  <div id="wheel-wrapper">
-    <div style="position:absolute; top:-20px; left:50%; transform:translateX(-50%); width:0; height:0; border-left:20px solid transparent; border-right:20px solid transparent; border-top:30px solid #ff0000; z-index:10; filter:drop-shadow(0 4px 4px rgba(0,0,0,0.8));"></div>
-    <canvas id="wheel-canvas" width="300" height="300"></canvas>
-  </div>
-  <div id="wheel-result" style="font-size:40px; font-weight:900; color:#ffd700; margin:20px 0; text-shadow:0 0 20px #ffd700; opacity:0; transition:0.3s;">0</div>
-  <div style="text-align:center;">
-    <div id="wheel-timer" style="color:#aaa; margin-bottom:10px;">Загрузка...</div>
-    <button class="main-btn" id="wheel-spin-btn" style="background:linear-gradient(to bottom, #9b59b6, #5e2c76); width:200px; padding:15px;">КРУТИТЬ</button>
-    <button class="main-btn" id="wheel-close" style="background:#ffd700; color:#000; width:200px; padding:15px; display:none; margin-top:10px;">ЗАБРАТЬ</button>
-  </div>
-</div>
-<script>
+  <script>
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 const init = tg?.initData || '';
@@ -207,7 +197,16 @@ try {
 
 const AC = window.AudioContext || window.webkitAudioContext;
 let actx = null;
-function audioCtx() { if (!AC) return null; if (!actx) actx = new AC(); if (actx.state === 'suspended') actx.resume(); return actx; }
+let isMusicPlaying = true;
+let musicTimer = null;
+
+function audioCtx() { 
+    if (!AC) return null; 
+    if (!actx) actx = new AC(); 
+    if (actx.state === 'suspended') actx.resume(); 
+    return actx; 
+}
+
 function tone(freq, dur, type='sine', vol=0.06, when=0) {
   const ctx = audioCtx(); if (!ctx) return;
   const t = ctx.currentTime + when;
@@ -216,6 +215,7 @@ function tone(freq, dur, type='sine', vol=0.06, when=0) {
   g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + dur + 0.02);
 }
+
 function noise(dur=0.05, vol=0.04) {
   const ctx = audioCtx(); if (!ctx) return;
   const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
@@ -225,6 +225,7 @@ function noise(dur=0.05, vol=0.04) {
   const f = ctx.createBiquadFilter(); f.type='highpass'; f.frequency.value=800;
   src.connect(f); f.connect(g); g.connect(ctx.destination); src.start();
 }
+
 const SFX = {
   click: () => tone(800, .05, 'square', .05),
   reelTick: () => noise(.02, .03),
@@ -235,6 +236,25 @@ const SFX = {
   fish: () => { [400, 600, 800].forEach((f,i)=>tone(f,.1,'triangle',.1,i*.1)); },
   lose: () => tone(200,.3,'sawtooth',.05,0),
 };
+
+// Генератор фоновой музыки (простая мелодия, чтобы не тянуть файлы)
+function playBackgroundMusic() {
+    if (!isMusicPlaying) return;
+    const melody = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63, 261.63, 196.00];
+    let i = 0;
+    function playNote() {
+        if (!isMusicPlaying) return;
+        tone(melody[i], 0.4, 'sine', 0.02); // Тихая музыка
+        i = (i + 1) % melody.length;
+        musicTimer = setTimeout(playNote, 500); // Темп
+    }
+    playNote();
+}
+
+function stopBackgroundMusic() {
+    isMusicPlaying = false;
+    if (musicTimer) clearTimeout(musicTimer);
+}
 
 const GAME_CONFIG = {
   fruits: { 
@@ -300,6 +320,7 @@ window.addEventListener('load', () => {
 
 $('start-btn').onclick = () => {
     audioCtx();
+    playBackgroundMusic(); // Включаем музыку
     SFX.click();
     $('welcome-screen').style.opacity = '0';
     setTimeout(() => {
@@ -383,7 +404,7 @@ function initPixi() {
     app.ticker.add(tick);
   });
 }
-  function tick() {
+    function tick() {
   for (let i=0;i<reels.length;i++) {
     const r = reels[i];
     if (r.spinning) {
@@ -584,7 +605,7 @@ function updateUIState(level, xp, nextXp = null) {
 
 function showMsg(t, win) { const m = $('msg'); m.textContent = t; m.className = 'show ' + (win ? 'win':'lose'); setTimeout(()=> m.className='', 2000); }
 function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); setTimeout(()=> el.classList.remove('show'), 1500); }
-  // --- ОБРАБОТЧИКИ КНОПОК ---
+    // --- ОБРАБОТЧИКИ КНОПОК ---
 $('betrow').onclick = e => { 
     if (freeSpins > 0) return;
     if (e.target.id === 'custom-bet') return;
@@ -650,6 +671,17 @@ $('buy-bonus-btn').onclick = async () => {
 $('menu-toggle').onclick = () => {
     const menu = $('dropdown-menu');
     menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+};
+
+$('menu-music').onclick = () => {
+    if (isMusicPlaying) {
+        stopBackgroundMusic();
+        $('menu-music').textContent = '🎵 Музыка: ВЫКЛ';
+    } else {
+        isMusicPlaying = true;
+        playBackgroundMusic();
+        $('menu-music').textContent = '🎵 Музыка: ВКЛ';
+    }
 };
 
 $('menu-back').onclick = () => { location.reload(); };
@@ -803,3 +835,17 @@ $('wheel-close').onclick = () => { $('wheel-modal').style.display = 'none'; };
 </script>
 </body>
 </html>
+
+<div class="modal" id="wheel-modal" style="backdrop-filter: blur(5px);">
+  <div id="wheel-wrapper">
+    <div style="position:absolute; top:-20px; left:50%; transform:translateX(-50%); width:0; height:0; border-left:20px solid transparent; border-right:20px solid transparent; border-top:30px solid #ff0000; z-index:10; filter:drop-shadow(0 4px 4px rgba(0,0,0,0.8));"></div>
+    <canvas id="wheel-canvas" width="300" height="300"></canvas>
+  </div>
+  <div id="wheel-result" style="font-size:40px; font-weight:900; color:#ffd700; margin:20px 0; text-shadow:0 0 20px #ffd700; opacity:0; transition:0.3s;">0</div>
+  <div style="text-align:center;">
+    <div id="wheel-timer" style="color:#aaa; margin-bottom:10px;">Загрузка...</div>
+    <button class="main-btn" id="wheel-spin-btn" style="background:linear-gradient(to bottom, #9b59b6, #5e2c76); width:200px; padding:15px;">КРУТИТЬ</button>
+    <button class="main-btn" id="wheel-close" style="background:#ffd700; color:#000; width:200px; padding:15px; display:none; margin-top:10px;">ЗАБРАТЬ</button>
+  </div>
+  </div>
+  
