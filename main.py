@@ -72,7 +72,6 @@ def generate_grid(game_key):
                 else: grid[c][r] = random.choice(range(10))
         return grid
 
-    # ВЫСОКИЕ ШАНСЫ: Символы падают часто
     weights = [60, 50, 40, 30, 15, 5]
     pool = [s["id"] for s in g["symbols"] for _ in range(weights[s["id"]] if s["id"] < len(weights) else 1)]
     for _ in range(cols):
@@ -98,7 +97,6 @@ def check_win(grid, game_key, bet, free_spins=0, fish_caught=0):
                 if sym == g["scatter"]: scatters += 1
 
     if game_key == "fishing":
-        # Ищем рыбака (wild = 11)
         wild_coords = [(c, r) for c in range(len(grid)) for r in range(len(grid[c])) if grid[c][r] == g["wild"]]
         wilds_count = len(wild_coords)
         
@@ -150,6 +148,8 @@ def check_win(grid, game_key, bet, free_spins=0, fish_caught=0):
     return total_win, win_lines, scatters, fish_data, wilds_count
 
 class Req(BaseModel): init_data: str
+class RefReq(BaseModel): init_data: str; referrer_id: int
+class SpinReq(BaseModel): init_data: str; bet: int; game: str; bonus_buy: bool = False; free_spins: int = 0; fish_caught: int = 0
 
 @app.post("/state")
 def state(r: Req):
@@ -162,15 +162,12 @@ def state(r: Req):
     time_left = max(0, d["wheel_time"] - now)
     return {"balance": d["balance"], "wheel_ready": can_wheel, "wheel_time_left": time_left, "wheel_daily": d["wheel_daily"], "ad_ready": now - d["wheel_time"] > 60, "ad_allowed": d["balance"] < 5000, "free_spins": d["free_spins"], "level": d["level"], "xp": d["xp"], "next_level_xp": d["level"] * 15000, "ref_count": d["ref_count"]}
 
-class SpinReq(BaseModel):
-    init_data: str; bet: int; game: str; bonus_buy: bool = False; free_spins: int = 0; fish_caught: int = 0
-
 @app.post("/spin")
 def spin(r: SpinReq):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
     game_conf = GAMES[r.game]
     is_fs = d["free_spins"] > 0
-    cost = 0 if is_fs else (r.bet * 15 if r.bonus_buy else r.bet) # БОНУС ТЕПЕРЬ 15х
+    cost = 0 if is_fs else (r.bet * 15 if r.bonus_buy else r.bet)
     
     if not is_fs and r.bet < game_conf["min_bet"]: raise HTTPException(400, f"Мин. ставка {game_conf['min_bet']}")
     if d["balance"] < cost: raise HTTPException(400, "Недостаточно фишек")
