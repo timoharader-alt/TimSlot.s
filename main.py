@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-# Твой токен вставлен сюда
+# ТОКЕН
 BOT_TOKEN = os.getenv("BOT_TOKEN", "9110201643:AAG67oiLoDzt2pVrQggRB6OZHafInMypKLA")
 app = FastAPI()
 
@@ -41,38 +41,22 @@ def verify(init_data: str) -> dict:
 GAMES = {
     "fruits": {
         "cols": 5, "rows": 3, "min_bet": 10,
-        "symbols": [
-            {"id":0, "pay":[10, 20, 100]}, {"id":1, "pay":[10, 20, 100]}, 
-            {"id":2, "pay":[10, 30, 150]}, {"id":3, "pay":[10, 30, 150]}, 
-            {"id":4, "pay":[20, 50, 200]}, {"id":5, "pay":[20, 50, 200]}, 
-            {"id":6, "pay":[50, 200, 500]}, {"id":7, "pay":[100, 500, 1000]}
-        ], "scatter": None
+        "symbols": [{"id":0, "pay":[10, 20, 100]}, {"id":1, "pay":[10, 20, 100]}, {"id":2, "pay":[10, 30, 150]}, {"id":3, "pay":[10, 30, 150]}, {"id":4, "pay":[20, 50, 200]}, {"id":5, "pay":[20, 50, 200]}, {"id":6, "pay":[50, 200, 500]}, {"id":7, "pay":[100, 500, 1000]}], 
+        "scatter": None
     },
     "space": {
         "cols": 7, "rows": 3, "min_bet": 50,
-        "symbols": [
-            {"id":0, "pay":[1.2, 2, 5]}, {"id":1, "pay":[1.5, 3, 6]}, 
-            {"id":2, "pay":[2, 4, 8]}, {"id":3, "pay":[3, 6, 12]}, 
-            {"id":4, "pay":[5, 10, 20]}, {"id":5, "pay":[10, 20, 50]}
-        ], "scatter": 99
+        "symbols": [{"id":0, "pay":[1.2, 2, 5]}, {"id":1, "pay":[1.5, 3, 6]}, {"id":2, "pay":[2, 4, 8]}, {"id":3, "pay":[3, 6, 12]}, {"id":4, "pay":[5, 10, 20]}, {"id":5, "pay":[10, 20, 50]}], 
+        "scatter": 99
     },
     "egypt": {
         "cols": 5, "rows": 3, "min_bet": 30,
-        "symbols": [
-            {"id":0, "pay":[1.5, 3, 6]}, {"id":1, "pay":[2, 4, 8]}, 
-            {"id":2, "pay":[3, 6, 12]}, {"id":3, "pay":[5, 10, 20]}, 
-            {"id":4, "pay":[8, 16, 30]}, {"id":5, "pay":[15, 30, 60]}
-        ], "scatter": 99
+        "symbols": [{"id":0, "pay":[1.5, 3, 6]}, {"id":1, "pay":[2, 4, 8]}, {"id":2, "pay":[3, 6, 12]}, {"id":3, "pay":[5, 10, 20]}, {"id":4, "pay":[8, 16, 30]}, {"id":5, "pay":[15, 30, 60]}], 
+        "scatter": 99
     },
     "fishing": {
         "cols": 5, "rows": 3, "min_bet": 50,
-        "symbols": [
-            {"id":0, "pay":[5, 25, 100]}, {"id":1, "pay":[5, 25, 100]}, 
-            {"id":2, "pay":[5, 25, 100]}, {"id":3, "pay":[5, 25, 100]}, 
-            {"id":4, "pay":[5, 25, 100]}, {"id":5, "pay":[10, 50, 200]}, 
-            {"id":6, "pay":[20, 100, 500]}, {"id":7, "pay":[20, 100, 500]}, 
-            {"id":8, "pay":[30, 150, 1000]}, {"id":9, "pay":[50, 200, 2000]}
-        ],
+        "symbols": [{"id":0, "pay":[5, 25, 100]}, {"id":1, "pay":[5, 25, 100]}, {"id":2, "pay":[5, 25, 100]}, {"id":3, "pay":[5, 25, 100]}, {"id":4, "pay":[5, 25, 100]}, {"id":5, "pay":[10, 50, 200]}, {"id":6, "pay":[20, 100, 500]}, {"id":7, "pay":[20, 100, 500]}, {"id":8, "pay":[30, 150, 1000]}, {"id":9, "pay":[50, 200, 2000]}],
         "scatter": 10, "wild": 11, "fish_cash": [12, 13, 14, 15]
     }
 }
