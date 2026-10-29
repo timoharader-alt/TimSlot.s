@@ -295,6 +295,7 @@ function showResult(d) {
   const conf = GAME_CONFIG[currentGame];
   let hasScatters = false;
 
+  // Подсветка скаттеров
   if (conf.scatter !== null) {
     for(let col=0; col<conf.cols; col++) {
       for(let row=0; row<conf.rows; row++) {
@@ -306,6 +307,7 @@ function showResult(d) {
     }
   }
 
+  // Проверка бонуса (в первую очередь!)
   if (hasScatters && d.scatters >= 3 && freeSpins === 0) {
     SFX.scatter();
     freeSpins += 10;
@@ -317,7 +319,13 @@ function showResult(d) {
     
     showMsg(`БОНУС! +10 ФРИСПИНОВ, МНОЖИТЕЛЬ x${bonusMultiplier}`, true);
     toast(`SCATTER x${d.scatters}!`);
-  } else if (d.win > 0) {
+
+    if (d.win > 0) {
+      setTimeout(() => { showMsg(`+${d.win}`, true); toast(`+${d.win}`); }, 1500);
+    }
+  } 
+  // Проверка выигрыша линий
+  else if (d.win > 0) {
     let actualWin = d.win;
     if (freeSpins > 0) {
         actualWin = d.win * bonusMultiplier;
