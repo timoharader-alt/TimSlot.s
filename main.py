@@ -37,7 +37,7 @@ def verify(init_data: str) -> dict:
         raise HTTPException(401, "bad signature")
     return json.loads(p["user"])
 
-# Настройка слотов
+# Настройки слотов
 GAMES = {
     "fruits": {
         "cols": 5, "rows": 3, "min_bet": 10,
@@ -46,8 +46,7 @@ GAMES = {
             {"id":2, "pay":[10, 30, 150]}, {"id":3, "pay":[10, 30, 150]}, 
             {"id":4, "pay":[20, 50, 200]}, {"id":5, "pay":[20, 50, 200]}, 
             {"id":6, "pay":[50, 200, 500]}, {"id":7, "pay":[100, 500, 1000]}
-        ],
-        "scatter": None
+        ], "scatter": None
     },
     "space": {
         "cols": 7, "rows": 3, "min_bet": 50,
@@ -55,8 +54,7 @@ GAMES = {
             {"id":0, "pay":[1.2, 2, 5]}, {"id":1, "pay":[1.5, 3, 6]}, 
             {"id":2, "pay":[2, 4, 8]}, {"id":3, "pay":[3, 6, 12]}, 
             {"id":4, "pay":[5, 10, 20]}, {"id":5, "pay":[10, 20, 50]}
-        ],
-        "scatter": 99
+        ], "scatter": 99
     },
     "egypt": {
         "cols": 5, "rows": 3, "min_bet": 30,
@@ -64,27 +62,18 @@ GAMES = {
             {"id":0, "pay":[1.5, 3, 6]}, {"id":1, "pay":[2, 4, 8]}, 
             {"id":2, "pay":[3, 6, 12]}, {"id":3, "pay":[5, 10, 20]}, 
             {"id":4, "pay":[8, 16, 30]}, {"id":5, "pay":[15, 30, 60]}
-        ],
-        "scatter": 99
+        ], "scatter": 99
     },
-    # НОВАЯ ИГРА РЫБАЛКА
     "fishing": {
         "cols": 5, "rows": 3, "min_bet": 50,
         "symbols": [
-            {"id":0, "pay":[5, 25, 100]},  # 10
-            {"id":1, "pay":[5, 25, 100]},  # J
-            {"id":2, "pay":[5, 25, 100]},  # Q
-            {"id":3, "pay":[5, 25, 100]},  # K
-            {"id":4, "pay":[5, 25, 100]},  # A
-            {"id":5, "pay":[10, 50, 200]}, # Рыба
-            {"id":6, "pay":[20, 100, 500]},# Ящик
-            {"id":7, "pay":[20, 100, 500]},# Стрекоза
-            {"id":8, "pay":[30, 150, 1000]},# Удочка
-            {"id":9, "pay":[50, 200, 2000]},# Блесна
+            {"id":0, "pay":[5, 25, 100]}, {"id":1, "pay":[5, 25, 100]}, 
+            {"id":2, "pay":[5, 25, 100]}, {"id":3, "pay":[5, 25, 100]}, 
+            {"id":4, "pay":[5, 25, 100]}, {"id":5, "pay":[10, 50, 200]}, 
+            {"id":6, "pay":[20, 100, 500]}, {"id":7, "pay":[20, 100, 500]}, 
+            {"id":8, "pay":[30, 150, 1000]}, {"id":9, "pay":[50, 200, 2000]}
         ],
-        "scatter": 10, # Скаттер (рыба-хищник)
-        "wild": 11,    # Вилд (Рыбак)
-        "fish_cash": [12, 13, 14, 15] # Рыбки с кэшем
+        "scatter": 10, "wild": 11, "fish_cash": [12, 13, 14, 15]
     }
 }
 
@@ -92,44 +81,32 @@ LINES = {
     "fruits": [[1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2], [0,0,1,2,2], [2,2,1,0,0], [0,1,0,1,0], [2,1,2,1,2]],
     "space": [[1,1,1,1,1,1,1], [0,0,0,0,0,0,0], [2,2,2,2,2,2,2], [0,1,2,1,0,1,0], [2,1,0,1,2,1,2], [0,0,1,2,2,1,0]],
     "egypt": [[1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2]],
-    # 10 линий для рыбалки (как на скрине)
-    "fishing": [
-        [1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], 
-        [0,1,2,1,0], [2,1,0,1,2], [0,0,1,2,2], 
-        [2,2,1,0,0], [0,1,2,2,2], [2,1,0,0,0], 
-        [0,0,1,0,0]
-    ]
+    "fishing": [[1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2], [0,0,1,2,2], [2,2,1,0,0], [0,1,2,2,2], [2,1,0,0,0], [0,0,1,0,0]]
 }
 
-FISH_CASH_VALUES = [2, 5, 10, 15, 20, 25, 50, 200] # Множители для кэша рыбок
+FISH_CASH_VALUES = [2, 5, 10, 15, 20, 25, 50, 200]
 
 def generate_grid(game_key):
     g = GAMES[game_key]
     cols, rows = g["cols"], g["rows"]
-    
     grid = [[None]*rows for _ in range(cols)]
     
     if game_key == "fishing":
-        # В рыбалке символы падают немного иначе, чтобы не было перекоса
         for c in range(cols):
             for r in range(rows):
                 rand = random.random()
-                if rand < 0.01: grid[c][r] = g["scatter"] # 1% скаттер
-                elif rand < 0.06: grid[c][r] = random.choice(g["fish_cash"]) # 5% рыбка с кэшем
-                else: grid[c][r] = random.choice(range(10)) # Остальные
+                if rand < 0.01: grid[c][r] = g["scatter"]
+                elif rand < 0.06: grid[c][r] = random.choice(g["fish_cash"])
+                else: grid[c][r] = random.choice(range(10))
         return grid
 
-    # Для остальных игр (стандартный пул)
     weights = [40, 35, 30, 25, 15, 10, 5, 2]
     pool = [s["id"] for s in g["symbols"] for _ in range(weights[s["id"]])]
-    
     for _ in range(cols):
         col = []
         for _ in range(rows):
-            if g["scatter"] is not None and random.random() < 0.005:
-                col.append(g["scatter"])
-            else:
-                col.append(random.choice(pool))
+            if g["scatter"] is not None and random.random() < 0.005: col.append(g["scatter"])
+            else: col.append(random.choice(pool))
         grid[_] = col
     return grid
 
@@ -141,110 +118,82 @@ def check_win(grid, game_key, bet, free_spins=0):
     scatters = 0
     fish_win = 0
 
-    # Подсчет скаттеров
     if g.get("scatter") is not None:
         for col in grid:
             for sym in col:
                 if sym == g["scatter"]: scatters += 1
 
-    # Подсчет рыбок (только во фриспинах)
     if game_key == "fishing" and free_spins > 0:
         has_wild = any(sym == g.get("wild") for col in grid for sym in col)
         if has_wild:
             for col in grid:
                 for sym in col:
                     if sym in g["fish_cash"]:
-                        # Выбираем случайный множитель для кэша
-                        mult = random.choice(FISH_CASH_VALUES)
-                        fish_win += bet * mult
+                        fish_win += bet * random.choice(FISH_CASH_VALUES)
 
-    # Подсчет линий
     for line_idx, line in enumerate(lines):
         first_sym = grid[0][line[0]]
-        if first_sym is None or first_sym >= 10: continue # Скаттеры/рыбки не в линиях
+        if first_sym is None or first_sym >= 10: continue
         
         count = 1
         for col in range(1, len(grid)):
-            if grid[col][line[col]] == first_sym: count += 1
+            sym = grid[col][line[col]]
+            if sym == first_sym or (game_key == "fishing" and sym == g["wild"]): count += 1
+            elif first_sym == g.get("wild") and game_key == "fishing": 
+                first_sym = sym
+                count += 1
             else: break
         
         if count >= 3:
             if game_key == "fishing":
-                # У рыбалки массив pay = [3, 4, 5] символов
-                sym_data = g["symbols"][first_sym]
+                sym_data = g["symbols"][first_sym] if first_sym < 10 else g["symbols"][0]
                 mult = sym_data["pay"][count-3]
-                payout = bet * mult
             else:
                 sym_data = next(s for s in g["symbols"] if s["id"] == first_sym)
-                if count == 3: mult = sym_data["pay"][0]
-                elif count == 4: mult = sym_data["pay"][1]
-                else: mult = sym_data["pay"][2]
-                payout = bet * mult
+                mult = sym_data["pay"][count-3] if count <= 5 else sym_data["pay"][2]
             
+            payout = bet * mult
             total_win += payout
             win_lines.append({"line": line_idx, "count": count, "win": payout})
             
     return total_win + fish_win, win_lines, scatters, fish_win
 
-class Req(BaseModel):
-    init_data: str
+class Req(BaseModel): init_data: str
 
 @app.post("/state")
 def state(r: Req):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid); now = int(time.time())
     today = int(time.strftime("%j"))
-    
     if d["wheel_day"] != today:
         set_user(uid, wheel_daily=0, wheel_day=today)
         d["wheel_daily"] = 0
-
     can_wheel = (d["wheel_daily"] < 5) and (now >= d["wheel_time"])
     time_left = max(0, d["wheel_time"] - now)
-
-    return {
-        "balance": d["balance"], 
-        "wheel_ready": can_wheel,
-        "wheel_time_left": time_left,
-        "wheel_daily": d["wheel_daily"],
-        "ad_ready": now - d["wheel_time"] > 60,
-        "ad_allowed": d["balance"] < 5000
-    }
+    return {"balance": d["balance"], "wheel_ready": can_wheel, "wheel_time_left": time_left, "wheel_daily": d["wheel_daily"], "ad_ready": now - d["wheel_time"] > 60, "ad_allowed": d["balance"] < 5000}
 
 class SpinReq(BaseModel):
-    init_data: str
-    bet: int
-    game: str
-    bonus_buy: bool = False
-    free_spins: int = 0
+    init_data: str; bet: int; game: str; bonus_buy: bool = False; free_spins: int = 0
 
 @app.post("/spin")
 def spin(r: SpinReq):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
-    
     game_conf = GAMES[r.game]
     cost = r.bet * 100 if r.bonus_buy else r.bet
     
-    if r.bet < game_conf["min_bet"]:
-        raise HTTPException(400, f"Минимальная ставка {game_conf['min_bet']} фишек")
-    if d["balance"] < cost:
-        raise HTTPException(400, "Недостаточно фишек")
+    if r.bet < game_conf["min_bet"]: raise HTTPException(400, f"Мин. ставка {game_conf['min_bet']}")
+    if d["balance"] < cost: raise HTTPException(400, "Недостаточно фишек")
 
     bal = d["balance"] - cost
     grid = generate_grid(r.game)
     scatters = 0
     
     if r.bonus_buy:
-        # Принудительно ставим 3 скаттера
         for c in range(len(grid)):
             for row in range(len(grid[c])):
-                if grid[c][row] == game_conf.get("scatter"):
-                    grid[c][row] = 0 # Заменяем на мусор
-        grid[1][0] = game_conf["scatter"]
-        grid[3][1] = game_conf["scatter"]
-        grid[2][2] = game_conf["scatter"]
+                if grid[c][row] == game_conf.get("scatter"): grid[c][row] = 0
+        grid[1][0] = game_conf["scatter"]; grid[3][1] = game_conf["scatter"]; grid[2][2] = game_conf["scatter"]
         scatters = 3
     else:
-        # Считаем скаттеры естественным путем
         if game_conf.get("scatter") is not None:
             for c in grid:
                 for sym in c:
@@ -257,21 +206,15 @@ def spin(r: SpinReq):
     set_user(uid, balance=bal)
     
     bonus_mult = 1
-    if scatters >= 3:
-        bonus_mult = random.choice([2, 3, 5, 10])
+    if scatters >= 3: bonus_mult = random.choice([2, 3, 5, 10])
 
-    return {
-        "grid": grid, "win": win_amount, "balance": bal, "lines": win_lines, 
-        "scatters": scatters, "bonus_mult": bonus_mult, "fish_win": fish_win
-    }
+    return {"grid": grid, "win": win_amount, "balance": bal, "lines": win_lines, "scatters": scatters, "bonus_mult": bonus_mult, "fish_win": fish_win, "is_free_spin": r.free_spins > 0}
 
 @app.post("/bonus")
 def bonus(r: Req):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid); now = int(time.time())
-    
-    if d["wheel_daily"] >= 5: raise HTTPException(400, "Лимит 5 круток в день")
+    if d["wheel_daily"] >= 5: raise HTTPException(400, "Лимит 5 круток")
     if now < d["wheel_time"]: raise HTTPException(400, "Кулдаун 1 час")
-
     rnd = random.random() * 100
     if rnd < 1: amount = 1000
     elif rnd < 4: amount = 500
@@ -280,7 +223,6 @@ def bonus(r: Req):
     elif rnd < 62: amount = 50
     elif rnd < 87: amount = 20
     else: amount = 0
-
     set_user(uid, balance=d["balance"] + amount, wheel_time=now + 3600, wheel_daily=d["wheel_daily"] + 1)
     return {"amount": amount, "balance": d["balance"] + amount, "next_wheel": now + 3600}
 
