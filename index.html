@@ -9,28 +9,38 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
   html, body { margin:0; padding:0; background:#000; color:#fff; font-family: 'Montserrat', sans-serif; overflow:hidden; height:100%; }
   
-  /* ... СТИЛИ (оставил как было, чтобы не ломать дизайн) ... */
+  /* ПРИВЕТСТВИЕ */
   #welcome-screen { position: fixed; inset: 0; z-index: 200; background: radial-gradient(circle at center, #1a1a2e 0%, #000 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s; }
   #welcome-screen h1 { font-size: 42px; color: #ffd700; text-shadow: 0 0 20px #ff8c00; margin-bottom: 10px; text-transform: uppercase; text-align: center; }
   #welcome-screen p { color: #aaa; margin-bottom: 40px; font-size: 14px; }
   #start-btn { padding: 20px 60px; font-size: 24px; font-weight: 900; border-radius: 30px; border: none; background: linear-gradient(to right, #ffd700, #ff8c00); color: #000; box-shadow: 0 0 30px rgba(255, 215, 0, 0.5); cursor: pointer; }
   
+  /* ЛОББИ */
   #lobby-screen { position: fixed; inset: 0; z-index: 150; background: #0a0a0c; display: none; flex-direction: column; }
   .lobby-header { padding: 20px; text-align: center; }
   .lobby-header h2 { color: #fff; font-size: 24px; margin: 0; }
   #games-carousel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 20px; padding: 20px; height: 100%; align-items: center; }
   #games-carousel::-webkit-scrollbar { display: none; }
-  .game-card { flex: 0 0 80%; scroll-snap-align: center; height: 400px; border-radius: 20px; background-size: cover; background-position: center; position: relative; border: 2px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; cursor: pointer; }
+  
+  .game-card { 
+    flex: 0 0 80%; scroll-snap-align: center; height: 400px; border-radius: 20px; 
+    background-size: cover; background-position: center; position: relative; 
+    border: 2px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.8); 
+    display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; cursor: pointer; 
+    background-color: #111;
+  }
   .game-card h3 { font-size: 28px; margin: 0 0 5px 0; text-shadow: 0 2px 4px #000; }
   .game-card p { font-size: 14px; color: #ddd; margin: 0; text-shadow: 0 1px 2px #000; }
   .game-card .min-bet { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.8); padding: 5px 10px; border-radius: 10px; font-weight: bold; border: 1px solid #ffd700; color: #ffd700;}
 
-  .bg-fruits { background: linear-gradient(135deg, #4a0000, #1a0000); }
-  .bg-space { background: linear-gradient(135deg, #001133, #000511); }
-  .bg-egypt { background: linear-gradient(135deg, #3d2600, #1a0f00); }
-  .bg-fishing { background: linear-gradient(135deg, #003d4d, #001a1a); }
+  /* ФОНЫ ИГР (КАРТИНКИ) */
+  .bg-fruits { background-image: url('https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=600&auto=format&fit=crop'); }
+  .bg-space { background-image: url('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=600&auto=format&fit=crop'); }
+  .bg-egypt { background-image: url('https://images.unsplash.com/photo-1539650116574-75c0c6d73f6e?q=80&w=600&auto=format&fit=crop'); }
+  .bg-fishing { background-image: url('https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=600&auto=format&fit=crop'); }
 
-  #game-screen { position: fixed; inset: 0; z-index: 100; display: none; flex-direction: column; background-color: #000; }
+  /* ИГРА */
+  #game-screen { position: fixed; inset: 0; z-index: 100; display: none; flex-direction: column; background-size: cover; background-position: center; }
   #top-bar { display: flex; justify-content: space-between; align-items: flex-start; padding: 15px; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); z-index: 10; height: 100px; flex-shrink: 0;}
   .profile-info { display: flex; flex-direction: column; gap: 5px; }
   .balance-box { background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 10px; border: 1px solid #ffd700; }
@@ -45,46 +55,46 @@
   #dropdown-menu button { background: none; border: none; color: #fff; padding: 15px; text-align: left; font-size: 16px; font-weight: bold; border-bottom: 1px solid #333; cursor: pointer; font-family: inherit;}
   #dropdown-menu button:last-child { border-bottom: none; color: #ff3333; }
 
-  /* НОВОЕ ИГРОВОЕ ПОЛЕ НА CSS */
+  /* СЛОТ-ГРИД (HTML/CSS) */
   #pixi-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 10px; position: relative; overflow: hidden; min-height: 0; }
   
   #slot-grid { 
-    width: 100%; 
-    max-width: 100%; 
-    max-height: 100%;
+    width: 100%; max-width: 100%; max-height: 100%;
     aspect-ratio: var(--aspect, 5/3); 
     border-radius: 12px; 
-    box-shadow: 0 0 30px rgba(0,0,0,0.8); 
-    border: 2px solid rgba(255,255,255,0.1); 
+    box-shadow: 0 0 30px rgba(0,0,0,0.9); 
+    border: 3px solid rgba(255,215,0,0.3); 
     position: relative;
-    background: linear-gradient(135deg, rgba(20,20,20,0.8), rgba(0,0,0,0.9));
+    background: rgba(0,0,0,0.7); /* Полупрозрачный фон, чтобы видеть задник */
     overflow: hidden;
     display: flex;
-    justify-content: center;
-    align-items: center;
   }
 
   .reel-col {
-    display: flex; flex-direction: column; width: 100%; height: 100%;
-    overflow: hidden; position: relative; border-right: 1px solid rgba(255,255,255,0.05);
+    display: flex; flex-direction: column; flex: 1; height: 100%;
+    overflow: hidden; position: relative; border-right: 1px solid rgba(255,255,255,0.1);
   }
   .reel-col:last-child { border-right: none; }
   
   .reel-strip {
-    display: flex; flex-direction: column; width: 100%;
-    transition: none; /* Анимация управляется JS */
+    display: flex; flex-direction: column; width: 100%; height: 100%;
+    transition: none;
   }
 
   .cell {
     display: flex; justify-content: center; align-items: center;
-    width: 100%; font-weight: bold; text-align: center;
-    text-shadow: 0 2px 4px #000;
-    flex-shrink: 0;
+    width: 100%; flex: 1; /* Равномерно делим высоту */
+    text-align: center;
+  }
+
+  .cell img {
+    width: 80%; height: 80%; object-fit: contain;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
   }
 
   .win-cell {
     background: rgba(255, 215, 0, 0.3) !important;
-    box-shadow: inset 0 0 10px #ffd700;
+    box-shadow: inset 0 0 15px #ffd700;
     border-radius: 8px;
   }
 
@@ -172,10 +182,7 @@
         <div id="fisher-mult">x1</div>
     </div>
     
-    <!-- НОВЫЙ СЛОТ -->
-    <div id="slot-grid">
-        <!-- Колонки генерируются JS -->
-    </div>
+    <div id="slot-grid"></div>
   </div>
 
   <div id="controls-panel">
@@ -224,8 +231,278 @@
     <button class="main-btn" id="wheel-spin-btn" style="background:linear-gradient(to bottom, #9b59b6, #5e2c76); width:200px; padding:15px;">КРУТИТЬ</button>
     <button class="main-btn" id="wheel-close" style="background:#ffd700; color:#000; width:200px; padding:15px; display:none; margin-top:10px;">ЗАБРАТЬ</button>
   </div>
-      </div>
-  async function api(path, body={}) {
+  </div>
+  <script>
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+const init = tg?.initData || '';
+const $ = id => document.getElementById(id);
+
+let myId = 0;
+try {
+    if (init) {
+        const urlParams = new URLSearchParams(init);
+        const userStr = urlParams.get('user');
+        if (userStr) myId = JSON.parse(userStr).id;
+    }
+} catch(e) {}
+
+const AC = window.AudioContext || window.webkitAudioContext;
+let actx = null;
+let isMusicPlaying = true;
+let musicTimer = null;
+
+function audioCtx() { 
+    if (!AC) return null; 
+    if (!actx) actx = new AC(); 
+    if (actx.state === 'suspended') actx.resume(); 
+    return actx; 
+}
+
+function tone(freq, dur, type='sine', vol=0.06, when=0) {
+  const ctx = audioCtx(); if (!ctx) return;
+  const t = ctx.currentTime + when;
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+
+function noise(dur=0.05, vol=0.04) {
+  const ctx = audioCtx(); if (!ctx) return;
+  const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+  const d = buf.getChannelData(0); for (let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * (1 - i/d.length);
+  const src = ctx.createBufferSource(); src.buffer = buf;
+  const g = ctx.createGain(); g.gain.value = vol;
+  const f = ctx.createBiquadFilter(); f.type='highpass'; f.frequency.value=800;
+  src.connect(f); f.connect(g); g.connect(ctx.destination); src.start();
+}
+
+const SFX = {
+  click: () => tone(800, .05, 'square', .05),
+  reelTick: () => noise(.02, .03),
+  reelStop: () => { tone(150, .15, 'square', .1); noise(.1,.05); },
+  win: () => { [523,659,784,1046].forEach((f,i)=>tone(f,.15,'triangle',.08,i*.08)); },
+  bigWin: () => { [523,659,784,1046,1318,1568].forEach((f,i)=>tone(f,.2,'square',.08,i*.06)); },
+  scatter: () => { [800, 1000, 1200, 1600].forEach((f,i)=>tone(f,.15,'sine',.1,i*.1)); },
+  fish: () => { [400, 600, 800].forEach((f,i)=>tone(f,.1,'triangle',.1,i*.1)); },
+  lose: () => tone(200,.3,'sawtooth',.05,0),
+};
+
+function playBackgroundMusic() {
+    if (!isMusicPlaying) return;
+    const melody = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63, 261.63, 196.00];
+    let i = 0;
+    function playNote() {
+        if (!isMusicPlaying) return;
+        tone(melody[i], 0.4, 'sine', 0.02);
+        i = (i + 1) % melody.length;
+        musicTimer = setTimeout(playNote, 500);
+    }
+    playNote();
+}
+
+function stopBackgroundMusic() {
+    isMusicPlaying = false;
+    if (musicTimer) clearTimeout(musicTimer);
+}
+
+// НАСТОЯЩИЕ КАРТИНКИ ВМЕСТО ЭМОДЗИ
+const IMG = {
+    // Fruits
+    cherry: 'https://cdn-icons-png.flaticon.com/512/291/291531.png',
+    lemon: 'https://cdn-icons-png.flaticon.com/512/291/291514.png',
+    plum: 'https://cdn-icons-png.flaticon.com/512/291/291529.png',
+    orange: 'https://cdn-icons-png.flaticon.com/512/135/135620.png',
+    melon: 'https://cdn-icons-png.flaticon.com/512/291/291542.png',
+    grape: 'https://cdn-icons-png.flaticon.com/512/291/291525.png',
+    bell: 'https://cdn-icons-png.flaticon.com/512/3003/3003156.png',
+    seven: 'https://cdn-icons-png.flaticon.com/512/3514/3514316.png',
+    // Space
+    alien: 'https://cdn-icons-png.flaticon.com/512/2926/2926154.png',
+    rocket: 'https://cdn-icons-png.flaticon.com/512/1356/1356479.png',
+    star: 'https://cdn-icons-png.flaticon.com/512/1828/1828884.png',
+    galaxy: 'https://cdn-icons-png.flaticon.com/512/3239/3239388.png',
+    comet: 'https://cdn-icons-png.flaticon.com/512/3129/3129666.png',
+    crystal: 'https://cdn-icons-png.flaticon.com/512/3004/3004406.png',
+    planet: 'https://cdn-icons-png.flaticon.com/512/3213/3213359.png',
+    // Egypt
+    cat: 'https://cdn-icons-png.flaticon.com/512/616/616430.png',
+    snake: 'https://cdn-icons-png.flaticon.com/512/616/616515.png',
+    vase: 'https://cdn-icons-png.flaticon.com/512/2933/2933777.png',
+    anubis: 'https://cdn-icons-png.flaticon.com/512/1124/1124271.png',
+    scarab: 'https://cdn-icons-png.flaticon.com/512/3069/3069178.png',
+    eye: 'https://cdn-icons-png.flaticon.com/512/1239/1239109.png',
+    // Fishing
+    ten: 'https://cdn-icons-png.flaticon.com/512/483/483249.png',
+    j: 'https://cdn-icons-png.flaticon.com/512/483/483245.png',
+    q: 'https://cdn-icons-png.flaticon.com/512/483/483256.png',
+    k: 'https://cdn-icons-png.flaticon.com/512/483/483261.png',
+    a: 'https://cdn-icons-png.flaticon.com/512/483/483242.png',
+    fish: 'https://cdn-icons-png.flaticon.com/512/3095/3095095.png',
+    box: 'https://cdn-icons-png.flaticon.com/512/3081/3081841.png',
+    fly: 'https://cdn-icons-png.flaticon.com/512/1998/1998706.png',
+    rod: 'https://cdn-icons-png.flaticon.com/512/3081/3081661.png',
+    sparkle: 'https://cdn-icons-png.flaticon.com/512/1828/1828961.png',
+    shark: 'https://cdn-icons-png.flaticon.com/512/3438/3438403.png',
+    fisherman: 'https://cdn-icons-png.flaticon.com/512/194/194938.png'
+};
+
+const GAME_CONFIG = {
+  fruits: { cols: 3, rows: 1, min_bet: 10, syms: [IMG.cherry, IMG.lemon, IMG.plum, IMG.orange, IMG.melon, IMG.grape, IMG.bell, IMG.seven], bg: 'bg-fruits', scatter: null },
+  space: { cols: 7, rows: 3, min_bet: 10, syms: [IMG.alien, IMG.rocket, IMG.star, IMG.galaxy, IMG.comet, IMG.crystal, IMG.planet], bg: 'bg-space', scatter: 6 },
+  egypt: { cols: 5, rows: 3, min_bet: 10, syms: [IMG.cat, IMG.snake, IMG.vase, IMG.anubis, IMG.scarab, IMG.eye], bg: 'bg-egypt', scatter: 5 },
+  fishing: { cols: 5, rows: 3, min_bet: 10, syms: [IMG.ten, IMG.j, IMG.q, IMG.k, IMG.a, IMG.fish, IMG.box, IMG.fly, IMG.rod, IMG.sparkle, IMG.shark, IMG.fisherman], bg: 'bg-fishing', scatter: 10, wild: 11 }
+};
+
+const LINES = {
+  fruits: [[0,0,0]],
+  space: [[1,1,1,1,1,1,1], [0,0,0,0,0,0,0], [2,2,2,2,2,2,2], [0,1,2,1,0,1,0], [2,1,0,1,2,1,2], [0,0,1,2,2,1,0]],
+  egypt: [[1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2]],
+  fishing: [[1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2], [0,0,1,2,2], [2,2,1,0,0], [0,1,2,2,2], [2,1,0,0,0], [0,0,1,0,0]]
+};
+
+let currentGame = 'fruits';
+let columns = [];
+let freeSpins = 0;
+let currentBet = 10;
+let wheelTimerInterval = null;
+let spinning = false;
+let currentFishCaught = 0;
+
+window.addEventListener('load', () => {
+    const carousel = $('games-carousel');
+    const games = [
+        { id: 'fruits', title: 'Классика', desc: '3 барабана, 1 линия', cls: 'bg-fruits' },
+        { id: 'space', title: 'Космос', desc: '7x3, 6 линий', cls: 'bg-space' },
+        { id: 'egypt', title: 'Египет', desc: '5x3, 5 линий', cls: 'bg-egypt' },
+        { id: 'fishing', title: 'Рыбалка', desc: 'Бонусная игра', cls: 'bg-fishing' }
+    ];
+
+    games.forEach(g => {
+        const card = document.createElement('div');
+        card.className = `game-card ${g.cls}`;
+        card.innerHTML = `<h3>${g.title}</h3><p>${g.desc}</p><span class="min-bet">от 10 ₽</span>`;
+        card.onclick = () => { SFX.click(); startGame(g.id); };
+        carousel.appendChild(card);
+    });
+});
+
+$('start-btn').onclick = () => {
+    audioCtx();
+    playBackgroundMusic();
+    SFX.click();
+    $('welcome-screen').style.opacity = '0';
+    setTimeout(() => {
+        $('welcome-screen').style.display = 'none';
+        $('lobby-screen').style.display = 'flex';
+    }, 500);
+};
+
+function startGame(gameKey) {
+  currentGame = gameKey;
+  const conf = GAME_CONFIG[gameKey];
+  $('lobby-screen').style.display = 'none';
+  $('game-screen').style.display = 'flex';
+  $('game-screen').className = `bg-${gameKey}`;
+  
+  currentBet = conf.min_bet;
+  $('custom-bet').value = '';
+  $('custom-bet').placeholder = `от ${conf.min_bet}`;
+  $('spin-btn').textContent = `SPIN (${currentBet})`;
+  
+  $('slot-grid').style.setProperty('--aspect', `${conf.cols}/${conf.rows}`);
+
+  [...$('betrow').children].forEach(b=>b.classList.remove('active'));
+  $('betrow').querySelector('[data-bet="10"]').classList.add('active');
+
+  if (gameKey === 'egypt' || gameKey === 'fishing') {
+      $('buy-bonus-btn').style.display = 'block';
+      $('buy-bonus-btn').textContent = `КУПИТЬ БОНУС (${currentBet * 15})`;
+  } else {
+      $('buy-bonus-btn').style.display = 'none';
+  }
+  
+  $('fisher-scale').style.display = 'none';
+  
+  initSlotGrid();
+  refresh();
+}
+
+function initSlotGrid() {
+    const conf = GAME_CONFIG[currentGame];
+    const grid = $('slot-grid');
+    grid.innerHTML = '';
+    columns = [];
+
+    for (let i = 0; i < conf.cols; i++) {
+        const col = document.createElement('div');
+        col.className = 'reel-col';
+        
+        const strip = document.createElement('div');
+        strip.className = 'reel-strip';
+        
+        for (let j = 0; j < conf.rows + 2; j++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            const img = document.createElement('img');
+            img.src = conf.syms[Math.floor(Math.random() * conf.syms.length)];
+            cell.appendChild(img);
+            strip.appendChild(cell);
+        }
+        
+        col.appendChild(strip);
+        grid.appendChild(col);
+        columns.push({ el: col, strip: strip, offset: 0, speed: 0 });
+    }
+}
+
+function startSpin(finalGrid) {
+    const conf = GAME_CONFIG[currentGame];
+    spinning = true;
+    document.querySelectorAll('.win-cell').forEach(el => el.classList.remove('win-cell'));
+
+    columns.forEach((col, i) => {
+        col.speed = 40 + Math.random() * 15;
+        
+        const animate = () => {
+            if (!spinning) return;
+            
+            col.offset += col.speed;
+            if (col.offset >= (100 / conf.rows)) {
+                col.offset -= (100 / conf.rows);
+                const firstCell = col.strip.firstElementChild;
+                col.strip.appendChild(firstCell); 
+                firstCell.querySelector('img').src = conf.syms[Math.floor(Math.random() * conf.syms.length)];
+            }
+            
+            col.strip.style.transform = `translateY(-${col.offset}%)`;
+            requestAnimationFrame(animate);
+        };
+        requestAnimationFrame(animate);
+    });
+
+    for (let i = 0; i < conf.cols; i++) {
+        setTimeout(() => {
+            const col = columns[i];
+            col.speed = 0;
+            col.offset = 0;
+            col.strip.style.transform = `translateY(0%)`;
+            
+            const cells = col.strip.children;
+            for(let row = 0; row < conf.rows; row++) {
+                cells[row].querySelector('img').src = conf.syms[finalGrid[i][row]];
+            }
+            
+            SFX.reelStop();
+            
+            if (i === conf.cols - 1) {
+                setTimeout(() => showResult(finalGrid), 300);
+            }
+        }, 800 + i * 150);
+    }
+}
+    async function api(path, body={}) {
   const r = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ init_data: init, ...body }) });
   const j = await r.json(); if (!r.ok) throw new Error(j.detail || 'ошибка'); return j;
 }
@@ -259,8 +536,8 @@ async function refresh() {
 async function doSpin(betAmount, buyBonus = false) {
   try {
     const d = await api('/spin', { bet: betAmount, game: currentGame, bonus_buy: buyBonus, free_spins: freeSpins, fish_caught: currentFishCaught }); 
-    startSpin(d.grid); // Запускаем HTML-анимацию
-    setTimeout(() => { handleSpinResult(d); }, 1500); // Ждем окончания анимации
+    startSpin(d.grid);
+    setTimeout(() => { handleSpinResult(d); }, 1500 + GAME_CONFIG[currentGame].cols * 150);
   } catch(e) { 
       SFX.lose(); 
       showMsg(e.message, false); 
@@ -280,16 +557,20 @@ function handleSpinResult(d) {
         for(let row=0; row<conf.rows; row++) {
             const cellVal = d.grid[col][row];
             if (conf.scatter !== null && cellVal === conf.scatter) {
-                columns[col].strip.children[row].style.color = '#ffd700'; // Подсветка
+                columns[col].strip.children[row].style.boxShadow = '0 0 15px #ffd700';
+                columns[col].strip.children[row].style.borderRadius = '10px';
                 hasScatters = true;
             }
-            // Отрисовка кэша на рыбках
             if (d.is_free_spin && d.fish_data) {
                 const fish = d.fish_data.find(f => f.col === col && f.row === row);
                 if (fish) {
-                    columns[col].strip.children[row].textContent = `${fish.val}₽`;
-                    columns[col].strip.children[row].style.fontSize = '14px';
-                    columns[col].strip.children[row].style.color = '#ffd700';
+                    const cell = columns[col].strip.children[row];
+                    const img = cell.querySelector('img');
+                    if (img) img.style.display = 'none'; // Скрываем картинку рыбки
+                    const label = document.createElement('div');
+                    label.textContent = `${fish.val}₽`;
+                    label.style.cssText = 'color:#ffd700;font-weight:900;font-size:14px;text-shadow:0 0 5px #000;';
+                    cell.appendChild(label);
                 }
             }
         }
@@ -312,7 +593,6 @@ function handleSpinResult(d) {
         showMsg(`+${actualWin}`, true);
         toast(`+${actualWin}`);
 
-        // Подсветка линий
         if (d.lines && d.lines.length > 0) {
             d.lines.forEach(l => {
                 const lineData = LINES[currentGame][l.line];
@@ -368,6 +648,26 @@ function handleSpinResult(d) {
     
     refresh();
 }
+
+function triggerWinFlash() {
+    const flash = $('win-flash');
+    flash.classList.add('active');
+    setTimeout(() => flash.classList.remove('active'), 150);
+    $('pixi-container').style.transform = "translate(5px, 5px)";
+    setTimeout(() => $('pixi-container').style.transform = "translate(-5px, -5px)", 50);
+    setTimeout(() => $('pixi-container').style.transform = "translate(0, 0)", 100);
+}
+
+function updateUIState(level, xp, nextXp = null) {
+    $('lvl-text').textContent = level;
+    if (nextXp === null) nextXp = level * 15000;
+    let percent = (xp / nextXp) * 100;
+    if (percent > 100) percent = 100;
+    $('lvl-fill').style.width = `${percent}%`;
+}
+
+function showMsg(t, win) { const m = $('msg'); m.textContent = t; m.className = 'show ' + (win ? 'win':'lose'); setTimeout(()=> m.className='', 2000); }
+function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); setTimeout(()=> el.classList.remove('show'), 1500); }
 
 // --- УПРАВЛЕНИЕ КНОПКАМИ ---
 $('betrow').onclick = e => { 
@@ -565,264 +865,6 @@ $('wheel-spin-btn').onclick = async () => {
 };
 
 $('wheel-close').onclick = () => { $('wheel-modal').style.display = 'none'; };
-      <script>
-const tg = window.Telegram?.WebApp;
-if (tg) { tg.ready(); tg.expand(); }
-const init = tg?.initData || '';
-const $ = id => document.getElementById(id);
-
-let myId = 0;
-try {
-    if (init) {
-        const urlParams = new URLSearchParams(init);
-        const userStr = urlParams.get('user');
-        if (userStr) myId = JSON.parse(userStr).id;
-    }
-} catch(e) {}
-
-const AC = window.AudioContext || window.webkitAudioContext;
-let actx = null;
-let isMusicPlaying = true;
-let musicTimer = null;
-
-function audioCtx() { 
-    if (!AC) return null; 
-    if (!actx) actx = new AC(); 
-    if (actx.state === 'suspended') actx.resume(); 
-    return actx; 
-}
-
-function tone(freq, dur, type='sine', vol=0.06, when=0) {
-  const ctx = audioCtx(); if (!ctx) return;
-  const t = ctx.currentTime + when;
-  const o = ctx.createOscillator(), g = ctx.createGain();
-  o.type = type; o.frequency.setValueAtTime(freq, t);
-  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + dur + 0.02);
-}
-
-function noise(dur=0.05, vol=0.04) {
-  const ctx = audioCtx(); if (!ctx) return;
-  const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
-  const d = buf.getChannelData(0); for (let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * (1 - i/d.length);
-  const src = ctx.createBufferSource(); src.buffer = buf;
-  const g = ctx.createGain(); g.gain.value = vol;
-  const f = ctx.createBiquadFilter(); f.type='highpass'; f.frequency.value=800;
-  src.connect(f); f.connect(g); g.connect(ctx.destination); src.start();
-}
-
-const SFX = {
-  click: () => tone(800, .05, 'square', .05),
-  reelTick: () => noise(.02, .03),
-  reelStop: () => { tone(150, .15, 'square', .1); noise(.1,.05); },
-  win: () => { [523,659,784,1046].forEach((f,i)=>tone(f,.15,'triangle',.08,i*.08)); },
-  bigWin: () => { [523,659,784,1046,1318,1568].forEach((f,i)=>tone(f,.2,'square',.08,i*.06)); },
-  scatter: () => { [800, 1000, 1200, 1600].forEach((f,i)=>tone(f,.15,'sine',.1,i*.1)); },
-  fish: () => { [400, 600, 800].forEach((f,i)=>tone(f,.1,'triangle',.1,i*.1)); },
-  lose: () => tone(200,.3,'sawtooth',.05,0),
-};
-
-function playBackgroundMusic() {
-    if (!isMusicPlaying) return;
-    const melody = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63, 261.63, 196.00];
-    let i = 0;
-    function playNote() {
-        if (!isMusicPlaying) return;
-        tone(melody[i], 0.4, 'sine', 0.02);
-        i = (i + 1) % melody.length;
-        musicTimer = setTimeout(playNote, 500);
-    }
-    playNote();
-}
-
-function stopBackgroundMusic() {
-    isMusicPlaying = false;
-    if (musicTimer) clearTimeout(musicTimer);
-}
-
-const GAME_CONFIG = {
-  fruits: { cols: 3, rows: 1, min_bet: 10, syms: ['🍒','🍋','🫐','🍊','🍉','🍇','🔔','7️⃣'], bg: 'linear-gradient(135deg, #4a0000, #1a0000)', scatter: null },
-  space: { cols: 7, rows: 3, min_bet: 10, syms: ['👽','🚀','⭐','🌌','☄️','🔮', '🪐'], bg: 'linear-gradient(135deg, #001133, #000511)', scatter: 6 },
-  egypt: { cols: 5, rows: 3, min_bet: 10, syms: ['🐈','🐍','🏺','⚱️','🔺','🔱', '👁️'], bg: 'linear-gradient(135deg, #3d2600, #1a0f00)', scatter: 6 },
-  fishing: { cols: 5, rows: 3, min_bet: 10, syms: ['10','J','Q','K','A','🐟','🧰','🪰','🎣','✨','🦈','🧔','🐠','🐡','🐠'], bg: 'linear-gradient(135deg, #003d4d, #001a1a)', scatter: 10, wild: 11 }
-};
-
-const LINES = {
-  fruits: [[0,0,0]],
-  space: [[1,1,1,1,1,1,1], [0,0,0,0,0,0,0], [2,2,2,2,2,2,2], [0,1,2,1,0,1,0], [2,1,0,1,2,1,2], [0,0,1,2,2,1,0]],
-  egypt: [[1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2]],
-  fishing: [[1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2], [0,0,1,2,2], [2,2,1,0,0], [0,1,2,2,2], [2,1,0,0,0], [0,0,1,0,0]]
-};
-
-let currentGame = 'fruits';
-let columns = []; // Массив колонок (DOM-элементов)
-let freeSpins = 0;
-let currentBet = 10;
-let wheelTimerInterval = null;
-let spinning = false;
-let currentFishCaught = 0;
-
-window.addEventListener('load', () => {
-    const carousel = $('games-carousel');
-    const games = [
-        { id: 'fruits', title: 'Классика', desc: '3 барабана, 1 линия', cls: 'bg-fruits' },
-        { id: 'space', title: 'Космос', desc: '7x3, 6 линий', cls: 'bg-space' },
-        { id: 'egypt', title: 'Египет', desc: '5x3, 5 линий', cls: 'bg-egypt' },
-        { id: 'fishing', title: 'Рыбалка', desc: 'Бонусная игра', cls: 'bg-fishing' }
-    ];
-
-    games.forEach(g => {
-        const card = document.createElement('div');
-        card.className = `game-card ${g.cls}`;
-        card.innerHTML = `<h3>${g.title}</h3><p>${g.desc}</p><span class="min-bet">от 10 ₽</span>`;
-        card.onclick = () => { SFX.click(); startGame(g.id); };
-        carousel.appendChild(card);
-    });
-});
-
-$('start-btn').onclick = () => {
-    audioCtx();
-    playBackgroundMusic();
-    SFX.click();
-    $('welcome-screen').style.opacity = '0';
-    setTimeout(() => {
-        $('welcome-screen').style.display = 'none';
-        $('lobby-screen').style.display = 'flex';
-    }, 500);
-};
-
-function startGame(gameKey) {
-  currentGame = gameKey;
-  const conf = GAME_CONFIG[gameKey];
-  $('lobby-screen').style.display = 'none';
-  $('game-screen').style.display = 'flex';
-  $('game-screen').style.background = conf.bg;
-  
-  currentBet = conf.min_bet;
-  $('custom-bet').value = '';
-  $('custom-bet').placeholder = `от ${conf.min_bet}`;
-  $('spin-btn').textContent = `SPIN (${currentBet})`;
-  
-  // Устанавливаем пропорции
-  $('slot-grid').style.setProperty('--aspect', `${conf.cols}/${conf.rows}`);
-
-  [...$('betrow').children].forEach(b=>b.classList.remove('active'));
-  $('betrow').querySelector('[data-bet="10"]').classList.add('active');
-
-  if (gameKey === 'egypt' || gameKey === 'fishing') {
-      $('buy-bonus-btn').style.display = 'block';
-      $('buy-bonus-btn').textContent = `КУПИТЬ БОНУС (${currentBet * 15})`;
-  } else {
-      $('buy-bonus-btn').style.display = 'none';
-  }
-  
-  $('fisher-scale').style.display = 'none';
-  
-  initSlotGrid();
-  refresh();
-}
-
-// Генерация HTML-сетки
-function initSlotGrid() {
-    const conf = GAME_CONFIG[currentGame];
-    const grid = $('slot-grid');
-    grid.innerHTML = '';
-    columns = [];
-
-    for (let i = 0; i < conf.cols; i++) {
-        const col = document.createElement('div');
-        col.className = 'reel-col';
-        
-        const strip = document.createElement('div');
-        strip.className = 'reel-strip';
-        
-        // Создаем 3 видимых + 2 запасных символа
-        for (let j = 0; j < conf.rows + 2; j++) {
-            const cell = document.createElement('div');
-            cell.className = 'cell';
-            cell.textContent = conf.syms[Math.floor(Math.random() * conf.syms.length)];
-            cell.style.height = `${100 / conf.rows}%`; // Каждая ячейка это доля от высоты
-            cell.style.fontSize = `calc(${100 / conf.rows}vh * 0.6)`; // Шрифт зависит от высоты
-            strip.appendChild(cell);
-        }
-        
-        col.appendChild(strip);
-        grid.appendChild(col);
-        columns.push({ el: col, strip: strip, offset: 0, speed: 0 });
-    }
-}
-
-function startSpin(finalGrid) {
-    const conf = GAME_CONFIG[currentGame];
-    spinning = true;
-
-    // Сбрасываем подсветку
-    document.querySelectorAll('.win-cell').forEach(el => el.classList.remove('win-cell'));
-
-    columns.forEach((col, i) => {
-        // Запускаем анимацию прокрутки для каждой колонки
-        col.speed = 40 + Math.random() * 15;
-        
-        const animate = () => {
-            if (!spinning) return;
-            
-            col.offset += col.speed;
-            // Когда прокрутили на 1 ячейку, переносим верхнюю вниз
-            if (col.offset >= (100 / conf.rows)) {
-                col.offset -= (100 / conf.rows);
-                const firstCell = col.strip.firstElementChild;
-                col.strip.appendChild(firstCell); // Переносим в конец
-                firstCell.textContent = conf.syms[Math.floor(Math.random() * conf.syms.length)];
-            }
-            
-            col.strip.style.transform = `translateY(-${col.offset}%)`;
-            requestAnimationFrame(animate);
-        };
-        requestAnimationFrame(animate);
-    });
-
-    // Останавливаем колонки по очереди
-    for (let i = 0; i < conf.cols; i++) {
-        setTimeout(() => {
-            const col = columns[i];
-            col.speed = 0;
-            // Выравниваем позицию (сбрасываем в 0 для ровного отображения)
-            col.offset = 0;
-            col.strip.style.transform = `translateY(0%)`;
-            
-            // Устанавливаем финальные символы
-            const cells = col.strip.children;
-            for(let row = 0; row < conf.rows; row++) {
-                cells[row].textContent = conf.syms[finalGrid[i][row]];
-            }
-            
-            SFX.reelStop();
-            
-            // Если это последняя колонка — показываем результат
-            if (i === conf.cols - 1) {
-                setTimeout(() => showResult(finalGrid), 300);
-            }
-        }, 800 + i * 150);
-    }
-}
-
-function showResult(grid) {
-    // Заглушка для результата (будет доработана в Части 3)
-    spinning = false;
-    SFX.lose();
-    showMsg('Крутка завершена', false);
-}
-
-function updateUIState(level, xp, nextXp = null) {
-    $('lvl-text').textContent = level;
-    if (nextXp === null) nextXp = level * 15000;
-    let percent = (xp / nextXp) * 100;
-    if (percent > 100) percent = 100;
-    $('lvl-fill').style.width = `${percent}%`;
-}
-
-function showMsg(t, win) { const m = $('msg'); m.textContent = t; m.className = 'show ' + (win ? 'win':'lose'); setTimeout(()=> m.className='', 2000); }
-function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); setTimeout(()=> el.classList.remove('show'), 1500); }
 </script>
 </body>
 </html>
