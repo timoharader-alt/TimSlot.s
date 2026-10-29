@@ -17,20 +17,21 @@
   .game-btn { width:100%; max-width:300px; padding:20px; margin:10px 0; border-radius:12px; border:2px solid #d4af37; background:#111; color:#fff; font-size:18px; text-align:left; display:flex; justify-content:space-between; align-items:center; }
   .game-btn:active { background:#222; transform:scale(0.98); }
   
-  #msg { min-height:24px; text-align:center; font-weight:900; font-size:16px; transition:opacity .2s; opacity:0; margin-bottom: 4px; }
+  #msg { min-height:24px; text-align:center; font-weight:900; font-size:16px; transition:opacity .2s; opacity:0; margin-bottom: 4px; color: #ffd700;}
   #msg.show { opacity:1; }
   #msg.win { color:#00ff00; text-shadow:0 0 10px #0f0; }
   #msg.lose { color:#ff3333; }
   
   #pixi { width:100%; border-radius:12px; overflow:hidden; background:#000; border:3px solid #d4af37; position:relative; transition: aspect-ratio 0.3s; }
           
-  .controls { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-top:auto; margin-bottom:8px; }
+  .controls { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:auto; margin-bottom:8px; }
   button { padding:14px 6px; font-size:14px; font-weight:900; border-radius:10px; border:2px solid #d4af37; color:#fff; cursor:pointer;}
   button:active { transform:scale(.95); }
   button:disabled { opacity:.4; filter:grayscale(1); cursor:not-allowed;}
   
   #spin { grid-column:1 / -1; padding:16px; font-size:20px; background:linear-gradient(to bottom, #ff0000, #990000); }
   #bonus { background:linear-gradient(to bottom, #8a2be2, #4b0082); position:relative;}
+  #buy-bonus { background:linear-gradient(to bottom, #ffd700, #b8860b); color:#000; display:none; }
   #ad { background:linear-gradient(to bottom, #00c853, #00796b); }
   
   .betrow { display:flex; gap:4px; justify-content:center; margin-bottom:6px; align-items:center; flex-wrap: wrap;}
@@ -52,13 +53,15 @@
   #wheel-timer { color:#aaa; font-size:14px; margin-bottom:10px; font-weight:bold; }
   #wheel-spin-btn { padding:12px 40px; font-size:18px; background:linear-gradient(to bottom, #8a2be2, #4b0082); border-radius:8px; font-weight:900; border:2px solid #d4af37; color:#fff;}
   #wheel-close { padding:12px 24px; font-size:16px; background:#d4af37; color:#000; border-radius:8px; border:none; display:none; font-weight:bold; margin-top:10px;}
+
+  #bonus-mult-display { position:absolute; top:10px; right:10px; background:rgba(0,0,0,0.8); border:2px solid #ffd700; padding:5px 15px; border-radius:10px; color:#ffd700; font-size:20px; display:none; z-index:5; }
 </style>
 </head>
 <body>
 
 <div id="menu">
   <h1>Выбери игру</h1>
-  <button class="game-btn" onclick="startGame('fruits')"><span>🍒 Классика</span> <span>3x1 (мин: 10)</span></button>
+  <button class="game-btn" onclick="startGame('fruits')"><span>🍒 Классика</span> <span>5x3 (мин: 10)</span></button>
   <button class="game-btn" onclick="startGame('space')"><span>🚀 Космос</span> <span>7x3 (мин: 50)</span></button>
   <button class="game-btn" onclick="startGame('egypt')"><span>🏺 Египет</span> <span>5x3 (мин: 50)</span></button>
 </div>
@@ -68,7 +71,12 @@
     <div id="bal">0</div>
     <div style="font-size:10px;color:#d4af37" id="fs-counter"></div>
   </div>
-  <div id="pixi"></div>
+  
+  <div style="position: relative;">
+    <div id="pixi"></div>
+    <div id="bonus-mult-display">x1</div>
+  </div>
+  
   <div id="msg"></div>
   
   <div style="margin-top: auto;">
@@ -80,9 +88,10 @@
       <input type="number" id="custom-bet" placeholder="Своя">
     </div>
     <div class="controls">
-      <button id="spin">SPIN</button>
-      <button id="bonus">БОНУС</button>
+      <button id="spin" style="grid-column: 1 / -1;">SPIN</button>
+      <button id="bonus">РУЛЕТКА</button>
       <button id="ad">РЕКЛАМА</button>
+      <button id="buy-bonus" style="grid-column: 1 / -1;">КУПИТЬ БОНУС (100x)</button>
       <button id="backBtn" style="grid-column:1/-1; background:#333; color:#ccc; padding:8px; font-size:12px; margin-top:4px;">⬅ Сменить игру</button>
     </div>
   </div>
@@ -102,7 +111,6 @@
     <button id="wheel-close">ЗАБРАТЬ</button>
   </div>
 </div>
-
 <script>
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
@@ -140,13 +148,16 @@ const SFX = {
 };
 
 const GAME_CONFIG = {
-  fruits: { cols: 3, rows: 1, min_bet: 10, syms: ['🍒','🍋','🔔','⭐','💎','7️⃣'], bg: '#110000', scatter: null },
+  fruits: { cols: 5, rows: 3, min_bet: 10, syms: ['🍒','🍋','🫐','🍊','🍉','🍇','🔔','7️⃣'], bg: '#110000', scatter: null },
   space:  { cols: 7, rows: 3, min_bet: 50, syms: ['👽','🚀','⭐','🌌','☄️','🔮', '🪐'], bg: '#000511', scatter: 6 },
   egypt:  { cols: 5, rows: 3, min_bet: 50, syms: ['🐈','🐍','🏺','⚱️','🔺','🔱', '👁️'], bg: '#110b00', scatter: 6 }
 };
 
 const LINES = {
-  fruits: [[0,0,0]],
+  fruits: [
+      [1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2],
+      [0,0,1,2,2], [2,2,1,0,0], [0,1,0,1,0], [2,1,2,1,2]
+  ],
   space: [
       [1,1,1,1,1,1,1], [0,0,0,0,0,0,0], [2,2,2,2,2,2,2],
       [0,1,2,1,0,1,0], [2,1,0,1,2,1,2], [0,0,1,2,2,1,0]
@@ -161,6 +172,7 @@ let app, reels = [], cellW = 0, cellH = 0;
 let freeSpins = 0;
 let currentBet = 10;
 let wheelTimerInterval = null;
+let bonusMultiplier = 1;
 
 function startGame(gameKey) {
   currentGame = gameKey;
@@ -175,7 +187,20 @@ function startGame(gameKey) {
   $('spin').textContent = `SPIN (${currentBet})`;
   [...$('betrow').children].forEach(b=>b.classList.remove('active'));
   
+  if (gameKey === 'egypt') {
+      $('buy-bonus').style.display = 'block';
+      $('buy-bonus').textContent = `КУПИТЬ БОНУС (${currentBet * 100})`;
+  } else {
+      $('buy-bonus').style.display = 'none';
+  }
+  
   initPixi();
+}
+
+function updateBuyBonusText() {
+    if (currentGame === 'egypt' && currentBet > 0) {
+        $('buy-bonus').textContent = `КУПИТЬ БОНУС (${currentBet * 100})`;
+    }
 }
 
 function initPixi() {
@@ -284,14 +309,24 @@ function showResult(d) {
   if (hasScatters && d.scatters >= 3 && freeSpins === 0) {
     SFX.scatter();
     freeSpins += 10;
+    bonusMultiplier = d.bonus_mult;
+    
     $('fs-counter').textContent = `FS: ${freeSpins}`;
-    showMsg(`БОНУС! +10 ФРИСПИНОВ`, true);
+    $('bonus-mult-display').textContent = `x${bonusMultiplier}`;
+    $('bonus-mult-display').style.display = 'block';
+    
+    showMsg(`БОНУС! +10 ФРИСПИНОВ, МНОЖИТЕЛЬ x${bonusMultiplier}`, true);
     toast(`SCATTER x${d.scatters}!`);
   } else if (d.win > 0) {
-    const big = d.win >= currentBet * 10;
+    let actualWin = d.win;
+    if (freeSpins > 0) {
+        actualWin = d.win * bonusMultiplier;
+    }
+    
+    const big = actualWin >= currentBet * 10;
     big ? SFX.bigWin() : SFX.win();
-    showMsg(`+${d.win}`, true);
-    toast(`+${d.win}`);
+    showMsg(`+${actualWin}`, true);
+    toast(`+${actualWin}`);
     
     winLinesGraphics = new PIXI.Graphics();
     d.lines.forEach(l => {
@@ -314,13 +349,18 @@ function showResult(d) {
     freeSpins--;
     $('fs-counter').textContent = freeSpins > 0 ? `FS: ${freeSpins}` : '';
     if (freeSpins > 0) {
-      showMsg(`ФРИСПИН (осталось: ${freeSpins})`, true);
+      showMsg(`ФРИСПИН (осталось: ${freeSpins})`, false);
       setTimeout(() => { doSpin(0); }, 2000);
     } else {
       $('spin').disabled = false;
+      $('buy-bonus').disabled = false;
+      $('bonus-mult-display').style.display = 'none';
       showMsg(`ФРИСПИНЫ ОКОНЧЕНЫ`, false);
     }
-  } else { $('spin').disabled = false; }
+  } else { 
+      $('spin').disabled = false; 
+      $('buy-bonus').disabled = false;
+  }
 }
 
 async function api(path, body={}) {
@@ -364,6 +404,7 @@ $('betrow').onclick = e => {
     $('custom-bet').value = '';
     currentBet = +e.target.dataset.bet; 
     $('spin').textContent = `SPIN (${currentBet})`; 
+    updateBuyBonusText();
 };
 
 $('custom-bet').oninput = e => {
@@ -372,17 +413,19 @@ $('custom-bet').oninput = e => {
     if (isNaN(val) || val < minB) {
         $('spin').textContent = `SPIN (мин. ${minB})`;
         currentBet = 0; 
+        $('buy-bonus').textContent = `КУПИТЬ БОНУС (${minB * 100})`;
     } else {
         $('spin').textContent = `SPIN (${val})`;
         currentBet = val;
         [...$('betrow').children].forEach(b=>b.classList.remove('active'));
+        updateBuyBonusText();
     }
 };
 
 let spinning = false;
-async function doSpin(betAmount) {
+async function doSpin(betAmount, buyBonus = false) {
   try {
-    const d = await api('/spin', { bet: betAmount, game: currentGame }); 
+    const d = await api('/spin', { bet: betAmount, game: currentGame, bonus_buy: buyBonus }); 
     startSpin(d.grid);
     setTimeout(() => { showResult(d); }, 1000 + GAME_CONFIG[currentGame].cols * 150 + 500);
   } catch(e) { 
@@ -392,14 +435,23 @@ async function doSpin(betAmount) {
       $('spin').disabled = false; 
       freeSpins = 0; 
       $('fs-counter').textContent = ''; 
+      $('buy-bonus').disabled = false;
+      $('bonus-mult-display').style.display = 'none';
   }
 }
 
 $('spin').onclick = async () => {
   if (spinning || freeSpins > 0) return; 
   if (currentBet <= 0) { showMsg('Ставка меньше минимума!', false); return; }
-  SFX.click(); spinning = true; $('spin').disabled = true;
-  doSpin(currentBet);
+  SFX.click(); spinning = true; $('spin').disabled = true; $('buy-bonus').disabled = true;
+  doSpin(currentBet, false);
+};
+
+$('buy-bonus').onclick = async () => {
+  if (spinning || freeSpins > 0) return; 
+  if (currentBet <= 0) return;
+  SFX.click(); spinning = true; $('spin').disabled = true; $('buy-bonus').disabled = true;
+  doSpin(currentBet, true);
 };
 
 // ==================== РУЛЕТКА ====================
@@ -415,7 +467,6 @@ const sliceAngle = Math.PI * 2 / slices.length;
 let currentRotation = 0;
 let isSpinningWheel = false;
 const offsetAngle = -Math.PI / 2 - sliceAngle / 2; 
-
 let wheelStartTime = 0;
 
 function drawWheel() {
@@ -468,7 +519,7 @@ $('bonus').onclick = async () => {
              let tl = Math.max(0, state.wheel_time_left - (Date.now() - wheelStartTime) / 1000);
              if (tl <= 0) {
                  $('wheel-spin-btn').disabled = false;
-                                  $('wheel-timer').textContent = `Доступно круток: ${5 - state.wheel_daily}/5`;
+                 $('wheel-timer').textContent = `Доступно круток: ${5 - state.wheel_daily}/5`;
                  clearInterval(wheelTimerInterval);
              } else {
                  let mm = Math.floor(tl / 60);
@@ -534,7 +585,6 @@ $('ad').onclick = async () => {
 
 $('backBtn').onclick = () => { location.reload(); };
 
-// Запуск меню
 $('menu').style.display = 'flex';
 </script>
 </body>
