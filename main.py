@@ -61,6 +61,7 @@ def generate_grid(game_key, is_bonus=False):
     g = GAMES[game_key]
     cols, rows = g["cols"], g["rows"]
     grid = [[None]*rows for _ in range(cols)]
+    fish_prices = {} # Словарь для хранения цен рыбок: (col, row) -> price
     
     if game_key == "fishing":
         for c in range(cols):
@@ -69,12 +70,14 @@ def generate_grid(game_key, is_bonus=False):
                 if rand < 0.01: 
                     grid[c][r] = g["scatter"]
                 elif rand < (0.30 if is_bonus else 0.08): 
+                    # Рыбка с ценой
                     grid[c][r] = random.choice(g["fish_cash"])
+                    fish_prices[(c, r)] = random.choice([5, 10, 20, 50, 100, 200])
                 elif rand < (0.34 if is_bonus else 0.10): 
-                    grid[c][r] = g["wild"] # Рыбак теперь редкий (4% в бонусе)
+                    grid[c][r] = g["wild"] # Рыбак (4% в бонусе)
                 else: 
                     grid[c][r] = random.choice(range(10))
-        return grid
+        return grid, fish_prices
 
     weights = [70, 60, 50, 40, 20, 5]
     pool = [s["id"] for s in g["symbols"] for _ in range(weights[s["id"]] if s["id"] < len(weights) else 1)]
@@ -84,9 +87,9 @@ def generate_grid(game_key, is_bonus=False):
             if g["scatter"] is not None and random.random() < 0.02: col.append(g["scatter"])
             else: col.append(random.choice(pool))
         grid[_] = col
-    return grid
+    return grid, fish_prices
 
-def check_win(grid, game_key, bet, fish_caught=0):
+def check_win(grid, game_key, bet, fish_prices, fish_caught=0):
     g = GAMES[game_key]
     lines = LINES[game_key]
     total_win = 0
@@ -115,8 +118,9 @@ def check_win(grid, game_key, bet, fish_caught=0):
             for c in range(len(grid)):
                 for r in range(len(grid[c])):
                     if grid[c][r] in g["fish_cash"]:
-                        # Цена рыбы (от 5 до 200 ставок)
-                        val = random.choice([5, 10, 20, 50, 100, 200]) * bet
+                        # Берем цену из словаря, если есть, иначе генерируем
+                        price_mult = fish_prices.get((c, r), random.choice([5, 10, 20, 50, 100, 200]))
+                        val = price_mult * bet
                         total_win += val * mult
                         fish_data.append({"col": c, "row": r, "val": val, "mult": mult})
 
@@ -179,7 +183,7 @@ def spin(r: SpinReq):
     if d["balance"] < cost: raise HTTPException(400, "Недостаточно фишек")
 
     bal = d["balance"] - cost
-    grid = generate_grid(r.game, is_fs or r.bonus_buy)
+    grid, fish_prices = generate_grid(r.game, is_fs or r.bonus_buy)
     scatters = 0
     
     if r.bonus_buy:
@@ -194,6 +198,10 @@ def spin(r: SpinReq):
             grid[1][1] = game_conf["fish_cash"][0]
             grid[3][1] = game_conf["fish_cash"][1]
             grid[2][0] = game_conf["fish_cash"][2]
+            # Явно ставим цену для гарантированных рыбок
+            fish_prices[(1,1)] = 50
+            fish_prices[(3,1)] = 100
+            fish_prices[(2,0)] = 20
     else:
         if not is_fs and game_conf.get("scatter") is not None:
             for c in grid:
@@ -208,8 +216,10 @@ def spin(r: SpinReq):
                  grid[2][1] = game_conf["wild"]
                  grid[1][1] = game_conf["fish_cash"][0]
                  grid[3][1] = game_conf["fish_cash"][1]
+                 fish_prices[(1,1)] = 50
+                 fish_prices[(3,1)] = 100
 
-    win_amount, win_lines, scatters_nat, fish_data, wilds_count = check_win(grid, r.game, r.bet, r.fish_caught)
+    win_amount, win_lines, scatters_nat, fish_data, wilds_count = check_win(grid, r.game, r.bet, fish_prices, r.fish_caught)
     if not r.bonus_buy and not is_fs: scatters = scatters_nat
     
     new_free_spins = d["free_spins"]
