@@ -10,16 +10,10 @@ app = FastAPI()
 def db():
     c = sqlite3.connect("slot.db")
     c.execute("""CREATE TABLE IF NOT EXISTS users(
-        uid INTEGER PRIMARY KEY, 
-        balance INTEGER DEFAULT 5000, 
-        wheel_time INTEGER DEFAULT 0, 
-        wheel_daily INTEGER DEFAULT 0, 
-        wheel_day INTEGER DEFAULT 0, 
-        free_spins INTEGER DEFAULT 0,
-        xp INTEGER DEFAULT 0,
-        level INTEGER DEFAULT 1,
-        referrer_id INTEGER DEFAULT 0,
-        ref_count INTEGER DEFAULT 0
+        uid INTEGER PRIMARY KEY, balance INTEGER DEFAULT 5000, 
+        wheel_time INTEGER DEFAULT 0, wheel_daily INTEGER DEFAULT 0, wheel_day INTEGER DEFAULT 0, 
+        free_spins INTEGER DEFAULT 0, xp INTEGER DEFAULT 0, level INTEGER DEFAULT 1,
+        referrer_id INTEGER DEFAULT 0, ref_count INTEGER DEFAULT 0
     )""")
     return c
 
@@ -78,13 +72,13 @@ def generate_grid(game_key):
                 else: grid[c][r] = random.choice(range(10))
         return grid
 
-    # ПОВЫШЕННЫЕ ШАНСЫ: убрал веса для редких символов, чтобы чаще падали базовые
+    # ПОВЫШЕННЫЕ ШАНСЫ: Базовые символы падают чаще
     weights = [50, 40, 30, 20, 10, 5]
     pool = [s["id"] for s in g["symbols"] for _ in range(weights[s["id"]] if s["id"] < len(weights) else 1)]
     for _ in range(cols):
         col = []
         for _ in range(rows):
-            if g["scatter"] is not None and random.random() < 0.008: col.append(g["scatter"])
+            if g["scatter"] is not None and random.random() < 0.01: col.append(g["scatter"])
             else: col.append(random.choice(pool))
         grid[_] = col
     return grid
@@ -134,7 +128,6 @@ def check_win(grid, game_key, bet, free_spins=0, fish_caught=0):
                 count += 1
             else: break
         
-        # СНИЖЕН ПОРОГ ДЛЯ ФРУКТОВ: 2 символа для 3x1 - это уже выигрыш
         min_match = 2 if game_key == "fruits" else 3
         
         if count >= min_match:
@@ -143,7 +136,6 @@ def check_win(grid, game_key, bet, free_spins=0, fish_caught=0):
                 mult = sym_data["pay"][count-3] if count >= 3 else 0
             else:
                 sym_data = next(s for s in g["symbols"] if s["id"] == first_sym)
-                # Если count = 2, берем первый элемент pay, если 3 - второй и т.д.
                 idx = count - min_match
                 if idx < len(sym_data["pay"]):
                     mult = sym_data["pay"][idx]
