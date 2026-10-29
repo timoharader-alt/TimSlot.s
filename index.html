@@ -63,7 +63,8 @@
   <h1>Выбери игру</h1>
   <button class="game-btn" onclick="startGame('fruits')"><span>🍒 Классика</span> <span>5x3 (мин: 10)</span></button>
   <button class="game-btn" onclick="startGame('space')"><span>🚀 Космос</span> <span>7x3 (мин: 50)</span></button>
-  <button class="game-btn" onclick="startGame('egypt')"><span>🏺 Египет</span> <span>5x3 (мин: 50)</span></button>
+  <button class="game-btn" onclick="startGame('egypt')"><span>🏺 Египет</span> <span>5x3 (мин: 30)</span></button>
+  <button class="game-btn" onclick="startGame('fishing')"><span>🎣 Рыбалка</span> <span>5x3 (мин: 50)</span></button>
 </div>
 
 <div id="app">
@@ -144,27 +145,22 @@ const SFX = {
   win: () => { [523,659,784,1046].forEach((f,i)=>tone(f,.15,'square',.06,i*.08)); },
   bigWin: () => { [523,659,784,1046,1318,1568].forEach((f,i)=>tone(f,.2,'square',.08,i*.06)); },
   scatter: () => { [800, 1000, 1200, 1600].forEach((f,i)=>tone(f,.1,'sine',.1,i*.1)); },
+  fish: () => { [400, 600, 800].forEach((f,i)=>tone(f,.1,'triangle',.1,i*.1)); },
   lose: () => tone(150,.3,'sawtooth',.06,0),
 };
 
 const GAME_CONFIG = {
   fruits: { cols: 5, rows: 3, min_bet: 10, syms: ['🍒','🍋','🫐','🍊','🍉','🍇','🔔','7️⃣'], bg: '#110000', scatter: null },
   space:  { cols: 7, rows: 3, min_bet: 50, syms: ['👽','🚀','⭐','🌌','☄️','🔮', '🪐'], bg: '#000511', scatter: 6 },
-  egypt:  { cols: 5, rows: 3, min_bet: 50, syms: ['🐈','🐍','🏺','⚱️','🔺','🔱', '👁️'], bg: '#110b00', scatter: 6 }
+  egypt:  { cols: 5, rows: 3, min_bet: 30, syms: ['🐈','🐍','🏺','⚱️','🔺','🔱', '👁️'], bg: '#110b00', scatter: 6 },
+  fishing:{ cols: 5, rows: 3, min_bet: 50, syms: ['10','J','Q','K','A','🐟','🧰','🪰','🎣','✨','🦈','🧔','🐠','🐡','🐠'], bg: '#001122', scatter: 10, wild: 11 }
 };
 
 const LINES = {
-  fruits: [
-      [1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2],
-      [0,0,1,2,2], [2,2,1,0,0], [0,1,0,1,0], [2,1,2,1,2]
-  ],
-  space: [
-      [1,1,1,1,1,1,1], [0,0,0,0,0,0,0], [2,2,2,2,2,2,2],
-      [0,1,2,1,0,1,0], [2,1,0,1,2,1,2], [0,0,1,2,2,1,0]
-  ],
-  egypt: [
-      [1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2]
-  ]
+  fruits: [[1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2], [0,0,1,2,2], [2,2,1,0,0], [0,1,0,1,0], [2,1,2,1,2]],
+  space: [[1,1,1,1,1,1,1], [0,0,0,0,0,0,0], [2,2,2,2,2,2,2], [0,1,2,1,0,1,0], [2,1,0,1,2,1,2], [0,0,1,2,2,1,0]],
+  egypt: [[1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2]],
+  fishing: [[1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2], [0,0,1,2,2], [2,2,1,0,0], [0,1,2,2,2], [2,1,0,0,0], [0,0,1,0,0]]
 };
 
 let currentGame = 'fruits';
@@ -187,7 +183,7 @@ function startGame(gameKey) {
   $('spin').textContent = `SPIN (${currentBet})`;
   [...$('betrow').children].forEach(b=>b.classList.remove('active'));
   
-  if (gameKey === 'egypt') {
+  if (gameKey === 'egypt' || gameKey === 'fishing') {
       $('buy-bonus').style.display = 'block';
       $('buy-bonus').textContent = `КУПИТЬ БОНУС (${currentBet * 100})`;
   } else {
@@ -198,7 +194,7 @@ function startGame(gameKey) {
 }
 
 function updateBuyBonusText() {
-    if (currentGame === 'egypt' && currentBet > 0) {
+    if ((currentGame === 'egypt' || currentGame === 'fishing') && currentBet > 0) {
         $('buy-bonus').textContent = `КУПИТЬ БОНУС (${currentBet * 100})`;
     }
 }
@@ -224,7 +220,7 @@ function initPixi() {
       const labels = [];
 
       for (let j=0;j<conf.rows + 2;j++) {
-        const t = new PIXI.Text({ text: conf.syms[j % conf.syms.length], style:{ fontFamily:'Arial', fontSize: cellH * 0.7, align:'center', fontWeight: 'bold' } });
+        const t = new PIXI.Text({ text: conf.syms[j % conf.syms.length], style:{ fontFamily:'Arial', fontSize: cellH * 0.6, align:'center', fontWeight: 'bold' } });
         t.anchor.set(0.5); t.x = cellW / 2; t.y = j*cellH + cellH/2;
         strip.addChild(t); labels.push(t);
       }
@@ -295,7 +291,6 @@ function showResult(d) {
   const conf = GAME_CONFIG[currentGame];
   let hasScatters = false;
 
-  // Подсветка скаттеров
   if (conf.scatter !== null) {
     for(let col=0; col<conf.cols; col++) {
       for(let row=0; row<conf.rows; row++) {
@@ -307,7 +302,7 @@ function showResult(d) {
     }
   }
 
-  // Проверка бонуса (в первую очередь!)
+  // Если выпал скаттер и мы не во фриспинах
   if (hasScatters && d.scatters >= 3 && freeSpins === 0) {
     SFX.scatter();
     freeSpins += 10;
@@ -345,6 +340,11 @@ function showResult(d) {
       winLinesGraphics.stroke({ width: 4, color: 0xffd700, alpha: 1 });
     });
     app.stage.addChild(winLinesGraphics);
+
+    // Если это рыбалка и есть выигрыш рыбок
+    if (currentGame === 'fishing' && d.fish_win > 0) {
+        setTimeout(() => { SFX.fish(); showMsg(`РЫБАК ПОЙМАЛ: +${d.fish_win * bonusMultiplier}`, true); }, 1000);
+    }
   } else {
     SFX.lose();
     showMsg('пусто', false);
@@ -433,7 +433,7 @@ $('custom-bet').oninput = e => {
 let spinning = false;
 async function doSpin(betAmount, buyBonus = false) {
   try {
-    const d = await api('/spin', { bet: betAmount, game: currentGame, bonus_buy: buyBonus }); 
+    const d = await api('/spin', { bet: betAmount, game: currentGame, bonus_buy: buyBonus, free_spins: freeSpins }); 
     startSpin(d.grid);
     setTimeout(() => { showResult(d); }, 1000 + GAME_CONFIG[currentGame].cols * 150 + 500);
   } catch(e) { 
