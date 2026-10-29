@@ -68,6 +68,7 @@ def generate_grid(game_key, is_bonus=False):
                 rand = random.random()
                 if rand < 0.01: grid[c][r] = g["scatter"]
                 elif rand < (0.35 if is_bonus else 0.10): grid[c][r] = random.choice(g["fish_cash"])
+                elif rand < (0.45 if is_bonus else 0.12): grid[c][r] = g["wild"]
                 else: grid[c][r] = random.choice(range(10))
         return grid
 
