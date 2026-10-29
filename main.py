@@ -4,7 +4,6 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-# Токен берется из переменных окружения Render (Environment Variables)
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 app = FastAPI()
 
@@ -44,6 +43,7 @@ def verify(init_data: str) -> dict:
         raise HTTPException(401, "bad signature")
     return json.loads(p["user"])
 
+# КЛАССИКА 3x1
 GAMES = {
     "fruits": {"cols": 3, "rows": 1, "min_bet": 10, "symbols": [{"id":0, "pay":[0, 10, 30]}, {"id":1, "pay":[0, 15, 50]}, {"id":2, "pay":[0, 20, 100]}, {"id":3, "pay":[0, 50, 200]}, {"id":4, "pay":[0, 100, 500]}, {"id":5, "pay":[0, 200, 1000]}], "scatter": None},
     "space": {"cols": 7, "rows": 3, "min_bet": 10, "symbols": [{"id":0, "pay":[1.2, 2, 5]}, {"id":1, "pay":[1.5, 3, 6]}, {"id":2, "pay":[2, 4, 8]}, {"id":3, "pay":[3, 6, 12]}, {"id":4, "pay":[5, 10, 20]}, {"id":5, "pay":[10, 20, 50]}], "scatter": 99},
@@ -69,8 +69,9 @@ def generate_grid(game_key):
         for c in range(cols):
             for r in range(rows):
                 rand = random.random()
+                # ШАНС РЫБОК 15% (увеличен для окупаемости бонуса)
                 if rand < 0.01: grid[c][r] = g["scatter"]
-                elif rand < 0.06: grid[c][r] = random.choice(g["fish_cash"])
+                elif rand < 0.15: grid[c][r] = random.choice(g["fish_cash"])
                 else: grid[c][r] = random.choice(range(10))
         return grid
 
@@ -209,11 +210,6 @@ def spin(r: SpinReq):
     elif scatters >= 3:
         new_free_spins = 10
         new_fish_caught = 0
-        # ГАРАНТИЯ 30% ДЛЯ КУПЛЕННОГО БОНУСА
-        if r.bonus_buy:
-            min_guaranteed = cost * 0.3
-            if win_amount < min_guaranteed:
-                win_amount = int(min_guaranteed)
     
     bal += win_amount
     new_xp = d["xp"] + win_amount 
