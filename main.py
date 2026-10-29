@@ -4,7 +4,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "ВСТАВЬ_ТОКЕН")
+# Твой токен вставлен сюда
+BOT_TOKEN = os.getenv("BOT_TOKEN", "9110201643:AAG67oiLoDzt2pVrQggRB6OZHafInMypKLA")
 app = FastAPI()
 
 def db():
@@ -16,7 +17,7 @@ def get_user(uid):
     c = db()
     row = c.execute("SELECT balance, wheel_time, wheel_daily, wheel_day FROM users WHERE uid=?", (uid,)).fetchone()
     if not row:
-        c.execute("INSERT INTO users(uid) VALUES(?)", (uid,))
+        c.execute("INSERT INTO users(uid, balance) VALUES(?, 5000)", (uid,))
         c.commit()
         row = (5000, 0, 0, 0)
     c.close()
@@ -37,7 +38,6 @@ def verify(init_data: str) -> dict:
         raise HTTPException(401, "bad signature")
     return json.loads(p["user"])
 
-# Настройки слотов
 GAMES = {
     "fruits": {
         "cols": 5, "rows": 3, "min_bet": 10,
