@@ -178,13 +178,19 @@ def spin(r: SpinReq):
         grid[1][0] = game_conf["scatter"]; grid[3][1] = game_conf["scatter"]; grid[2][2] = game_conf["scatter"]
         scatters = 3
     else:
-        if game_conf.get("scatter") is not None:
-            for c in grid:
-                for sym in c:
-                    if sym == game_conf["scatter"]: scatters += 1
+        # Защита от выпадения скаттеров во время фриспинов
+        if r.free_spins > 0:
+            for c in range(len(grid)):
+                for row in range(len(grid[c])):
+                    if grid[c][row] == game_conf.get("scatter"): grid[c][row] = 0
+        else:
+            if game_conf.get("scatter") is not None:
+                for c in grid:
+                    for sym in c:
+                        if sym == game_conf["scatter"]: scatters += 1
 
     win_amount, win_lines, scatters_nat, fish_win = check_win(grid, r.game, r.bet, r.free_spins)
-    if not r.bonus_buy: scatters = scatters_nat
+    if not r.bonus_buy and r.free_spins == 0: scatters = scatters_nat
     
     bal += win_amount
     set_user(uid, balance=bal)
