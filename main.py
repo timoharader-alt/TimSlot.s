@@ -4,7 +4,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "9110201643:AAG67oiLoDzt2pVrQggRB6OZHafInMypKLA")
+# Токен берется из переменных окружения Render (Environment Variables)
+BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 app = FastAPI()
 
 def db():
@@ -42,6 +43,7 @@ def verify(init_data: str) -> dict:
         raise HTTPException(401, "bad signature")
     return json.loads(p["user"])
 
+# КЛАССИКА 3x1, покупка бонуса для Египта, Космоса и Рыбалки
 GAMES = {
     "fruits": {"cols": 3, "rows": 1, "min_bet": 10, "symbols": [{"id":0, "pay":[0, 10, 30]}, {"id":1, "pay":[0, 15, 50]}, {"id":2, "pay":[0, 20, 100]}, {"id":3, "pay":[0, 50, 200]}, {"id":4, "pay":[0, 100, 500]}, {"id":5, "pay":[0, 200, 1000]}], "scatter": None},
     "space": {"cols": 7, "rows": 3, "min_bet": 10, "symbols": [{"id":0, "pay":[1.2, 2, 5]}, {"id":1, "pay":[1.5, 3, 6]}, {"id":2, "pay":[2, 4, 8]}, {"id":3, "pay":[3, 6, 12]}, {"id":4, "pay":[5, 10, 20]}, {"id":5, "pay":[10, 20, 50]}], "scatter": 99},
