@@ -68,7 +68,7 @@ def generate_grid(game_key, is_bonus=False):
                 rand = random.random()
                 if rand < 0.01: grid[c][r] = g["scatter"]
                 elif rand < (0.35 if is_bonus else 0.10): grid[c][r] = random.choice(g["fish_cash"])
-                elif rand < (0.45 if is_bonus else 0.12): grid[c][r] = g["wild"]
+                elif rand < (0.40 if is_bonus else 0.11): grid[c][r] = g["wild"] # Рыбак 5% в бонусе
                 else: grid[c][r] = random.choice(range(10))
         return grid
 
@@ -100,6 +100,7 @@ def check_win(grid, game_key, bet, fish_caught=0):
         wild_coords = [(c, r) for c in range(len(grid)) for r in range(len(grid[c])) if grid[c][r] == g["wild"]]
         wilds_count = len(wild_coords)
         
+        # Если есть рыбак, собираем ВСЕХ рыбок
         if wilds_count >= 1:
             mult = 1
             if fish_caught >= 9: mult = 10
@@ -110,6 +111,7 @@ def check_win(grid, game_key, bet, fish_caught=0):
             for c in range(len(grid)):
                 for r in range(len(grid[c])):
                     if grid[c][r] in g["fish_cash"]:
+                        # Цена рыбы
                         val = random.choice([5, 10, 20, 50, 100, 200]) * bet
                         total_win += val * mult
                         fish_data.append({"col": c, "row": r, "val": val, "mult": mult})
