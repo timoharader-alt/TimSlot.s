@@ -67,17 +67,18 @@ def generate_grid(game_key, is_bonus=False):
             for r in range(rows):
                 rand = random.random()
                 if rand < 0.01: grid[c][r] = g["scatter"]
-                # Во время бонуса рыбок 25%, вне бонуса 6%
-                elif rand < (0.25 if is_bonus else 0.06): grid[c][r] = random.choice(g["fish_cash"])
+                # Рыбок в бонусе 35%, вне 10%
+                elif rand < (0.35 if is_bonus else 0.10): grid[c][r] = random.choice(g["fish_cash"])
                 else: grid[c][r] = random.choice(range(10))
         return grid
 
-    weights = [60, 50, 40, 30, 15, 5]
+    # ПОВЫШЕННЫЕ ШАНСЫ: больше базовых символов
+    weights = [70, 60, 50, 40, 20, 5]
     pool = [s["id"] for s in g["symbols"] for _ in range(weights[s["id"]] if s["id"] < len(weights) else 1)]
     for _ in range(cols):
         col = []
         for _ in range(rows):
-            if g["scatter"] is not None and random.random() < 0.015: col.append(g["scatter"])
+            if g["scatter"] is not None and random.random() < 0.02: col.append(g["scatter"])
             else: col.append(random.choice(pool))
         grid[_] = col
     return grid
@@ -100,7 +101,6 @@ def check_win(grid, game_key, bet, is_bonus=False, fish_caught=0):
         wild_coords = [(c, r) for c in range(len(grid)) for r in range(len(grid[c])) if grid[c][r] == g["wild"]]
         wilds_count = len(wild_coords)
         
-        # Если есть хотя бы 1 рыбак, он собирает ВСЕХ рыбок на этом экране (каждую)
         if wilds_count >= 1 and is_bonus:
             mult = 1
             if fish_caught >= 9: mult = 10
@@ -111,7 +111,8 @@ def check_win(grid, game_key, bet, is_bonus=False, fish_caught=0):
             for c in range(len(grid)):
                 for r in range(len(grid[c])):
                     if grid[c][r] in g["fish_cash"]:
-                        val = random.choice([2, 5, 10, 20, 50, 100]) * bet
+                        # УВЕЛИЧЕННЫЙ КЭШ НА РЫБКАХ (от 5 до 200 ставок)
+                        val = random.choice([5, 10, 20, 50, 100, 200]) * bet
                         total_win += val * mult
                         fish_data.append({"col": c, "row": r, "val": val, "mult": mult})
 
@@ -177,7 +178,6 @@ def spin(r: SpinReq):
     grid = generate_grid(r.game, is_fs or r.bonus_buy)
     scatters = 0
     
-    # ПРИНУДИТЕЛЬНЫЙ РЫБАК НА ПЕРВОМ СПИНЕ БОНУСА
     if r.bonus_buy:
         for c in range(len(grid)):
             for row in range(len(grid[c])):
@@ -185,10 +185,9 @@ def spin(r: SpinReq):
         grid[1][0] = game_conf["scatter"]; grid[3][1] = game_conf["scatter"]; grid[2][2] = game_conf["scatter"]
         scatters = 3
         
+        # ГАРАНТИРОВАННЫЙ РЫБАК ПРИ ПОКУПКЕ
         if r.game == "fishing":
-            # Ставим рыбака в центр
             grid[2][1] = game_conf["wild"]
-            # Ставим рыбок вокруг него (гарантируем кэш)
             grid[1][1] = game_conf["fish_cash"][0]
             grid[3][1] = game_conf["fish_cash"][1]
             grid[2][0] = game_conf["fish_cash"][2]
@@ -202,7 +201,7 @@ def spin(r: SpinReq):
                 for row in range(len(grid[c])):
                     if grid[c][row] == game_conf.get("scatter"): grid[c][row] = 0
              
-             # Гарантируем рыбака на первом спине, если бонус выпал случайно
+             # ГАРАНТИРОВАННЫЙ РЫБАК НА ПЕРВОМ СПИНЕ СЛУЧАЙНОГО БОНУСА
              if d["free_spins"] == 10 and r.game == "fishing":
                  grid[2][1] = game_conf["wild"]
                  grid[1][1] = game_conf["fish_cash"][0]
@@ -216,7 +215,6 @@ def spin(r: SpinReq):
     
     if is_fs:
         new_free_spins -= 1
-        # Считаем КАЖДОГО рыбака, который выпал
         if wilds_count > 0:
             new_fish_caught += wilds_count
             if new_fish_caught % 3 == 0 and new_fish_caught <= 12:
@@ -243,3 +241,43 @@ def spin(r: SpinReq):
     elif new_fish_caught >= 1: ui_mult = 2
 
     return {"grid": grid, "win": win_amount, "balance": bal, "lines": win_lines, "scatters": scatters, "bonus_mult": ui_mult, "fish_data": fish_data, "is_free_spin": is_fs, "free_spins_left": new_free_spins, "fish_caught": new_fish_caught, "level": new_level, "xp": new_xp, "wilds_count": wilds_count}
+
+@app.post("/referral")
+def referral(r: RefReq):
+    u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
+    if uid == r.referrer_id or d["referrer_id"] != 0: return {"status": "error"}
+    c = db()
+    ref_row = c.execute("SELECT uid FROM users WHERE uid=?", (r.referrer_id,)).fetchone()
+    if not ref_row: c.close(); return {"status": "error"}
+    c.execute("UPDATE users SET referrer_id=?, balance=balance+1000 WHERE uid=?", (r.referrer_id, uid))
+    c.execute("UPDATE users SET ref_count=ref_count+1, balance=balance+2000 WHERE uid=?", (r.referrer_id,))
+    c.commit(); c.close()
+    return {"status": "success"}
+
+@app.post("/bonus")
+def bonus(r: Req):
+    u = verify(r.init_data); uid = u["id"]; d = get_user(uid); now = int(time.time())
+    if d["wheel_daily"] >= 5: raise HTTPException(400, "Лимит 5 круток")
+    if now < d["wheel_time"]: raise HTTPException(400, "Кулдаун 1 час")
+    rnd = random.random() * 100
+    if rnd < 1: amount = 1000
+    elif rnd < 4: amount = 500
+    elif rnd < 12: amount = 250
+    elif rnd < 32: amount = 100
+    elif rnd < 62: amount = 50
+    elif rnd < 87: amount = 20
+    else: amount = 0
+    set_user(uid, balance=d["balance"] + amount, wheel_time=now + 3600, wheel_daily=d["wheel_daily"] + 1)
+    return {"amount": amount, "balance": d["balance"] + amount}
+
+@app.post("/ad")
+def ad(r: Req):
+    u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
+    if d["balance"] >= 5000: raise HTTPException(400, "реклама доступна только при балансе < 5000")
+    amount = random.choice([100, 200, 300, 500])
+    set_user(uid, balance=d["balance"] + amount)
+    return {"amount": amount, "balance": d["balance"] + amount}
+
+@app.get("/")
+def index():
+    return FileResponse("index.html")
