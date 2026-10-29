@@ -4,24 +4,23 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-# ТОКЕН
 BOT_TOKEN = os.getenv("BOT_TOKEN", "9110201643:AAG67oiLoDzt2pVrQggRB6OZHafInMypKLA")
 app = FastAPI()
 
 def db():
     c = sqlite3.connect("slot.db")
-    c.execute("CREATE TABLE IF NOT EXISTS users(uid INTEGER PRIMARY KEY, balance INTEGER DEFAULT 5000, wheel_time INTEGER DEFAULT 0, wheel_daily INTEGER DEFAULT 0, wheel_day INTEGER DEFAULT 0)")
+    c.execute("CREATE TABLE IF NOT EXISTS users(uid INTEGER PRIMARY KEY, balance INTEGER DEFAULT 5000, wheel_time INTEGER DEFAULT 0, wheel_daily INTEGER DEFAULT 0, wheel_day INTEGER DEFAULT 0, free_spins INTEGER DEFAULT 0)")
     return c
 
 def get_user(uid):
     c = db()
-    row = c.execute("SELECT balance, wheel_time, wheel_daily, wheel_day FROM users WHERE uid=?", (uid,)).fetchone()
+    row = c.execute("SELECT balance, wheel_time, wheel_daily, wheel_day, free_spins FROM users WHERE uid=?", (uid,)).fetchone()
     if not row:
         c.execute("INSERT INTO users(uid, balance) VALUES(?, 5000)", (uid,))
         c.commit()
-        row = (5000, 0, 0, 0)
+        row = (5000, 0, 0, 0, 0)
     c.close()
-    return {"balance": row[0], "wheel_time": row[1], "wheel_daily": row[2], "wheel_day": row[3]}
+    return {"balance": row[0], "wheel_time": row[1], "wheel_daily": row[2], "wheel_day": row[3], "free_spins": row[4]}
 
 def set_user(uid, **kw):
     c = db()
@@ -153,7 +152,7 @@ def state(r: Req):
         d["wheel_daily"] = 0
     can_wheel = (d["wheel_daily"] < 5) and (now >= d["wheel_time"])
     time_left = max(0, d["wheel_time"] - now)
-    return {"balance": d["balance"], "wheel_ready": can_wheel, "wheel_time_left": time_left, "wheel_daily": d["wheel_daily"], "ad_ready": now - d["wheel_time"] > 60, "ad_allowed": d["balance"] < 5000}
+    return {"balance": d["balance"], "wheel_ready": can_wheel, "wheel_time_left": time_left, "wheel_daily": d["wheel_daily"], "ad_ready": now - d["wheel_time"] > 60, "ad_allowed": d["balance"] < 5000, "free_spins": d["free_spins"]}
 
 class SpinReq(BaseModel):
     init_data: str; bet: int; game: str; bonus_buy: bool = False; free_spins: int = 0
@@ -162,9 +161,11 @@ class SpinReq(BaseModel):
 def spin(r: SpinReq):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
     game_conf = GAMES[r.game]
-    cost = r.bet * 100 if r.bonus_buy else r.bet
     
-    if r.bet < game_conf["min_bet"]: raise HTTPException(400, f"Мин. ставка {game_conf['min_bet']}")
+    is_fs = d["free_spins"] > 0
+    cost = 0 if is_fs else (r.bet * 100 if r.bonus_buy else r.bet)
+    
+    if not is_fs and r.bet < game_conf["min_bet"]: raise HTTPException(400, f"Мин. ставка {game_conf['min_bet']}")
     if d["balance"] < cost: raise HTTPException(400, "Недостаточно фишек")
 
     bal = d["balance"] - cost
@@ -178,27 +179,31 @@ def spin(r: SpinReq):
         grid[1][0] = game_conf["scatter"]; grid[3][1] = game_conf["scatter"]; grid[2][2] = game_conf["scatter"]
         scatters = 3
     else:
-        # Защита от выпадения скаттеров во время фриспинов
-        if r.free_spins > 0:
-            for c in range(len(grid)):
+        if not is_fs and game_conf.get("scatter") is not None:
+            for c in grid:
+                for sym in c:
+                    if sym == game_conf["scatter"]: scatters += 1
+        elif is_fs:
+             for c in range(len(grid)):
                 for row in range(len(grid[c])):
                     if grid[c][row] == game_conf.get("scatter"): grid[c][row] = 0
-        else:
-            if game_conf.get("scatter") is not None:
-                for c in grid:
-                    for sym in c:
-                        if sym == game_conf["scatter"]: scatters += 1
 
-    win_amount, win_lines, scatters_nat, fish_win = check_win(grid, r.game, r.bet, r.free_spins)
-    if not r.bonus_buy and r.free_spins == 0: scatters = scatters_nat
+    win_amount, win_lines, scatters_nat, fish_win = check_win(grid, r.game, r.bet, d["free_spins"])
+    if not r.bonus_buy and not is_fs: scatters = scatters_nat
+    
+    new_free_spins = d["free_spins"]
+    if is_fs:
+        new_free_spins -= 1
+    elif scatters >= 3:
+        new_free_spins = 10
     
     bal += win_amount
-    set_user(uid, balance=bal)
+    set_user(uid, balance=bal, free_spins=new_free_spins)
     
     bonus_mult = 1
     if scatters >= 3: bonus_mult = random.choice([2, 3, 5, 10])
 
-    return {"grid": grid, "win": win_amount, "balance": bal, "lines": win_lines, "scatters": scatters, "bonus_mult": bonus_mult, "fish_win": fish_win, "is_free_spin": r.free_spins > 0}
+    return {"grid": grid, "win": win_amount, "balance": bal, "lines": win_lines, "scatters": scatters, "bonus_mult": bonus_mult, "fish_win": fish_win, "is_free_spin": is_fs, "free_spins_left": new_free_spins}
 
 @app.post("/bonus")
 def bonus(r: Req):
