@@ -37,6 +37,7 @@ def verify(init_data: str) -> dict:
         raise HTTPException(401, "bad signature")
     return json.loads(p["user"])
 
+# Настройка слотов
 GAMES = {
     "fruits": {
         "cols": 5, "rows": 3, "min_bet": 10,
@@ -58,37 +59,70 @@ GAMES = {
         "scatter": 99
     },
     "egypt": {
-        "cols": 5, "rows": 3, "min_bet": 50,
+        "cols": 5, "rows": 3, "min_bet": 30,
         "symbols": [
             {"id":0, "pay":[1.5, 3, 6]}, {"id":1, "pay":[2, 4, 8]}, 
             {"id":2, "pay":[3, 6, 12]}, {"id":3, "pay":[5, 10, 20]}, 
             {"id":4, "pay":[8, 16, 30]}, {"id":5, "pay":[15, 30, 60]}
         ],
         "scatter": 99
+    },
+    # НОВАЯ ИГРА РЫБАЛКА
+    "fishing": {
+        "cols": 5, "rows": 3, "min_bet": 50,
+        "symbols": [
+            {"id":0, "pay":[5, 25, 100]},  # 10
+            {"id":1, "pay":[5, 25, 100]},  # J
+            {"id":2, "pay":[5, 25, 100]},  # Q
+            {"id":3, "pay":[5, 25, 100]},  # K
+            {"id":4, "pay":[5, 25, 100]},  # A
+            {"id":5, "pay":[10, 50, 200]}, # Рыба
+            {"id":6, "pay":[20, 100, 500]},# Ящик
+            {"id":7, "pay":[20, 100, 500]},# Стрекоза
+            {"id":8, "pay":[30, 150, 1000]},# Удочка
+            {"id":9, "pay":[50, 200, 2000]},# Блесна
+        ],
+        "scatter": 10, # Скаттер (рыба-хищник)
+        "wild": 11,    # Вилд (Рыбак)
+        "fish_cash": [12, 13, 14, 15] # Рыбки с кэшем
     }
 }
 
 LINES = {
-    "fruits": [
-        [1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2],
-        [0,0,1,2,2], [2,2,1,0,0], [0,1,0,1,0], [2,1,2,1,2]
-    ],
-    "space": [
-        [1,1,1,1,1,1,1], [0,0,0,0,0,0,0], [2,2,2,2,2,2,2],
-        [0,1,2,1,0,1,0], [2,1,0,1,2,1,2], [0,0,1,2,2,1,0]
-    ],
-    "egypt": [
-        [1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2]
+    "fruits": [[1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2], [0,0,1,2,2], [2,2,1,0,0], [0,1,0,1,0], [2,1,2,1,2]],
+    "space": [[1,1,1,1,1,1,1], [0,0,0,0,0,0,0], [2,2,2,2,2,2,2], [0,1,2,1,0,1,0], [2,1,0,1,2,1,2], [0,0,1,2,2,1,0]],
+    "egypt": [[1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2]],
+    # 10 линий для рыбалки (как на скрине)
+    "fishing": [
+        [1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], 
+        [0,1,2,1,0], [2,1,0,1,2], [0,0,1,2,2], 
+        [2,2,1,0,0], [0,1,2,2,2], [2,1,0,0,0], 
+        [0,0,1,0,0]
     ]
 }
+
+FISH_CASH_VALUES = [2, 5, 10, 15, 20, 25, 50, 200] # Множители для кэша рыбок
 
 def generate_grid(game_key):
     g = GAMES[game_key]
     cols, rows = g["cols"], g["rows"]
+    
+    grid = [[None]*rows for _ in range(cols)]
+    
+    if game_key == "fishing":
+        # В рыбалке символы падают немного иначе, чтобы не было перекоса
+        for c in range(cols):
+            for r in range(rows):
+                rand = random.random()
+                if rand < 0.01: grid[c][r] = g["scatter"] # 1% скаттер
+                elif rand < 0.06: grid[c][r] = random.choice(g["fish_cash"]) # 5% рыбка с кэшем
+                else: grid[c][r] = random.choice(range(10)) # Остальные
+        return grid
+
+    # Для остальных игр (стандартный пул)
     weights = [40, 35, 30, 25, 15, 10, 5, 2]
     pool = [s["id"] for s in g["symbols"] for _ in range(weights[s["id"]])]
     
-    grid = []
     for _ in range(cols):
         col = []
         for _ in range(rows):
@@ -96,24 +130,38 @@ def generate_grid(game_key):
                 col.append(g["scatter"])
             else:
                 col.append(random.choice(pool))
-        grid.append(col)
+        grid[_] = col
     return grid
 
-def check_win(grid, game_key, bet):
+def check_win(grid, game_key, bet, free_spins=0):
     g = GAMES[game_key]
     lines = LINES[game_key]
     total_win = 0
     win_lines = []
     scatters = 0
+    fish_win = 0
 
-    if g["scatter"] is not None:
+    # Подсчет скаттеров
+    if g.get("scatter") is not None:
         for col in grid:
             for sym in col:
                 if sym == g["scatter"]: scatters += 1
 
+    # Подсчет рыбок (только во фриспинах)
+    if game_key == "fishing" and free_spins > 0:
+        has_wild = any(sym == g.get("wild") for col in grid for sym in col)
+        if has_wild:
+            for col in grid:
+                for sym in col:
+                    if sym in g["fish_cash"]:
+                        # Выбираем случайный множитель для кэша
+                        mult = random.choice(FISH_CASH_VALUES)
+                        fish_win += bet * mult
+
+    # Подсчет линий
     for line_idx, line in enumerate(lines):
         first_sym = grid[0][line[0]]
-        if first_sym == g["scatter"]: continue
+        if first_sym is None or first_sym >= 10: continue # Скаттеры/рыбки не в линиях
         
         count = 1
         for col in range(1, len(grid)):
@@ -121,16 +169,22 @@ def check_win(grid, game_key, bet):
             else: break
         
         if count >= 3:
-            sym_data = next(s for s in g["symbols"] if s["id"] == first_sym)
-            if count == 3: mult = sym_data["pay"][0]
-            elif count == 4: mult = sym_data["pay"][1]
-            else: mult = sym_data["pay"][2]
+            if game_key == "fishing":
+                # У рыбалки массив pay = [3, 4, 5] символов
+                sym_data = g["symbols"][first_sym]
+                mult = sym_data["pay"][count-3]
+                payout = bet * mult
+            else:
+                sym_data = next(s for s in g["symbols"] if s["id"] == first_sym)
+                if count == 3: mult = sym_data["pay"][0]
+                elif count == 4: mult = sym_data["pay"][1]
+                else: mult = sym_data["pay"][2]
+                payout = bet * mult
             
-            payout = bet * mult
             total_win += payout
             win_lines.append({"line": line_idx, "count": count, "win": payout})
             
-    return total_win, win_lines, scatters
+    return total_win + fish_win, win_lines, scatters, fish_win
 
 class Req(BaseModel):
     init_data: str
@@ -161,6 +215,7 @@ class SpinReq(BaseModel):
     bet: int
     game: str
     bonus_buy: bool = False
+    free_spins: int = 0
 
 @app.post("/spin")
 def spin(r: SpinReq):
@@ -179,12 +234,23 @@ def spin(r: SpinReq):
     scatters = 0
     
     if r.bonus_buy:
-        grid[1][0] = 99
-        grid[3][1] = 99
-        grid[2][2] = 99
+        # Принудительно ставим 3 скаттера
+        for c in range(len(grid)):
+            for row in range(len(grid[c])):
+                if grid[c][row] == game_conf.get("scatter"):
+                    grid[c][row] = 0 # Заменяем на мусор
+        grid[1][0] = game_conf["scatter"]
+        grid[3][1] = game_conf["scatter"]
+        grid[2][2] = game_conf["scatter"]
         scatters = 3
+    else:
+        # Считаем скаттеры естественным путем
+        if game_conf.get("scatter") is not None:
+            for c in grid:
+                for sym in c:
+                    if sym == game_conf["scatter"]: scatters += 1
 
-    win_amount, win_lines, scatters_nat = check_win(grid, r.game, r.bet)
+    win_amount, win_lines, scatters_nat, fish_win = check_win(grid, r.game, r.bet, r.free_spins)
     if not r.bonus_buy: scatters = scatters_nat
     
     bal += win_amount
@@ -196,7 +262,7 @@ def spin(r: SpinReq):
 
     return {
         "grid": grid, "win": win_amount, "balance": bal, "lines": win_lines, 
-        "scatters": scatters, "bonus_mult": bonus_mult
+        "scatters": scatters, "bonus_mult": bonus_mult, "fish_win": fish_win
     }
 
 @app.post("/bonus")
