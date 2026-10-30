@@ -38,9 +38,6 @@
   .balance-box { background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 10px; border: 1px solid #ffd700; }
   .balance-box span { font-size: 12px; color: #aaa; display: block; }
   .balance-box strong { font-size: 22px; color: #ffd700; text-shadow: 0 0 10px #ffd700; }
-  .level-box { background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 10px; font-size: 12px; border: 1px solid #444; color: #fff;}
-  .level-bar { width: 100px; height: 6px; background: #333; border-radius: 3px; margin-top: 5px; overflow: hidden; }
-  .level-fill { height: 100%; background: #00ff88; width: 0%; transition: width 0.3s; }
   .menu-btn { background: rgba(0,0,0,0.6); border: 1px solid #555; color: #fff; width: 45px; height: 45px; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 24px; cursor: pointer; font-weight: bold; }
 
   #dropdown-menu { position: absolute; top: 70px; right: 15px; background: rgba(20,20,25,0.95); border: 1px solid #ffd700; border-radius: 12px; display: none; flex-direction: column; min-width: 200px; z-index: 50; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
@@ -49,19 +46,33 @@
 
   /* SLOT GRID */
   #pixi-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 10px; position: relative; overflow: hidden; min-height: 0; }
-  #slot-grid { width: 100%; max-width: 100%; max-height: 100%; height: 60vh; border-radius: 12px; box-shadow: 0 0 30px rgba(0,0,0,0.9); border: 3px solid rgba(255,215,0,0.3); position: relative; background: rgba(0,0,0,0.6); overflow: hidden; display: flex; }
+  
+  #slot-grid { 
+      width: 100%; 
+      max-width: 90%;
+      max-height: 100%; 
+      height: auto;
+      aspect-ratio: 3 / 1; /* Пропорции для классики */
+      border-radius: 12px; 
+      box-shadow: 0 0 30px rgba(0,0,0,0.9); 
+      border: 3px solid rgba(255,215,0,0.3); 
+      position: relative; 
+      background: rgba(0,0,0,0.6); 
+      overflow: hidden; 
+      display: flex; 
+      margin: auto;
+  }
+  #slot-grid.fishing-mode { aspect-ratio: 5 / 3; }
+
   .reel-col { display: flex; flex-direction: column; flex: 1; height: 100%; overflow: hidden; position: relative; border-right: 1px solid rgba(255,255,255,0.1); min-width: 40px;}
   .reel-col:last-child { border-right: none; }
-  /* ИЗМЕНЕНО: высота 100%, убраны скрытые ряды */
   .reel-strip { display: flex; flex-direction: column; width: 100%; height: 100%; transition: none; }
-  /* ИЗМЕНЕНО: ячейки занимают равную долю без скрытых рядов */
   .cell { display: flex; justify-content: center; align-items: center; width: 100%; height: calc(100% / var(--rows)); min-height: 0; flex-shrink: 0; text-align: center; font-size: 32px; line-height: 1; background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.05); transition: transform 0.15s; }
 
   .win-cell { background: rgba(255, 215, 0, 0.3) !important; box-shadow: inset 0 0 15px #ffd700; border-radius: 8px; }
   .win-flash { position: fixed; inset: 0; background: #fff; z-index: 90; pointer-events: none; opacity: 0; transition: opacity 0.1s; }
   .win-flash.active { opacity: 0.8; }
 
-  /* ИЗМЕНЕНО: шкала вынесена в поток, absolute убран */
   #fisher-scale { 
       display: none; 
       margin: 0 auto 5px auto; 
@@ -132,7 +143,7 @@
   .roulette-wheel { width: 100%; height: 100%; border-radius: 50%; border: 8px solid #b8860b; box-shadow: 0 0 20px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.8); position: relative; background: #111; transition: transform 4s cubic-bezier(0.1, 0.7, 0.1, 1); }
   #r-wheel-sectors { width: 100%; height: 100%; border-radius: 50%; overflow: hidden; position: absolute; inset: 0; }
   .roulette-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 30%; height: 30%; background: #222; border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 2px solid #555; z-index: 2; font-size: 20px; }
-  .roulette-ball { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); width: 12px; height: 12px; background: radial-gradient(circle at 30% 30%, #fff, #ccc); border-radius: 50%; box-shadow: 0 0 10px #fff; z-index: 3; transition: top 4s cubic-bezier(0.1, 0.7, 0.1, 1), transform 4s cubic-bezier(0.1, 0.7, 0.1, 1); }
+  .roulette-ball { position: absolute; top: 50%; left: 50%; width: 12px; height: 12px; background: radial-gradient(circle at 30% 30%, #fff, #ccc); border-radius: 50%; box-shadow: 0 0 10px #fff; z-index: 3; margin-top: -6px; margin-left: -6px; transform-origin: 0 0; transition: transform 4s cubic-bezier(0.2, 0.8, 0.2, 1); }
   .wheel-sector { position: absolute; top: 0; left: 0; width: 50%; height: 50%; transform-origin: 100% 100%; display: flex; justify-content: center; align-items: center; font-size: 10px; font-weight: bold; color: #fff; clip-path: polygon(0 0, 100% 0, 100% 100%); }
 </style>
 </head>
@@ -153,22 +164,22 @@
 </div>
 
 <div id="game-screen">
-  <!-- ИЗМЕНЕНО: Кнопка "Назад" добавлена в верхнюю панель -->
   <div id="top-bar">
     <div style="display:flex; align-items:center; gap:10px;">
       <button class="main-btn" onclick="exitToLobby()" style="width:auto; padding:10px 15px; background:rgba(0,0,0,0.7); color:#fff; border:1px solid #555; box-shadow:none; font-size:14px; border-radius:12px;">⬅ Назад</button>
       <div class="profile-info">
         <div class="balance-box"><span>Баланс</span><strong id="bal">0</strong></div>
-        <div class="level-box">
-          <div>Уровень <span id="lvl-text">1</span></div>
-          <div class="level-bar"><div class="level-fill" id="lvl-fill"></div></div>
-        </div>
       </div>
     </div>
     <div class="menu-btn" id="menu-toggle">⋮</div>
   </div>
 
   <div id="dropdown-menu">
+    <div style="padding: 12px 15px; border-bottom: 1px solid #333; background: rgba(255,215,0,0.1);">
+        <div style="font-size: 14px; color: #fff; font-weight: bold; margin-bottom: 5px;">Уровень <span id="lvl-text">1</span></div>
+        <div class="level-bar" style="width: 100%; height: 8px; background:#333; border-radius:4px; overflow:hidden;"><div class="level-fill" id="lvl-fill" style="width: 0%; height:100%; background:#00ff88;"></div></div>
+    </div>
+    
     <button id="menu-music">🎵 Музыка: ВКЛ</button>
     <button id="menu-bonus">🎰 Рулетка</button>
     <button id="menu-ad">🎬 Реклама</button>
@@ -177,7 +188,6 @@
     <button id="menu-back">⬅ В меню</button>
   </div>
 
-  <!-- ИЗМЕНЕНО: Шкала рыбака вынесена ИЗ контейнера с барабанами -->
   <div id="fisher-scale">
       <div class="fisher-icons">
           <div class="fisher-icon" id="fi-1">🧔</div>
@@ -204,12 +214,10 @@
     <div class="action-buttons">
       <button class="main-btn" id="spin-btn">SPIN</button>
       <button class="main-btn" id="buy-bonus-btn">КУПИТЬ БОНУС</button>
-      <!-- ИЗМЕНЕНО: Старая нижняя кнопка "Сменить игру" удалена -->
     </div>
   </div>
 </div>
 
-<!-- ИЗМЕНЕНО: Новая структура экрана рулетки с круглым колесом -->
 <div id="roulette-screen">
   <div class="roulette-top">
     <button class="main-btn" onclick="document.getElementById('roulette-screen').style.display='none'; document.getElementById('lobby-screen').style.display='flex';" style="width:100px; background:#333; color:#fff; padding:10px;">⬅ Назад</button>
@@ -231,13 +239,20 @@
 
   <div class="roulette-bets" id="r-bets">
     <div style="text-align:center; margin-bottom:10px;">Твои ставки: <span id="r-total-bet">0</span></div>
+    <div style="display:flex; justify-content:center; align-items:center; gap:8px; margin-bottom:15px; flex-wrap:wrap;">
+      <button class="r-bet-btn r-amount-btn active" data-amount="10" style="margin:0; padding:8px 12px; font-size:14px; background:#ffd700; color:#000; border-color:#fff;">10</button>
+      <button class="r-bet-btn r-amount-btn" data-amount="50" style="margin:0; padding:8px 12px; font-size:14px;">50</button>
+      <button class="r-bet-btn r-amount-btn" data-amount="100" style="margin:0; padding:8px 12px; font-size:14px;">100</button>
+      <button class="r-bet-btn r-amount-btn" data-amount="500" style="margin:0; padding:8px 12px; font-size:14px;">500</button>
+      <input type="number" id="r-custom-bet" placeholder="Своя" style="width:70px; padding:8px; background:rgba(0,0,0,0.5); border:1px solid #444; color:#ffd700; border-radius:8px; text-align:center; font-weight:bold; outline:none;">
+    </div>
     <div style="text-align:center;">
-      <div class="r-bet-btn" onclick="addBet('color', 'red', 100)">Красное (x2)</div>
-      <div class="r-bet-btn" onclick="addBet('color', 'black', 100)">Черное (x2)</div>
-      <div class="r-bet-btn" onclick="addBet('parity', 'even', 100)">Чет (x2)</div>
-      <div class="r-bet-btn" onclick="addBet('parity', 'odd', 100)">Нечет (x2)</div>
-      <div class="r-bet-btn" onclick="addBet('half', 'low', 100)">1-18 (x2)</div>
-      <div class="r-bet-btn" onclick="addBet('half', 'high', 100)">19-36 (x2)</div>
+      <div class="r-bet-btn" onclick="addBet('color', 'red')">Красное (x2)</div>
+      <div class="r-bet-btn" onclick="addBet('color', 'black')">Черное (x2)</div>
+      <div class="r-bet-btn" onclick="addBet('parity', 'even')">Чет (x2)</div>
+      <div class="r-bet-btn" onclick="addBet('parity', 'odd')">Нечет (x2)</div>
+      <div class="r-bet-btn" onclick="addBet('half', 'low')">1-18 (x2)</div>
+      <div class="r-bet-btn" onclick="addBet('half', 'high')">19-36 (x2)</div>
     </div>
     <button id="r-spin-btn">КРУТИТЬ (Списать ставки)</button>
   </div>
@@ -273,15 +288,13 @@
     <button class="main-btn" id="wheel-spin-btn" style="background:linear-gradient(to bottom, #9b59b6, #5e2c76); width:200px; padding:15px;">КРУТИТЬ</button>
     <button class="main-btn" id="wheel-close" style="background:#ffd700; color:#000; width:200px; padding:15px; display:none; margin-top:10px;">ЗАБРАТЬ</button>
   </div>
-</div>
-
-<script>
+  </div>
+  <script>
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 const init = tg?.initData || '';
 const $ = id => document.getElementById(id);
 
-// НОВАЯ ФУНКЦИЯ: Выход в меню
 function exitToLobby() {
     SFX.click();
     spinning = false;
@@ -430,18 +443,19 @@ function startGame(gameKey) {
   $('custom-bet').placeholder = `от ${conf.min_bet}`;
   $('spin-btn').textContent = `SPIN (${currentBet})`;
   
-  $('slot-grid').style.setProperty('--rows', conf.rows);
-  $('slot-grid').style.setProperty('--aspect', `${conf.cols}/${conf.rows}`);
-
-  [...$('betrow').children].forEach(b=>b.classList.remove('active'));
-  $('betrow').querySelector('[data-bet="10"]').classList.add('active');
-
+  const grid = $('slot-grid');
+  grid.style.setProperty('--rows', conf.rows);
   if (gameKey === 'fishing') {
+      grid.classList.add('fishing-mode');
       $('buy-bonus-btn').style.display = 'block';
       $('buy-bonus-btn').textContent = `КУПИТЬ БОНУС (${currentBet * 15})`;
   } else {
+      grid.classList.remove('fishing-mode');
       $('buy-bonus-btn').style.display = 'none';
   }
+
+  [...$('betrow').children].forEach(b=>b.classList.remove('active'));
+  $('betrow').querySelector('[data-bet="10"]').classList.add('active');
   
   $('fisher-scale').style.display = 'none';
   
@@ -449,7 +463,6 @@ function startGame(gameKey) {
   refresh();
 }
 
-// ИЗМЕНЕНО: Генерация сетки без скрытых рядов +2
 function initSlotGrid() {
     const conf = GAME_CONFIG[currentGame];
     const grid = $('slot-grid');
@@ -476,7 +489,6 @@ function initSlotGrid() {
     }
 }
 
-// ИЗМЕНЕНО: Новая анимация спина (эффект мигания вместо сдвига)
 function startSpin(finalGrid) {
     const conf = GAME_CONFIG[currentGame];
     spinning = true;
@@ -504,12 +516,11 @@ function startSpin(finalGrid) {
                 cells[row].style.transform = 'scale(1.2)';
                 setTimeout(() => cells[row].style.transform = 'scale(1)', 150);
             }
-            
             SFX.reelStop();
         }, 800 + i * 200);
     }
 }
-  // ================== API ==================
+    // ================== API ==================
 async function api(path, body={}) {
   const r = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ init_data: init, ...body }) });
   const j = await r.json(); if (!r.ok) throw new Error(j.detail || 'ошибка'); return j;
@@ -560,7 +571,7 @@ function updateUIState(level, xp, nextXp = null) {
 function showMsg(t, win) { const m = $('msg'); m.textContent = t; m.className = 'show ' + (win ? 'win':'lose'); setTimeout(()=> m.className='', 2000); }
 function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); setTimeout(()=> el.classList.remove('show'), 1500); }
 
-// --- УПРАВЛЕНИЕ СТАВКАМИ ---
+// --- УПРАВЛЕНИЕ СТАВКАМИ В СЛОТАХ ---
 $('betrow').onclick = e => { 
     if (freeSpins > 0) return;
     if (e.target.id === 'custom-bet') return;
@@ -624,7 +635,6 @@ function handleSpinResult(d) {
     const conf = GAME_CONFIG[currentGame];
     let hasScatters = false;
 
-    // Сброс визуала
     for(let col=0; col<conf.cols; col++) {
         for(let row=0; row<conf.rows; row++) {
             const cell = columns[col].strip.children[row];
@@ -636,7 +646,6 @@ function handleSpinResult(d) {
         }
     }
 
-    // Подсветка и вывод цены рыбок
     for(let col=0; col<conf.cols; col++) {
         for(let row=0; row<conf.rows; row++) {
             const idx = d.grid[col][row];
@@ -662,7 +671,6 @@ function handleSpinResult(d) {
         }
     }
 
-    // Логика бонуса
     if (hasScatters && d.scatters >= 3 && !d.is_free_spin) {
         SFX.scatter();
         $('top-bar').style.boxShadow = "0 0 50px #ffd700";
@@ -695,25 +703,25 @@ function handleSpinResult(d) {
         showMsg('пусто', false);
     }
 
-    // Синхронизация состояния
     freeSpins = d.free_spins_left;
     currentFishCaught = d.fish_caught;
     spinning = false;
     updateUIState(d.level, d.xp);
 
-    // Шкала рыбака
+    // НОВАЯ ЛОГИКА ШКАЛЫ РЫБАКА
     if (currentGame === 'fishing' && freeSpins > 0) {
         $('fisher-scale').style.display = 'block';
-        let lvl = Math.floor(currentFishCaught / 3);
         let mult = 1;
-        if (lvl >= 4) mult = 10;
-        else if (lvl >= 3) mult = 5;
-        else if (lvl >= 2) mult = 3;
-        else if (lvl >= 1) mult = 2;
+        let activeIcons = 0;
+        
+        if (currentFishCaught >= 20) { mult = 10; activeIcons = 4; }
+        else if (currentFishCaught >= 12) { mult = 5; activeIcons = 3; }
+        else if (currentFishCaught >= 8) { mult = 3; activeIcons = 2; }
+        else if (currentFishCaught >= 4) { mult = 2; activeIcons = 1; }
 
-        $('fisher-mult').textContent = `x${mult}`;
+        $('fisher-mult').textContent = `x${mult} (${currentFishCaught}/20)`;
         for (let i=1; i<=4; i++) {
-            if (i <= lvl) $('fi-'+i).classList.add('active');
+            if (i <= activeIcons) $('fi-'+i).classList.add('active');
             else $('fi-'+i).classList.remove('active');
         }
     } else {
@@ -746,10 +754,10 @@ function triggerWinFlash() {
     $('pixi-container').style.transform = "translate(5px, 5px)";
     setTimeout(() => $('pixi-container').style.transform = "translate(-5px, -5px)", 50);
     setTimeout(() => $('pixi-container').style.transform = "translate(0, 0)", 100);
-}
-
-// --- РУЛЕТКА ЛОГИКА ---
+    }
+    // --- РУЛЕТКА ЛОГИКА ---
 let currentRouletteBets = [];
+let currentRouletteAmount = 10;
 
 function startRoulette() {
     $('lobby-screen').style.display = 'none';
@@ -761,7 +769,7 @@ function startRoulette() {
         zero.className = 'r-cell green';
         zero.textContent = '0';
         zero.style.gridColumn = 'span 3';
-        zero.onclick = () => addBet('number', 0, 100);
+        zero.onclick = () => addBet('number', 0);
         board.appendChild(zero);
 
         for (let i=1; i<=36; i++) {
@@ -769,11 +777,45 @@ function startRoulette() {
             const isRed = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].includes(i);
             cell.className = `r-cell ${isRed ? 'red' : 'black'}`;
             cell.textContent = i;
-            cell.onclick = () => addBet('number', i, 100);
+            cell.onclick = () => addBet('number', i);
             board.appendChild(cell);
         }
         
         drawRouletteWheel();
+        
+        document.querySelectorAll('.r-amount-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                if (state.balance < currentRouletteAmount) { toast("Мало фишек"); return; }
+                SFX.click();
+                document.querySelectorAll('.r-amount-btn').forEach(b => {
+                    b.classList.remove('active');
+                    b.style.background = '#222';
+                    b.style.color = '#fff';
+                    b.style.borderColor = '#444';
+                });
+                e.target.classList.add('active');
+                e.target.style.background = '#ffd700';
+                e.target.style.color = '#000';
+                e.target.style.borderColor = '#fff';
+                currentRouletteAmount = parseInt(e.target.dataset.amount);
+                $('r-custom-bet').value = '';
+            };
+        });
+
+        $('r-custom-bet').oninput = (e) => {
+            let val = parseInt(e.target.value);
+            if (isNaN(val) || val < 1) {
+                currentRouletteAmount = 0;
+            } else {
+                currentRouletteAmount = val;
+                document.querySelectorAll('.r-amount-btn').forEach(b => {
+                    b.classList.remove('active');
+                    b.style.background = '#222';
+                    b.style.color = '#fff';
+                    b.style.borderColor = '#444';
+                });
+            }
+        };
     }
 }
 
@@ -800,22 +842,30 @@ function drawRouletteWheel() {
         
         const textSpan = document.createElement('span');
         textSpan.textContent = num;
-        textSpan.style.transform = `skewY(-${90 - anglePerSector}deg) rotate(${anglePerSector / 2}deg)`;
         textSpan.style.position = 'absolute';
-        textSpan.style.top = '10%';
-        textSpan.style.left = '50%';
-        textSpan.style.fontSize = '8px';
+        textSpan.style.top = '12%'; 
+        textSpan.style.left = '50%'; 
+        textSpan.style.fontSize = '11px'; 
+        textSpan.style.fontWeight = '900';
         textSpan.style.color = '#fff';
-        sector.appendChild(textSpan);
+        textSpan.style.textShadow = '0 1px 2px #000';
+        textSpan.style.transformOrigin = '0 0';
+        textSpan.style.transform = `skewY(-${90 - anglePerSector}deg) rotate(${anglePerSector / 2}deg) translateX(-50%)`;
         
+        sector.appendChild(textSpan);
         container.appendChild(sector);
     });
 }
 
-function addBet(type, value, amount) {
-    if (state.balance < 100) { toast("Мало фишек"); return; }
+function addBet(type, value) {
+    if (currentRouletteAmount <= 0) { toast("Введи ставку!"); return; }
+    if (state.balance < currentRouletteAmount) { toast("Мало фишек"); return; }
     
-    currentRouletteBets.push({ type, value, amount });
+    // Списываем баланс на фронтенде, чтобы не уйти в минус
+    state.balance -= currentRouletteAmount;
+    $('r-bal').textContent = state.balance;
+
+    currentRouletteBets.push({ type, value, amount: currentRouletteAmount });
     $('r-total-bet').textContent = currentRouletteBets.reduce((a,b)=>a+b.amount,0);
     SFX.click();
     
@@ -831,8 +881,8 @@ $('r-spin-btn').onclick = async () => {
     if (currentRouletteBets.length === 0) { toast("Сделай ставку"); return; }
     
     try {
+        // Отправляем ставки (баланс уже списан на фронте)
         const d = await api('/roulette/bet', { bets: currentRouletteBets });
-        $('r-bal').textContent = d.balance;
         
         $('r-result').textContent = "Крутим...";
         SFX.reelTick();
@@ -849,24 +899,22 @@ $('r-spin-btn').onclick = async () => {
                 wheel.style.transition = 'none';
                 ball.style.transition = 'none';
                 wheel.style.transform = 'rotate(0deg)';
-                ball.style.top = '10%';
-                ball.style.transform = 'translateX(-50%)';
+                ball.style.transform = 'rotate(0deg) translateY(-110px)';
                 
                 setTimeout(() => {
                     wheel.style.transition = 'transform 4s cubic-bezier(0.1, 0.7, 0.1, 1)';
-                    ball.style.transition = 'top 4s cubic-bezier(0.1, 0.7, 0.1, 1), transform 4s cubic-bezier(0.1, 0.7, 0.1, 1)';
+                    ball.style.transition = 'transform 4s cubic-bezier(0.2, 0.8, 0.2, 1)';
                     
                     const wheelOrder = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
                     const winIndex = wheelOrder.indexOf(res.win_num);
-                    
                     const totalSectors = wheelOrder.length;
                     const anglePerSector = 360 / totalSectors;
                     
-                    const targetAngle = (5 * 360) + (360 - (winIndex * anglePerSector));
+                    const wheelTargetAngle = (5 * 360) + (360 - (winIndex * anglePerSector));
+                    const ballTargetAngle = -(8 * 360) - (winIndex * anglePerSector);
                     
-                    wheel.style.transform = `rotate(${targetAngle}deg)`;
-                    ball.style.top = '40%';
-                    ball.style.transform = `translateX(-50%) scale(0.8)`;
+                    wheel.style.transform = `rotate(${wheelTargetAngle}deg)`;
+                    ball.style.transform = `rotate(${ballTargetAngle}deg) translateY(-110px)`;
                     
                     setTimeout(() => {
                         if (res.win_amount > 0) {
@@ -1039,7 +1087,7 @@ $('wheel-spin-btn').onclick = async () => {
 
 $('wheel-close').onclick = () => { $('wheel-modal').style.display = 'none'; };
 
-// ================== ФИКС: автоматическое обновление таймеров ==================
+// ================== АВТООБНОВЛЕНИЕ ТАЙМЕРОВ ==================
 setInterval(() => {
     if (!spinning && !isSpinningWheel && $('welcome-screen').style.display === 'none') {
         refresh();
