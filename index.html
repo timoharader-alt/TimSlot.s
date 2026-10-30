@@ -52,14 +52,30 @@
   #slot-grid { width: 100%; max-width: 100%; max-height: 100%; height: 60vh; border-radius: 12px; box-shadow: 0 0 30px rgba(0,0,0,0.9); border: 3px solid rgba(255,215,0,0.3); position: relative; background: rgba(0,0,0,0.6); overflow: hidden; display: flex; }
   .reel-col { display: flex; flex-direction: column; flex: 1; height: 100%; overflow: hidden; position: relative; border-right: 1px solid rgba(255,255,255,0.1); min-width: 40px;}
   .reel-col:last-child { border-right: none; }
-  .reel-strip { display: flex; flex-direction: column; width: 100%; height: calc((var(--rows) + 2) * 100%); transition: none; }
-  .cell { display: flex; justify-content: center; align-items: center; width: 100%; height: calc(100% / (var(--rows) + 2)); min-height: 0; flex-shrink: 0; text-align: center; font-size: 32px; line-height: 1; background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.05); }
+  /* ИЗМЕНЕНО: высота 100%, убраны скрытые ряды */
+  .reel-strip { display: flex; flex-direction: column; width: 100%; height: 100%; transition: none; }
+  /* ИЗМЕНЕНО: ячейки занимают равную долю без скрытых рядов */
+  .cell { display: flex; justify-content: center; align-items: center; width: 100%; height: calc(100% / var(--rows)); min-height: 0; flex-shrink: 0; text-align: center; font-size: 32px; line-height: 1; background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.05); transition: transform 0.15s; }
 
   .win-cell { background: rgba(255, 215, 0, 0.3) !important; box-shadow: inset 0 0 15px #ffd700; border-radius: 8px; }
   .win-flash { position: fixed; inset: 0; background: #fff; z-index: 90; pointer-events: none; opacity: 0; transition: opacity 0.1s; }
   .win-flash.active { opacity: 0.8; }
 
-  #fisher-scale { display: none; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); border: 2px solid #ffd700; border-radius: 20px; padding: 5px 15px; z-index: 20; text-align: center; box-shadow: 0 0 20px rgba(255,215,0,0.5); }
+  /* ИЗМЕНЕНО: шкала вынесена в поток, absolute убран */
+  #fisher-scale { 
+      display: none; 
+      margin: 0 auto 5px auto; 
+      width: max-content; 
+      background: rgba(0,0,0,0.8); 
+      border: 2px solid #ffd700; 
+      border-radius: 20px; 
+      padding: 5px 15px; 
+      z-index: 20; 
+      text-align: center; 
+      box-shadow: 0 0 20px rgba(255,215,0,0.5); 
+      position: relative; 
+      flex-shrink: 0; 
+  }
   .fisher-icons { display: flex; gap: 5px; justify-content: center; margin-top: 5px; }
   .fisher-icon { width: 25px; height: 25px; border-radius: 50%; background: #333; border: 2px solid #555; display: flex; justify-content: center; align-items: center; font-size: 14px; filter: grayscale(1); }
   .fisher-icon.active { background: #00c853; border-color: #fff; filter: none; box-shadow: 0 0 10px #00c853; }
@@ -78,7 +94,6 @@
   .main-btn:disabled { opacity: 0.5; filter: grayscale(1); }
   #spin-btn { grid-column: 1 / -1; background: linear-gradient(to bottom, #ff3b30, #a30000); color: #fff; font-size: 24px; padding: 20px; box-shadow: 0 6px 0 #600000; }
   #buy-bonus-btn { grid-column: 1 / -1; background: linear-gradient(to bottom, #f1c40f, #b8860b); color: #000; box-shadow: 0 4px 0 #7a5a00; display: none; }
-  #back-btn { grid-column: 1 / -1; background: #333; color: #ccc; padding: 10px; font-size: 12px; margin-top: 5px; }
 
   /* MODALS */
   .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 300; display: none; justify-content: center; align-items: center; flex-direction: column; padding: 20px; overflow-y: auto;}
@@ -107,6 +122,18 @@
   .roulette-bets { margin: 20px auto; max-width: 400px; width: 100%; background: rgba(0,0,0,0.8); padding: 15px; border-radius: 12px;}
   .r-bet-btn { display: inline-block; padding: 10px 15px; background: #222; border: 1px solid #444; border-radius: 8px; margin: 5px; cursor: pointer; font-weight: bold; }
   #r-spin-btn { width: 100%; margin-top: 20px; padding: 20px; font-size: 20px; background: linear-gradient(to bottom, #ff0000, #990000); color: #fff; border: none; border-radius: 12px; font-weight: 900; cursor: pointer; }
+
+  /* --- НОВЫЕ СТИЛИ ДЛЯ РУЛЕТКИ (Колесо) --- */
+  .roulette-main-layout { display: flex; justify-content: center; align-items: center; gap: 15px; max-width: 800px; margin: 0 auto; width: 100%; }
+  .roulette-board { grid-template-columns: repeat(3, 1fr); flex: 0 0 45%; max-width: 200px; padding: 5px; gap: 3px; }
+  .r-cell { height: 30px; font-size: 12px; border-radius: 4px; }
+  .r-cell.green { grid-column: span 3; }
+  .roulette-wheel-container { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; aspect-ratio: 1 / 1; max-width: 250px; }
+  .roulette-wheel { width: 100%; height: 100%; border-radius: 50%; border: 8px solid #b8860b; box-shadow: 0 0 20px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.8); position: relative; background: #111; transition: transform 4s cubic-bezier(0.1, 0.7, 0.1, 1); }
+  #r-wheel-sectors { width: 100%; height: 100%; border-radius: 50%; overflow: hidden; position: absolute; inset: 0; }
+  .roulette-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 30%; height: 30%; background: #222; border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 2px solid #555; z-index: 2; font-size: 20px; }
+  .roulette-ball { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); width: 12px; height: 12px; background: radial-gradient(circle at 30% 30%, #fff, #ccc); border-radius: 50%; box-shadow: 0 0 10px #fff; z-index: 3; transition: top 4s cubic-bezier(0.1, 0.7, 0.1, 1), transform 4s cubic-bezier(0.1, 0.7, 0.1, 1); }
+  .wheel-sector { position: absolute; top: 0; left: 0; width: 50%; height: 50%; transform-origin: 100% 100%; display: flex; justify-content: center; align-items: center; font-size: 10px; font-weight: bold; color: #fff; clip-path: polygon(0 0, 100% 0, 100% 100%); }
 </style>
 </head>
 <body>
@@ -126,12 +153,16 @@
 </div>
 
 <div id="game-screen">
+  <!-- ИЗМЕНЕНО: Кнопка "Назад" добавлена в верхнюю панель -->
   <div id="top-bar">
-    <div class="profile-info">
-      <div class="balance-box"><span>Баланс</span><strong id="bal">0</strong></div>
-      <div class="level-box">
-        <div>Уровень <span id="lvl-text">1</span></div>
-        <div class="level-bar"><div class="level-fill" id="lvl-fill"></div></div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <button class="main-btn" onclick="exitToLobby()" style="width:auto; padding:10px 15px; background:rgba(0,0,0,0.7); color:#fff; border:1px solid #555; box-shadow:none; font-size:14px; border-radius:12px;">⬅ Назад</button>
+      <div class="profile-info">
+        <div class="balance-box"><span>Баланс</span><strong id="bal">0</strong></div>
+        <div class="level-box">
+          <div>Уровень <span id="lvl-text">1</span></div>
+          <div class="level-bar"><div class="level-fill" id="lvl-fill"></div></div>
+        </div>
       </div>
     </div>
     <div class="menu-btn" id="menu-toggle">⋮</div>
@@ -146,16 +177,18 @@
     <button id="menu-back">⬅ В меню</button>
   </div>
 
+  <!-- ИЗМЕНЕНО: Шкала рыбака вынесена ИЗ контейнера с барабанами -->
+  <div id="fisher-scale">
+      <div class="fisher-icons">
+          <div class="fisher-icon" id="fi-1">🧔</div>
+          <div class="fisher-icon" id="fi-2">🧔</div>
+          <div class="fisher-icon" id="fi-3">🧔</div>
+          <div class="fisher-icon" id="fi-4">🧔</div>
+      </div>
+      <div id="fisher-mult">x1</div>
+  </div>
+
   <div id="pixi-container">
-    <div id="fisher-scale">
-        <div class="fisher-icons">
-            <div class="fisher-icon" id="fi-1">🧔</div>
-            <div class="fisher-icon" id="fi-2">🧔</div>
-            <div class="fisher-icon" id="fi-3">🧔</div>
-            <div class="fisher-icon" id="fi-4">🧔</div>
-        </div>
-        <div id="fisher-mult">x1</div>
-    </div>
     <div id="slot-grid"></div>
   </div>
 
@@ -171,11 +204,12 @@
     <div class="action-buttons">
       <button class="main-btn" id="spin-btn">SPIN</button>
       <button class="main-btn" id="buy-bonus-btn">КУПИТЬ БОНУС</button>
-      <button class="main-btn" id="back-btn" onclick="document.getElementById('game-screen').style.display='none'; document.getElementById('lobby-screen').style.display='flex';">СМЕНИТЬ ИГРУ</button>
+      <!-- ИЗМЕНЕНО: Старая нижняя кнопка "Сменить игру" удалена -->
     </div>
   </div>
 </div>
 
+<!-- ИЗМЕНЕНО: Новая структура экрана рулетки с круглым колесом -->
 <div id="roulette-screen">
   <div class="roulette-top">
     <button class="main-btn" onclick="document.getElementById('roulette-screen').style.display='none'; document.getElementById('lobby-screen').style.display='flex';" style="width:100px; background:#333; color:#fff; padding:10px;">⬅ Назад</button>
@@ -184,7 +218,16 @@
   
   <div style="text-align:center; margin-bottom:10px; font-size:24px; font-weight:900;" id="r-result">Крути!</div>
 
-  <div class="roulette-board" id="r-board"></div>
+  <div class="roulette-main-layout">
+    <div class="roulette-board" id="r-board"></div>
+    <div class="roulette-wheel-container">
+        <div class="roulette-wheel" id="r-wheel">
+            <div id="r-wheel-sectors"></div>
+            <div class="roulette-ball" id="r-ball"></div>
+            <div class="roulette-center">🎰</div>
+        </div>
+    </div>
+  </div>
 
   <div class="roulette-bets" id="r-bets">
     <div style="text-align:center; margin-bottom:10px;">Твои ставки: <span id="r-total-bet">0</span></div>
@@ -237,6 +280,17 @@ const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 const init = tg?.initData || '';
 const $ = id => document.getElementById(id);
+
+// НОВАЯ ФУНКЦИЯ: Выход в меню
+function exitToLobby() {
+    SFX.click();
+    spinning = false;
+    if (window.wheelTimerInterval) clearInterval(window.wheelTimerInterval);
+    
+    document.getElementById('game-screen').style.display = 'none';
+    document.getElementById('lobby-screen').style.display = 'flex';
+    refresh();
+}
 
 let myId = 0;
 try {
@@ -349,7 +403,6 @@ window.addEventListener('load', () => {
         carousel.appendChild(card);
     });
 
-    // ФИКС: загружаем состояние сразу при старте
     refresh();
 });
 
@@ -396,6 +449,7 @@ function startGame(gameKey) {
   refresh();
 }
 
+// ИЗМЕНЕНО: Генерация сетки без скрытых рядов +2
 function initSlotGrid() {
     const conf = GAME_CONFIG[currentGame];
     const grid = $('slot-grid');
@@ -409,7 +463,7 @@ function initSlotGrid() {
         const strip = document.createElement('div');
         strip.className = 'reel-strip';
         
-        for (let j = 0; j < conf.rows + 2; j++) {
+        for (let j = 0; j < conf.rows; j++) {
             const cell = document.createElement('div');
             cell.className = 'cell';
             cell.textContent = conf.syms[Math.floor(Math.random() * conf.syms.length)];
@@ -421,55 +475,41 @@ function initSlotGrid() {
         columns.push({ el: col, strip: strip, offset: 0, speed: 0 });
     }
 }
-  function startSpin(finalGrid) {
+
+// ИЗМЕНЕНО: Новая анимация спина (эффект мигания вместо сдвига)
+function startSpin(finalGrid) {
     const conf = GAME_CONFIG[currentGame];
     spinning = true;
     document.querySelectorAll('.win-cell').forEach(el => el.classList.remove('win-cell'));
     document.querySelectorAll('.cell').forEach(el => el.style.boxShadow = 'none');
 
     columns.forEach((col, i) => {
-        col.speed = 40 + Math.random() * 15;
-        
-        const animate = () => {
+        col.interval = setInterval(() => {
             if (!spinning) return;
-            
-            col.offset += col.speed / conf.rows; 
-            
-            if (col.offset >= (100 / conf.rows)) {
-                col.offset -= (100 / conf.rows);
-                const firstCell = col.strip.firstElementChild;
-                col.strip.appendChild(firstCell); 
-                firstCell.textContent = conf.syms[Math.floor(Math.random() * conf.syms.length)];
+            const cells = col.strip.children;
+            for (let row = 0; row < conf.rows; row++) {
+                cells[row].textContent = conf.syms[Math.floor(Math.random() * conf.syms.length)];
             }
-            
-            col.strip.style.transform = `translateY(-${col.offset}%)`;
-            requestAnimationFrame(animate);
-        };
-        requestAnimationFrame(animate);
+        }, 50 + i * 10);
     });
 
     for (let i = 0; i < conf.cols; i++) {
         setTimeout(() => {
             const col = columns[i];
-            col.speed = 0;
-            col.offset = 0;
-            col.strip.style.transform = `translateY(0%)`;
+            clearInterval(col.interval);
             
             const cells = col.strip.children;
             for(let row = 0; row < conf.rows; row++) {
                 cells[row].textContent = conf.syms[finalGrid[i][row]];
+                cells[row].style.transform = 'scale(1.2)';
+                setTimeout(() => cells[row].style.transform = 'scale(1)', 150);
             }
             
             SFX.reelStop();
-            
-            if (i === conf.cols - 1) {
-                // ФИКС: showResult не существует, результат обрабатывается в handleSpinResult
-            }
-        }, 800 + i * 150);
+        }, 800 + i * 200);
     }
 }
-
-// ================== API ==================
+  // ================== API ==================
 async function api(path, body={}) {
   const r = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ init_data: init, ...body }) });
   const j = await r.json(); if (!r.ok) throw new Error(j.detail || 'ошибка'); return j;
@@ -483,7 +523,6 @@ async function refresh() {
     $('r-bal').textContent = state.balance;
     updateUIState(state.level, state.xp, state.next_level_xp);
     
-    // ФИКС: синхронизация фриспинов с сервером
     if (state.free_spins !== undefined) {
         freeSpins = state.free_spins;
     }
@@ -559,7 +598,7 @@ $('spin-btn').onclick = async () => {
   try {
     const d = await api('/spin', { bet: currentBet, game: currentGame, bonus_buy: false, free_spins: freeSpins }); 
     startSpin(d.grid);
-    setTimeout(() => { handleSpinResult(d); }, 800 + GAME_CONFIG[currentGame].cols * 150 + 400);
+    setTimeout(() => { handleSpinResult(d); }, 800 + GAME_CONFIG[currentGame].cols * 200 + 400);
   } catch(e) { 
       SFX.lose(); showMsg(e.message, false); spinning = false; 
       $('spin-btn').disabled = false; freeSpins = 0; $('buy-bonus-btn').disabled = false;
@@ -574,7 +613,7 @@ $('buy-bonus-btn').onclick = async () => {
   try {
     const d = await api('/spin', { bet: currentBet, game: currentGame, bonus_buy: true, free_spins: freeSpins }); 
     startSpin(d.grid);
-    setTimeout(() => { handleSpinResult(d); }, 800 + GAME_CONFIG[currentGame].cols * 150 + 400);
+    setTimeout(() => { handleSpinResult(d); }, 800 + GAME_CONFIG[currentGame].cols * 200 + 400);
   } catch(e) { 
       SFX.lose(); showMsg(e.message, false); spinning = false; 
       $('spin-btn').disabled = false; freeSpins = 0; $('buy-bonus-btn').disabled = false;
@@ -681,13 +720,13 @@ function handleSpinResult(d) {
         $('fisher-scale').style.display = 'none';
     }
 
-    // Автозапуск фриспинов (ФИКС: conf.cols -> GAME_CONFIG[currentGame].cols)
+    // Автозапуск фриспинов
     if (freeSpins > 0) {
         showMsg(`ФРИСПИН (осталось: ${freeSpins})`, false);
         setTimeout(() => { 
             api('/spin', { bet: currentBet, game: currentGame, bonus_buy: false, free_spins: freeSpins }).then(res => {
                 startSpin(res.grid);
-                setTimeout(() => { handleSpinResult(res); }, 800 + GAME_CONFIG[currentGame].cols * 150 + 400);
+                setTimeout(() => { handleSpinResult(res); }, 800 + GAME_CONFIG[currentGame].cols * 200 + 400);
             });
         }, 2500); 
     } else {
@@ -718,11 +757,10 @@ function startRoulette() {
     
     const board = $('r-board');
     if (board.innerHTML === '') {
-        // ФИКС: корректная вставка "0" первым в сетке
         const zero = document.createElement('div');
         zero.className = 'r-cell green';
         zero.textContent = '0';
-        zero.style.gridColumn = 'span 4';
+        zero.style.gridColumn = 'span 3';
         zero.onclick = () => addBet('number', 0, 100);
         board.appendChild(zero);
 
@@ -734,7 +772,44 @@ function startRoulette() {
             cell.onclick = () => addBet('number', i, 100);
             board.appendChild(cell);
         }
+        
+        drawRouletteWheel();
     }
+}
+
+function drawRouletteWheel() {
+    const container = $('r-wheel-sectors');
+    container.innerHTML = '';
+    
+    const redNumbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
+    const wheelOrder = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+    
+    const totalSectors = wheelOrder.length;
+    const anglePerSector = 360 / totalSectors;
+
+    wheelOrder.forEach((num, index) => {
+        const sector = document.createElement('div');
+        sector.className = 'wheel-sector';
+        
+        let color = '#222';
+        if (num === 0) color = '#008800';
+        else if (redNumbers.includes(num)) color = '#cc0000';
+        
+        sector.style.backgroundColor = color;
+        sector.style.transform = `rotate(${index * anglePerSector}deg) skewY(${90 - anglePerSector}deg)`;
+        
+        const textSpan = document.createElement('span');
+        textSpan.textContent = num;
+        textSpan.style.transform = `skewY(-${90 - anglePerSector}deg) rotate(${anglePerSector / 2}deg)`;
+        textSpan.style.position = 'absolute';
+        textSpan.style.top = '10%';
+        textSpan.style.left = '50%';
+        textSpan.style.fontSize = '8px';
+        textSpan.style.color = '#fff';
+        sector.appendChild(textSpan);
+        
+        container.appendChild(sector);
+    });
 }
 
 function addBet(type, value, amount) {
@@ -761,24 +836,55 @@ $('r-spin-btn').onclick = async () => {
         
         $('r-result').textContent = "Крутим...";
         SFX.reelTick();
+        
         setTimeout(async () => {
             try {
                 const res = await api('/roulette/spin');
                 $('r-result').textContent = `Выпало: ${res.win_num}`;
                 $('r-bal').textContent = res.balance;
                 
-                if (res.win_amount > 0) {
-                    SFX.bigWin();
-                    toast(`+${res.win_amount}₽`);
-                } else {
-                    SFX.lose();
-                }
-                currentRouletteBets = [];
-                $('r-total-bet').textContent = '0';
-                [...$('r-board').children].forEach(c => c.classList.remove('active'));
-                refresh();
+                const wheel = $('r-wheel');
+                const ball = $('r-ball');
+                
+                wheel.style.transition = 'none';
+                ball.style.transition = 'none';
+                wheel.style.transform = 'rotate(0deg)';
+                ball.style.top = '10%';
+                ball.style.transform = 'translateX(-50%)';
+                
+                setTimeout(() => {
+                    wheel.style.transition = 'transform 4s cubic-bezier(0.1, 0.7, 0.1, 1)';
+                    ball.style.transition = 'top 4s cubic-bezier(0.1, 0.7, 0.1, 1), transform 4s cubic-bezier(0.1, 0.7, 0.1, 1)';
+                    
+                    const wheelOrder = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+                    const winIndex = wheelOrder.indexOf(res.win_num);
+                    
+                    const totalSectors = wheelOrder.length;
+                    const anglePerSector = 360 / totalSectors;
+                    
+                    const targetAngle = (5 * 360) + (360 - (winIndex * anglePerSector));
+                    
+                    wheel.style.transform = `rotate(${targetAngle}deg)`;
+                    ball.style.top = '40%';
+                    ball.style.transform = `translateX(-50%) scale(0.8)`;
+                    
+                    setTimeout(() => {
+                        if (res.win_amount > 0) {
+                            SFX.bigWin();
+                            toast(`+${res.win_amount}₽`);
+                        } else {
+                            SFX.lose();
+                        }
+                        currentRouletteBets = [];
+                        $('r-total-bet').textContent = '0';
+                        [...$('r-board').children].forEach(c => c.classList.remove('active'));
+                        refresh();
+                    }, 4000);
+                    
+                }, 50);
+                
             } catch (e) { toast(e.message); }
-        }, 1500);
+        }, 1000);
         
     } catch(e) { toast(e.message); }
 };
