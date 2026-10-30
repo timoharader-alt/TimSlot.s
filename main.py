@@ -13,19 +13,21 @@ def db():
         uid INTEGER PRIMARY KEY, balance INTEGER DEFAULT 5000, 
         wheel_time INTEGER DEFAULT 0, wheel_daily INTEGER DEFAULT 0, wheel_day INTEGER DEFAULT 0, 
         free_spins INTEGER DEFAULT 0, xp INTEGER DEFAULT 0, level INTEGER DEFAULT 1,
-        referrer_id INTEGER DEFAULT 0, ref_count INTEGER DEFAULT 0
+        referrer_id INTEGER DEFAULT 0, ref_count INTEGER DEFAULT 0,
+        is_spinning INTEGER DEFAULT 0, fs_bet INTEGER DEFAULT 0, last_ad INTEGER DEFAULT 0,
+        fish_caught INTEGER DEFAULT 0
     )""")
     return c
 
 def get_user(uid):
     c = db()
-    row = c.execute("SELECT balance, wheel_time, wheel_daily, wheel_day, free_spins, xp, level, referrer_id, ref_count FROM users WHERE uid=?", (uid,)).fetchone()
+    row = c.execute("SELECT balance, wheel_time, wheel_daily, wheel_day, free_spins, xp, level, referrer_id, ref_count, fs_bet, last_ad, is_spinning, fish_caught FROM users WHERE uid=?", (uid,)).fetchone()
     if not row:
         c.execute("INSERT INTO users(uid, balance) VALUES(?, 5000)", (uid,))
         c.commit()
-        row = (5000, 0, 0, 0, 0, 0, 1, 0, 0)
+        row = (5000, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0)
     c.close()
-    return {"balance": row[0], "wheel_time": row[1], "wheel_daily": row[2], "wheel_day": row[3], "free_spins": row[4], "xp": row[5], "level": row[6], "referrer_id": row[7], "ref_count": row[8]}
+    return {"balance": row[0], "wheel_time": row[1], "wheel_daily": row[2], "wheel_day": row[3], "free_spins": row[4], "xp": row[5], "level": row[6], "referrer_id": row[7], "ref_count": row[8], "fs_bet": row[9], "last_ad": row[10], "is_spinning": row[11], "fish_caught": row[12]}
 
 def set_user(uid, **kw):
     c = db()
@@ -34,7 +36,10 @@ def set_user(uid, **kw):
 
 def verify(init_data: str) -> dict:
     if not BOT_TOKEN: raise HTTPException(500, "BOT_TOKEN не задан")
-    p = dict(parse_qsl(init_data, strict_parsing=True))
+    try:
+        p = dict(parse_qsl(init_data, strict_parsing=True))
+    except Exception:
+        raise HTTPException(400, "bad init_data")
     h = p.pop("hash", None)
     if not h: raise HTTPException(400, "no hash")
     check = "\n".join(f"{k}={v}" for k, v in sorted(p.items()))
@@ -156,36 +161,37 @@ def check_win(grid, game_key, bet, fish_prices, fish_caught=0):
 
 class Req(BaseModel): init_data: str
 class RefReq(BaseModel): init_data: str; referrer_id: int
-class SpinReq(BaseModel): init_data: str; bet: int; game: str; bonus_buy: bool = False; free_spins: int = 0; fish_caught: int = 0
+class SpinReq(BaseModel): init_data: str; bet: int; game: str; bonus_buy: bool = False; free_spins: int = 0
 
 @app.post("/state")
 def state(r: Req):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid); now = int(time.time())
     today = int(time.strftime("%j"))
-    
-    # БАГ-ФИКС: Если при входе есть активные фриспины, сжигаем их.
-    # Это предотвращает абуз "вышел-зашел-получил новые гарантированные спины".
-    if d["free_spins"] > 0:
-        set_user(uid, free_spins=0)
-        d["free_spins"] = 0
-
     if d["wheel_day"] != today:
         set_user(uid, wheel_daily=0, wheel_day=today)
         d["wheel_daily"] = 0
     can_wheel = (d["wheel_daily"] < 5) and (now >= d["wheel_time"])
     time_left = max(0, d["wheel_time"] - now)
-    return {"balance": d["balance"], "wheel_ready": can_wheel, "wheel_time_left": time_left, "wheel_daily": d["wheel_daily"], "ad_ready": now - d["wheel_time"] > 60, "ad_allowed": d["balance"] < 5000, "free_spins": d["free_spins"], "level": d["level"], "xp": d["xp"], "next_level_xp": d["level"] * 15000, "ref_count": d["ref_count"]}
+    return {"balance": d["balance"], "wheel_ready": can_wheel, "wheel_time_left": time_left, "wheel_daily": d["wheel_daily"], "ad_ready": now - d["last_ad"] > 60, "ad_allowed": d["balance"] < 5000, "free_spins": d["free_spins"], "level": d["level"], "xp": d["xp"], "next_level_xp": d["level"] * 15000, "ref_count": d["ref_count"], "fish_caught": d["fish_caught"]}
 
 @app.post("/spin")
 def spin(r: SpinReq):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
+    if d["is_spinning"] == 1: raise HTTPException(400, "Спин уже в процессе")
+
     game_conf = GAMES[r.game]
     is_fs = d["free_spins"] > 0
-    cost = 0 if is_fs else (r.bet * 15 if r.bonus_buy else r.bet)
-    
+    if not r.free_spins and not r.bonus_buy and d["free_spins"] > 0:
+        set_user(uid, free_spins=0, fish_caught=0)
+        d["free_spins"] = 0; d["fish_caught"] = 0; is_fs = False
+
+    actual_bet = d["fs_bet"] if is_fs else (r.bet * 15 if r.bonus_buy else r.bet)
+    cost = 0 if is_fs else actual_bet
+
     if not is_fs and r.bet < game_conf["min_bet"]: raise HTTPException(400, f"Мин. ставка {game_conf['min_bet']}")
     if d["balance"] < cost: raise HTTPException(400, "Недостаточно фишек")
 
+    set_user(uid, is_spinning=1)
     bal = d["balance"] - cost
     grid, fish_prices = generate_grid(r.game, is_fs or r.bonus_buy)
     scatters = 0
@@ -196,15 +202,12 @@ def spin(r: SpinReq):
                 if grid[c][row] == game_conf.get("scatter"): grid[c][row] = 0
         grid[1][0] = game_conf["scatter"]; grid[3][1] = game_conf["scatter"]; grid[2][2] = game_conf["scatter"]
         scatters = 3
-        
         if r.game == "fishing":
             grid[2][1] = game_conf["wild"]
             grid[1][1] = game_conf["fish_cash"][0]
             grid[3][1] = game_conf["fish_cash"][1]
             grid[2][0] = game_conf["fish_cash"][2]
-            fish_prices[(1,1)] = 50
-            fish_prices[(3,1)] = 100
-            fish_prices[(2,0)] = 20
+            fish_prices[(1,1)] = 50; fish_prices[(3,1)] = 100; fish_prices[(2,0)] = 20
     else:
         if not is_fs and game_conf.get("scatter") is not None:
             for c in grid:
@@ -214,41 +217,32 @@ def spin(r: SpinReq):
              for c in range(len(grid)):
                 for row in range(len(grid[c])):
                     if grid[c][row] == game_conf.get("scatter"): grid[c][row] = 0
-             
-             # Гарантированный рыбак на первом спине бонуса
              if d["free_spins"] == 10 and r.game == "fishing":
                  grid[2][1] = game_conf["wild"]
                  grid[1][1] = game_conf["fish_cash"][0]
                  grid[3][1] = game_conf["fish_cash"][1]
-                 fish_prices[(1,1)] = 50
-                 fish_prices[(3,1)] = 100
+                 fish_prices[(1,1)] = 50; fish_prices[(3,1)] = 100
 
-    win_amount, win_lines, scatters_nat, fish_data, wilds_count = check_win(grid, r.game, r.bet, fish_prices, r.fish_caught)
+    win_amount, win_lines, scatters_nat, fish_data, wilds_count = check_win(grid, r.game, actual_bet, fish_prices, d["fish_caught"])
     if not r.bonus_buy and not is_fs: scatters = scatters_nat
     
-    new_free_spins = d["free_spins"]
-    new_fish_caught = r.fish_caught
+    new_free_spins = d["free_spins"]; new_fish_caught = d["fish_caught"]; new_fs_bet = d["fs_bet"]
     
     if is_fs:
         new_free_spins -= 1
         if wilds_count > 0:
             new_fish_caught += wilds_count
-            if new_fish_caught % 3 == 0 and new_fish_caught <= 12:
-                new_free_spins += 10
+            if new_fish_caught % 3 == 0 and new_fish_caught <= 12: new_free_spins += 10
+        if new_free_spins <= 0: new_fs_bet = 0; new_fish_caught = 0
     elif scatters >= 3:
-        new_free_spins = 10
-        new_fish_caught = 0
+        new_free_spins = 10; new_fish_caught = 0; new_fs_bet = r.bet
     
     bal += win_amount
     new_xp = d["xp"] + win_amount 
-    new_level = d["level"]
-    next_level_xp = new_level * 15000
-    if new_xp >= next_level_xp:
-        new_level += 1
-        bal += 5000
-        new_xp = new_xp - next_level_xp
+    new_level = d["level"]; next_level_xp = new_level * 15000
+    if new_xp >= next_level_xp: new_level += 1; bal += 5000; new_xp -= next_level_xp
         
-    set_user(uid, balance=bal, free_spins=new_free_spins, xp=new_xp, level=new_level)
+    set_user(uid, balance=bal, free_spins=new_free_spins, fs_bet=new_fs_bet, xp=new_xp, level=new_level, is_spinning=0, fish_caught=new_fish_caught)
     
     ui_mult = 1
     if new_fish_caught >= 9: ui_mult = 10
@@ -288,10 +282,11 @@ def bonus(r: Req):
 
 @app.post("/ad")
 def ad(r: Req):
-    u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
+    u = verify(r.init_data); uid = u["id"]; d = get_user(uid); now = int(time.time())
+    if now - d["last_ad"] < 60: raise HTTPException(400, "Подожди минуту")
     if d["balance"] >= 5000: raise HTTPException(400, "реклама доступна только при балансе < 5000")
     amount = random.choice([100, 200, 300, 500])
-    set_user(uid, balance=d["balance"] + amount)
+    set_user(uid, balance=d["balance"] + amount, last_ad=now)
     return {"amount": amount, "balance": d["balance"] + amount}
 
 @app.get("/")
