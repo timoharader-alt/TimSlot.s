@@ -47,21 +47,7 @@
   /* SLOT GRID */
   #pixi-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 10px; position: relative; overflow: hidden; min-height: 0; }
   
-  #slot-grid { 
-      width: 100%; 
-      max-width: 90%;
-      max-height: 100%; 
-      height: auto;
-      aspect-ratio: 3 / 1;
-      border-radius: 12px; 
-      box-shadow: 0 0 30px rgba(0,0,0,0.9); 
-      border: 3px solid rgba(255,215,0,0.3); 
-      position: relative; 
-      background: rgba(0,0,0,0.6); 
-      overflow: hidden; 
-      display: flex; 
-      margin: auto;
-  }
+  #slot-grid { width: 100%; max-width: 90%; max-height: 100%; height: auto; aspect-ratio: 3 / 1; border-radius: 12px; box-shadow: 0 0 30px rgba(0,0,0,0.9); border: 3px solid rgba(255,215,0,0.3); position: relative; background: rgba(0,0,0,0.6); overflow: hidden; display: flex; margin: auto; }
   #slot-grid.fishing-mode { aspect-ratio: 5 / 3; }
 
   .reel-col { display: flex; flex-direction: column; flex: 1; height: 100%; overflow: hidden; position: relative; border-right: 1px solid rgba(255,255,255,0.1); min-width: 40px;}
@@ -98,7 +84,7 @@
 
   /* MODALS */
   .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 300; display: none; justify-content: center; align-items: center; flex-direction: column; padding: 20px; overflow-y: auto;}
-  .modal-content { background: #1a1a2e; width: 100%; max-width: 400px; border-radius: 20px; border: 2px solid #ffd700; padding: 20px; text-align: center; position: relative;}
+  .modal-content { background: #1a1a2e; width: 100%; max-width: 400px; border-radius: 20px; border: 2px solid #ffd700; padding: 20px; text-align: center; position: relative; max-height: 85vh; overflow-y: auto;}
   .modal-close { position: absolute; top: 15px; right: 15px; font-size: 24px; color: #aaa; cursor: pointer; }
   .modal h2 { color: #ffd700; margin-top: 0; }
   .ref-link-box { background: #000; padding: 10px; border-radius: 10px; margin: 15px 0; font-size: 12px; word-break: break-all; border: 1px solid #444; color: #00ff88; }
@@ -235,8 +221,8 @@
       <div class="r-bet-btn" onclick="addBet('color', 'black')">Черное (x2)</div>
       <div class="r-bet-btn" onclick="addBet('parity', 'even')">Чет (x2)</div>
       <div class="r-bet-btn" onclick="addBet('parity', 'odd')">Нечет (x2)</div>
-      <div class="r-bet-btn" onclick="addBet('half', 'low')">1-18 (x2)</div>
-      <div class="r-bet-btn" onclick="addBet('half', 'high')">19-36 (x2)</div>
+      <div class="r-bet-btn" onclick="addBet('half', 'low')">1-18 (x3)</div>
+      <div class="r-bet-btn" onclick="addBet('half', 'high')">19-36 (x3)</div>
     </div>
     <button id="r-spin-btn">КРУТИТЬ (Списать ставки)</button>
   </div>
@@ -280,6 +266,10 @@ if (tg) { tg.ready(); tg.expand(); }
 const init = tg?.initData || '';
 const $ = id => document.getElementById(id);
 
+const SPIN_COOLDOWN = 5000;
+let lastSpinTime = 0;
+let lastRouletteTime = 0;
+
 async function api(path, body={}) {
   const r = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ init_data: init, ...body }) });
   const j = await r.json(); if (!r.ok) throw new Error(j.detail || 'ошибка'); return j;
@@ -290,7 +280,6 @@ async function exitToLobby() {
     spinning = false;
     if (window.wheelTimerInterval) clearInterval(window.wheelTimerInterval);
     
-    // СБРОС ФРИСПИНОВ ПРИ ВЫХОДЕ
     if (freeSpins > 0) {
         try {
             await api('/reset_fs');
@@ -391,8 +380,7 @@ let currentBet = 10;
 let wheelTimerInterval = null;
 let spinning = false;
 let currentFishCaught = 0;
-
-window.addEventListener('load', () => {
+  window.addEventListener('load', () => {
     const carousel = $('games-carousel');
     const games = [
         { id: 'fruits', title: 'Классика', desc: '3 барабана, 1 линия', cls: 'bg-fruits' },
@@ -415,7 +403,6 @@ window.addEventListener('load', () => {
         carousel.appendChild(card);
     });
 
-    // Проверка фриспинов при загрузке
     api('/state').then(s => {
         if (s.free_spins > 0) {
             api('/reset_fs').then(() => refresh());
@@ -454,7 +441,7 @@ function startGame(gameKey) {
   if (gameKey === 'fishing') {
       grid.classList.add('fishing-mode');
       $('buy-bonus-btn').style.display = 'block';
-      $('buy-bonus-btn').textContent = `КУПИТЬ БОНУС (${currentBet * 15})`;
+      $('buy-bonus-btn').textContent = `КУПИТЬ БОНУС (${currentBet * 150})`;
   } else {
       grid.classList.remove('fishing-mode');
       $('buy-bonus-btn').style.display = 'none';
@@ -491,7 +478,8 @@ function initFisherTrack() {
         track.appendChild(cell);
     }
 }
-  function initSlotGrid() {
+
+function initSlotGrid() {
     const conf = GAME_CONFIG[currentGame];
     const grid = $('slot-grid');
     grid.innerHTML = '';
@@ -546,14 +534,11 @@ function startSpin(finalGrid) {
             SFX.reelStop();
         }, 800 + i * 200);
     }
-}
-
-let state = {};
+  }
+  let state = {};
 async function refresh() {
   try {
     state = await api('/state'); 
-    
-    // ЗАЩИТА ОТ NaN
     state.balance = parseInt(state.balance) || 0; 
     state.xp = parseInt(state.xp) || 0;
     
@@ -561,12 +546,8 @@ async function refresh() {
     $('r-bal').textContent = state.balance;
     updateUIState(state.level, state.xp, state.next_level_xp);
     
-    if (state.free_spins !== undefined) {
-        freeSpins = state.free_spins;
-    }
-    if (state.fish_caught !== undefined) {
-        currentFishCaught = state.fish_caught;
-    }
+    if (state.free_spins !== undefined) freeSpins = state.free_spins;
+    if (state.fish_caught !== undefined) currentFishCaught = state.fish_caught;
     
     if (freeSpins === 0) {
         if (state.wheel_daily >= 5) {
@@ -608,7 +589,7 @@ $('betrow').onclick = e => {
     $('custom-bet').value = '';
     currentBet = +e.target.dataset.bet; 
     $('spin-btn').textContent = `SPIN (${currentBet})`; 
-    if (currentGame === 'fishing') $('buy-bonus-btn').textContent = `КУПИТЬ БОНУС (${currentBet * 15})`;
+    if (currentGame === 'fishing') $('buy-bonus-btn').textContent = `КУПИТЬ БОНУС (${currentBet * 150})`;
 };
 
 $('custom-bet').oninput = e => {
@@ -617,18 +598,41 @@ $('custom-bet').oninput = e => {
     if (isNaN(val) || val < minB) {
         $('spin-btn').textContent = `SPIN (мин. ${minB})`;
         currentBet = 0; 
+    } else if (val > 5000) {
+        showMsg('Максимальная ставка — 5000', false);
+        $('spin-btn').textContent = `SPIN (макс. 5000)`;
+        currentBet = 0; 
     } else {
         $('spin-btn').textContent = `SPIN (${val})`;
         currentBet = val;
         [...$('betrow').children].forEach(b=>b.classList.remove('active'));
-        if (currentGame === 'fishing') $('buy-bonus-btn').textContent = `КУПИТЬ БОНУС (${currentBet * 15})`;
+        if (currentGame === 'fishing') $('buy-bonus-btn').textContent = `КУПИТЬ БОНУС (${currentBet * 150})`;
     }
 };
 
 $('spin-btn').onclick = async () => {
+  const now = Date.now();
+  if (now - lastSpinTime < SPIN_COOLDOWN) {
+      toast(`Подожди ${Math.ceil((SPIN_COOLDOWN - (now - lastSpinTime)) / 1000)} сек.`);
+      return;
+  }
+  lastSpinTime = now;
+
   if (spinning || freeSpins > 0) return; 
   if (currentBet <= 0) { showMsg('Ставка меньше минимума!', false); return; }
-  SFX.click(); spinning = true; $('spin-btn').disabled = true; $('buy-bonus-btn').disabled = true;
+  
+  const btn = $('spin-btn');
+  btn.disabled = true;
+  let timeLeft = 5;
+  let origTxt = btn.textContent;
+  btn.textContent = `WAIT (${timeLeft})`;
+  let cdInt = setInterval(() => {
+      timeLeft--;
+      if (timeLeft > 0) btn.textContent = `WAIT (${timeLeft})`;
+      else { clearInterval(cdInt); btn.textContent = origTxt; btn.disabled = false; }
+  }, 1000);
+
+  SFX.click(); spinning = true; $('buy-bonus-btn').disabled = true;
   
   try {
     const d = await api('/spin', { bet: currentBet, game: currentGame, bonus_buy: false, free_spins: freeSpins }); 
@@ -636,13 +640,22 @@ $('spin-btn').onclick = async () => {
     setTimeout(() => { handleSpinResult(d); }, 800 + GAME_CONFIG[currentGame].cols * 200 + 400);
   } catch(e) { 
       SFX.lose(); showMsg(e.message, false); spinning = false; 
-      $('spin-btn').disabled = false; freeSpins = 0; $('buy-bonus-btn').disabled = false;
+      clearInterval(cdInt); btn.textContent = origTxt; btn.disabled = false;
+      $('buy-bonus-btn').disabled = false;
   }
 };
 
 $('buy-bonus-btn').onclick = async () => {
+  const now = Date.now();
+  if (now - lastSpinTime < SPIN_COOLDOWN) {
+      toast(`Подожди ${Math.ceil((SPIN_COOLDOWN - (now - lastSpinTime)) / 1000)} сек.`);
+      return;
+  }
+  lastSpinTime = now;
+
   if (spinning || freeSpins > 0) return; 
   if (currentBet <= 0) return;
+  
   SFX.click(); spinning = true; $('spin-btn').disabled = true; $('buy-bonus-btn').disabled = true;
   
   try {
@@ -767,9 +780,8 @@ function triggerWinFlash() {
     $('pixi-container').style.transform = "translate(5px, 5px)";
     setTimeout(() => $('pixi-container').style.transform = "translate(-5px, -5px)", 50);
     setTimeout(() => $('pixi-container').style.transform = "translate(0, 0)", 100);
-}
-
-// --- РУЛЕТКА ЛОГИКА ---
+              }
+  // --- РУЛЕТКА ЛОГИКА ---
 let currentRouletteBets = [];
 let currentRouletteAmount = 10;
 
@@ -781,7 +793,7 @@ function startRoulette() {
     if (board.innerHTML === '') {
         const zero = document.createElement('div');
         zero.className = 'r-cell green';
-        zero.textContent = '0';
+        zero.textContent = '0 (x10)';
         zero.style.gridColumn = 'span 3';
         zero.onclick = () => addBet('number', 0);
         board.appendChild(zero);
@@ -820,6 +832,10 @@ function startRoulette() {
             let val = parseInt(e.target.value);
             if (isNaN(val) || val < 1) {
                 currentRouletteAmount = 0;
+            } else if (val > 5000) {
+                toast("Максимальная ставка — 5000");
+                currentRouletteAmount = 5000;
+                e.target.value = 5000;
             } else {
                 currentRouletteAmount = val;
                 document.querySelectorAll('.r-amount-btn').forEach(b => {
@@ -878,6 +894,7 @@ function drawRouletteWheel() {
 
 function addBet(type, value) {
     if (currentRouletteAmount <= 0) { toast("Введи ставку!"); return; }
+    if (currentRouletteAmount > 5000) { toast("Макс. ставка — 5000"); return; }
     let currentBalance = parseInt(state.balance) || 0;
     if (currentBalance < currentRouletteAmount) { toast("Мало фишек"); return; }
     
@@ -892,16 +909,38 @@ function addBet(type, value) {
     if (type === 'number') {
         [...$('r-board').children].forEach(c => c.classList.remove('active'));
         const numCells = [...$('r-board').children];
-        const cell = numCells.find(c => c.textContent == value.toString());
+        const cell = numCells.find(c => c.textContent == value.toString() || (value === 0 && c.textContent.startsWith('0')));
         if (cell) cell.classList.add('active');
     }
 }
 
 $('r-spin-btn').onclick = async () => {
+    const now = Date.now();
+    if (now - lastRouletteTime < SPIN_COOLDOWN) {
+        toast(`Подожди ${Math.ceil((SPIN_COOLDOWN - (now - lastRouletteTime)) / 1000)} сек.`);
+        return;
+    }
+    lastRouletteTime = now;
+
     if (currentRouletteBets.length === 0) { toast("Сделай ставку"); return; }
     
+    const btn = $('r-spin-btn');
+    btn.disabled = true;
+    const origTxt = btn.textContent;
+    let timeLeft = 5;
+    btn.textContent = `КРУТИМ... (${timeLeft})`;
+    const cdInt = setInterval(() => {
+        timeLeft--;
+        if (timeLeft > 0) btn.textContent = `ЖДИТЕ (${timeLeft})`;
+        else { clearInterval(cdInt); btn.textContent = origTxt; btn.disabled = false; }
+    }, 1000);
+
     try {
-        await api('/roulette/bet', { bets: currentRouletteBets });
+        const d = await api('/roulette/bet', { bets: currentRouletteBets });
+        $('r-bal').textContent = d.balance;
+        $('bal').textContent = d.balance;
+        state.balance = d.balance;
+        
         $('r-result').textContent = "Крутим...";
         SFX.reelTick();
         
@@ -914,6 +953,8 @@ $('r-spin-btn').onclick = async () => {
 
                 $('r-result').textContent = `Выпало: ${winNum}`;
                 $('r-bal').textContent = newBalance;
+                $('bal').textContent = newBalance;
+                state.balance = newBalance;
                 
                 const wheel = $('r-wheel');
                 const ball = $('r-ball');
@@ -950,12 +991,28 @@ $('r-spin-btn').onclick = async () => {
                         currentRouletteBets = [];
                         $('r-total-bet').textContent = '0';
                         [...$('r-board').children].forEach(c => c.classList.remove('active'));
+                        
+                        clearInterval(cdInt);
+                        btn.textContent = origTxt;
+                        btn.disabled = false;
                         refresh();
                     }, 4000);
                 }, 50);
-            } catch (e) { toast(e.message); }
+            } catch (e) { 
+                toast(e.message); 
+                clearInterval(cdInt);
+                btn.textContent = origTxt;
+                btn.disabled = false;
+                refresh(); 
+            }
         }, 1000);
-    } catch(e) { toast(e.message); }
+    } catch(e) { 
+        toast(e.message); 
+        clearInterval(cdInt);
+        btn.textContent = origTxt;
+        btn.disabled = false;
+        refresh(); 
+    }
 };
 
 // --- МЕНЮ ---
@@ -981,11 +1038,10 @@ $('menu-rating').onclick = () => { $('dropdown-menu').style.display = 'none'; SF
 $('menu-ad').onclick = async () => {
   $('dropdown-menu').style.display = 'none';
   SFX.click(); $('menu-ad').disabled = true; showMsg('показ рекламы…', false);
-  showMsg('показ рекламы…', false);
   setTimeout(async () => { try { const d = await api('/ad'); SFX.win(); toast(`за рекламу +${d.amount}`); refresh(); } catch(e) { showMsg(e.message, false); refresh(); } }, 5000);
 };
 
-// --- КОЛЕСО УДАЧИ ---
+// --- БОНУСНАЯ РУЛЕТКА ---
 const wheelCanvas = $('wheel-canvas');
 const ctx = wheelCanvas.getContext('2d');
 const slices = [
