@@ -50,7 +50,7 @@
   #pixi-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 10px; position: relative; overflow: hidden; min-height: 0; }
   #slot-grid { width: 100%; max-width: 100%; max-height: 100%; aspect-ratio: var(--aspect, 5/3); border-radius: 12px; box-shadow: 0 0 30px rgba(0,0,0,0.9); border: 3px solid rgba(255,215,0,0.3); position: relative; background: rgba(0,0,0,0.6); overflow: hidden; display: flex; }
 
-  .reel-col { display: flex; flex-direction: column; flex: 1; height: 100%; overflow: hidden; position: relative; border-right: 1px solid rgba(255,255,255,0.1); }
+  .reel-col { display: flex; flex-direction: column; flex: 1; height: 100%; overflow: hidden; position: relative; border-right: 1px solid rgba(255,255,255,0.1); min-width: 40px; }
   .reel-col:last-child { border-right: none; }
   
   .reel-strip { display: flex; flex-direction: column; width: 100%; height: calc((var(--rows) + 2) * 100%); transition: none; }
