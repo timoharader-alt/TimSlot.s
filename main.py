@@ -48,6 +48,7 @@ def verify(init_data: str) -> dict:
         raise HTTPException(401, "bad signature")
     return json.loads(p["user"])
 
+# КЛАССИКА 3х1
 GAMES = {
     "fruits": {"cols": 3, "rows": 1, "min_bet": 10, "symbols": [{"id":0, "pay":[0, 10, 30]}, {"id":1, "pay":[0, 15, 50]}, {"id":2, "pay":[0, 20, 100]}, {"id":3, "pay":[0, 50, 200]}, {"id":4, "pay":[0, 100, 500]}, {"id":5, "pay":[0, 200, 1000]}], "scatter": None},
     "space": {"cols": 7, "rows": 3, "min_bet": 10, "symbols": [{"id":0, "pay":[1.2, 2, 5]}, {"id":1, "pay":[1.5, 3, 6]}, {"id":2, "pay":[2, 4, 8]}, {"id":3, "pay":[3, 6, 12]}, {"id":4, "pay":[5, 10, 20]}, {"id":5, "pay":[10, 20, 50]}], "scatter": 99},
@@ -74,10 +75,13 @@ def generate_grid(game_key, is_bonus=False):
                 rand = random.random()
                 if rand < 0.01: 
                     grid[c][r] = g["scatter"]
-                elif rand < (0.30 if is_bonus else 0.08): 
+                # РЕБАЛАНС: Рыбки теперь падают с шансом 20% в бонусе (было 30%), 5% в обычной
+                elif rand < (0.20 if is_bonus else 0.05): 
                     grid[c][r] = random.choice(g["fish_cash"])
-                    fish_prices[(c, r)] = random.choice([5, 10, 20, 50, 100, 200])
-                elif rand < (0.34 if is_bonus else 0.10): 
+                    # ЦЕНА: Максимум х100 от ставки (было 200)
+                    fish_prices[(c, r)] = random.choice([2, 5, 10, 20, 50, 100])
+                # РЕБАЛАНС: Рыбак падает реже (2% в бонусе, было 4%)
+                elif rand < (0.22 if is_bonus else 0.07): 
                     grid[c][r] = g["wild"]
                 else: 
                     grid[c][r] = random.choice(range(10))
@@ -121,7 +125,7 @@ def check_win(grid, game_key, bet, fish_prices, fish_caught=0):
             for c in range(len(grid)):
                 for r in range(len(grid[c])):
                     if grid[c][r] in g["fish_cash"]:
-                        price_mult = fish_prices.get((c, r), random.choice([5, 10, 20, 50, 100, 200]))
+                        price_mult = fish_prices.get((c, r), random.choice([2, 5, 10, 20, 50, 100]))
                         val = price_mult * bet
                         total_win += val * mult
                         fish_data.append({"col": c, "row": r, "val": val, "mult": mult})
@@ -207,7 +211,8 @@ def spin(r: SpinReq):
             grid[1][1] = game_conf["fish_cash"][0]
             grid[3][1] = game_conf["fish_cash"][1]
             grid[2][0] = game_conf["fish_cash"][2]
-            fish_prices[(1,1)] = 50; fish_prices[(3,1)] = 100; fish_prices[(2,0)] = 20
+            # Гарантированные цены на рыбках (тоже порезаны)
+            fish_prices[(1,1)] = 10; fish_prices[(3,1)] = 20; fish_prices[(2,0)] = 5
     else:
         if not is_fs and game_conf.get("scatter") is not None:
             for c in grid:
@@ -217,23 +222,30 @@ def spin(r: SpinReq):
              for c in range(len(grid)):
                 for row in range(len(grid[c])):
                     if grid[c][row] == game_conf.get("scatter"): grid[c][row] = 0
+             
              if d["free_spins"] == 10 and r.game == "fishing":
                  grid[2][1] = game_conf["wild"]
                  grid[1][1] = game_conf["fish_cash"][0]
                  grid[3][1] = game_conf["fish_cash"][1]
-                 fish_prices[(1,1)] = 50; fish_prices[(3,1)] = 100
+                 fish_prices[(1,1)] = 10; fish_prices[(3,1)] = 20
 
     win_amount, win_lines, scatters_nat, fish_data, wilds_count = check_win(grid, r.game, actual_bet, fish_prices, d["fish_caught"])
     if not r.bonus_buy and not is_fs: scatters = scatters_nat
     
-    new_free_spins = d["free_spins"]; new_fish_caught = d["fish_caught"]; new_fs_bet = d["fs_bet"]
+    new_free_spins = d["free_spins"]
+    new_fish_caught = d["fish_caught"]
+    new_fs_bet = d["fs_bet"]
     
     if is_fs:
         new_free_spins -= 1
         if wilds_count > 0:
             new_fish_caught += wilds_count
-            if new_fish_caught % 3 == 0 and new_fish_caught <= 12: new_free_spins += 10
-        if new_free_spins <= 0: new_fs_bet = 0; new_fish_caught = 0
+            # РЕБАЛАНС: Не суммируем фриспины. Уровень повышается - просто обновляем спины до 10 (или оставляем текущее, если больше).
+            if new_fish_caught % 3 == 0 and new_fish_caught <= 12:
+                if new_free_spins < 10:
+                    new_free_spins = 10 # Сбрасываем в 10, не плюсуем
+        if new_free_spins <= 0:
+            new_fs_bet = 0; new_fish_caught = 0
     elif scatters >= 3:
         new_free_spins = 10; new_fish_caught = 0; new_fs_bet = r.bet
     
