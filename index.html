@@ -73,51 +73,12 @@
   .win-flash { position: fixed; inset: 0; background: #fff; z-index: 90; pointer-events: none; opacity: 0; transition: opacity 0.1s; }
   .win-flash.active { opacity: 0.8; }
 
-  /* НОВАЯ ШКАЛА РЫБАКА */
-  #fisher-scale { 
-      display: none; 
-      margin: 0 auto 10px auto; 
-      width: 95%; 
-      max-width: 600px;
-      background: #4a2e15;
-      border: 3px solid #b8860b; 
-      border-radius: 15px; 
-      padding: 5px; 
-      z-index: 20; 
-      box-shadow: 0 4px 10px rgba(0,0,0,0.8), inset 0 0 10px rgba(0,0,0,0.8); 
-      flex-shrink: 0; 
-      overflow: hidden;
-  }
-
+  /* ШКАЛА РЫБАКА */
+  #fisher-scale { display: none; margin: 0 auto 10px auto; width: 95%; max-width: 600px; background: #4a2e15; border: 3px solid #b8860b; border-radius: 15px; padding: 5px; z-index: 20; box-shadow: 0 4px 10px rgba(0,0,0,0.8), inset 0 0 10px rgba(0,0,0,0.8); flex-shrink: 0; overflow: hidden; }
   .fisher-track { display: flex; gap: 2px; width: 100%; height: 40px; }
-
-  .fisher-cell {
-      flex: 1;
-      background: #2a1a0a;
-      border: 1px solid #5a3a1a;
-      border-radius: 4px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 20px;
-      filter: grayscale(1) brightness(0.5);
-      position: relative;
-      transition: 0.3s;
-  }
-
+  .fisher-cell { flex: 1; background: #2a1a0a; border: 1px solid #5a3a1a; border-radius: 4px; display: flex; justify-content: center; align-items: center; font-size: 20px; filter: grayscale(1) brightness(0.5); position: relative; transition: 0.3s; }
   .fisher-cell.active { filter: none; background: #5a3a1a; box-shadow: inset 0 0 10px #ffd700; }
-
-  .fisher-cell.bonus-cell {
-      flex: 1.5;
-      flex-direction: column;
-      font-size: 10px;
-      font-weight: 900;
-      color: #fff;
-      text-align: center;
-      line-height: 1.1;
-      background: #111;
-  }
-  
+  .fisher-cell.bonus-cell { flex: 1.5; flex-direction: column; font-size: 10px; font-weight: 900; color: #fff; text-align: center; line-height: 1.1; background: #111; }
   .fisher-cell.bonus-cell .plus { color: #00ff88; font-size: 12px; }
   .fisher-cell.bonus-cell .mult { color: #ffd700; font-size: 14px; text-shadow: 0 0 5px #ffd700; }
 
@@ -175,8 +136,8 @@
   .roulette-ball { position: absolute; top: 50%; left: 50%; width: 12px; height: 12px; background: radial-gradient(circle at 30% 30%, #fff, #ccc); border-radius: 50%; box-shadow: 0 0 10px #fff; z-index: 3; margin-top: -6px; margin-left: -6px; transform-origin: 0 0; transition: transform 4s cubic-bezier(0.2, 0.8, 0.2, 1); }
   .wheel-sector { position: absolute; top: 0; left: 0; width: 50%; height: 50%; transform-origin: 100% 100%; display: flex; justify-content: center; align-items: center; font-size: 10px; font-weight: bold; color: #fff; clip-path: polygon(0 0, 100% 0, 100% 100%); }
 </style>
-  </head>
-  <body>
+</head>
+<body>
 
 <div class="win-flash" id="win-flash"></div>
 <div id="toast"></div>
@@ -217,11 +178,8 @@
     <button id="menu-back">⬅ В меню</button>
   </div>
 
-  <!-- НОВАЯ ШКАЛА РЫБАКА -->
   <div id="fisher-scale">
-      <div class="fisher-track" id="fisher-track">
-          <!-- Сюда JS будет генерировать 12 ячеек -->
-      </div>
+      <div class="fisher-track" id="fisher-track"></div>
   </div>
 
   <div id="pixi-container">
@@ -315,16 +273,32 @@
     <button class="main-btn" id="wheel-close" style="background:#ffd700; color:#000; width:200px; padding:15px; display:none; margin-top:10px;">ЗАБРАТЬ</button>
   </div>
 </div>
+
 <script>
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 const init = tg?.initData || '';
 const $ = id => document.getElementById(id);
 
-function exitToLobby() {
+async function api(path, body={}) {
+  const r = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ init_data: init, ...body }) });
+  const j = await r.json(); if (!r.ok) throw new Error(j.detail || 'ошибка'); return j;
+}
+
+async function exitToLobby() {
     SFX.click();
     spinning = false;
     if (window.wheelTimerInterval) clearInterval(window.wheelTimerInterval);
+    
+    // СБРОС ФРИСПИНОВ ПРИ ВЫХОДЕ
+    if (freeSpins > 0) {
+        try {
+            await api('/reset_fs');
+            freeSpins = 0;
+            currentFishCaught = 0;
+            $('fisher-scale').style.display = 'none';
+        } catch(e) { console.error("Ошибка сброса фриспинов:", e); }
+    }
     
     document.getElementById('game-screen').style.display = 'none';
     document.getElementById('lobby-screen').style.display = 'flex';
@@ -418,7 +392,6 @@ let wheelTimerInterval = null;
 let spinning = false;
 let currentFishCaught = 0;
 
-// ================== ЗАГРУЗКА ЛОББИ ==================
 window.addEventListener('load', () => {
     const carousel = $('games-carousel');
     const games = [
@@ -442,7 +415,14 @@ window.addEventListener('load', () => {
         carousel.appendChild(card);
     });
 
-    refresh();
+    // Проверка фриспинов при загрузке
+    api('/state').then(s => {
+        if (s.free_spins > 0) {
+            api('/reset_fs').then(() => refresh());
+        } else {
+            refresh();
+        }
+    }).catch(() => refresh());
 });
 
 $('start-btn').onclick = () => {
@@ -486,11 +466,10 @@ function startGame(gameKey) {
   $('fisher-scale').style.display = 'none';
   
   initSlotGrid();
-  initFisherTrack(); // Инициализируем горизонтальную шкалу
+  initFisherTrack();
   refresh();
 }
 
-// НОВАЯ ФУНКЦИЯ ГЕНЕРАЦИИ ГОРИЗОНТАЛЬНОЙ ШКАЛЫ
 function initFisherTrack() {
     const track = $('fisher-track');
     if (!track) return;
@@ -503,7 +482,7 @@ function initFisherTrack() {
         
         if (i % 4 === 0) {
             cell.classList.add('bonus-cell');
-            let multText = i === 4 ? 'x2' : (i === 8 ? 'x3' : 'x10');
+            let multText = i === 4 ? 'x2' : (i === 8 ? 'x5' : 'x10');
             cell.innerHTML = `<div class="plus">+10<br>СПИНОВ</div><div class="mult">${multText}</div>`;
         } else {
             cell.innerHTML = '🧔';
@@ -512,8 +491,7 @@ function initFisherTrack() {
         track.appendChild(cell);
     }
 }
-
-function initSlotGrid() {
+  function initSlotGrid() {
     const conf = GAME_CONFIG[currentGame];
     const grid = $('slot-grid');
     grid.innerHTML = '';
@@ -522,7 +500,6 @@ function initSlotGrid() {
     for (let i = 0; i < conf.cols; i++) {
         const col = document.createElement('div');
         col.className = 'reel-col';
-        
         const strip = document.createElement('div');
         strip.className = 'reel-strip';
         
@@ -570,16 +547,16 @@ function startSpin(finalGrid) {
         }, 800 + i * 200);
     }
 }
-  // ================== API ==================
-async function api(path, body={}) {
-  const r = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ init_data: init, ...body }) });
-  const j = await r.json(); if (!r.ok) throw new Error(j.detail || 'ошибка'); return j;
-}
 
 let state = {};
 async function refresh() {
   try {
     state = await api('/state'); 
+    
+    // ЗАЩИТА ОТ NaN
+    state.balance = parseInt(state.balance) || 0; 
+    state.xp = parseInt(state.xp) || 0;
+    
     $('bal').textContent = state.balance; 
     $('r-bal').textContent = state.balance;
     updateUIState(state.level, state.xp, state.next_level_xp);
@@ -621,12 +598,10 @@ function updateUIState(level, xp, nextXp = null) {
 function showMsg(t, win) { const m = $('msg'); m.textContent = t; m.className = 'show ' + (win ? 'win':'lose'); setTimeout(()=> m.className='', 2000); }
 function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); setTimeout(()=> el.classList.remove('show'), 1500); }
 
-// --- УПРАВЛЕНИЕ СТАВКАМИ В СЛОТАХ ---
 $('betrow').onclick = e => { 
     if (freeSpins > 0) return;
     if (e.target.id === 'custom-bet') return;
     if (!e.target.dataset.bet) return; 
-    
     SFX.click(); 
     [...$('betrow').children].forEach(b=>b.classList.remove('active')); 
     e.target.classList.add('active'); 
@@ -650,7 +625,6 @@ $('custom-bet').oninput = e => {
     }
 };
 
-// --- СПИН ---
 $('spin-btn').onclick = async () => {
   if (spinning || freeSpins > 0) return; 
   if (currentBet <= 0) { showMsg('Ставка меньше минимума!', false); return; }
@@ -685,7 +659,6 @@ function handleSpinResult(d) {
     const conf = GAME_CONFIG[currentGame];
     let hasScatters = false;
 
-    // Сброс визуала сетки
     for(let col=0; col<conf.cols; col++) {
         for(let row=0; row<conf.rows; row++) {
             const cell = columns[col].strip.children[row];
@@ -697,12 +670,10 @@ function handleSpinResult(d) {
         }
     }
 
-    // Подсветка и вывод цены рыбок
     for(let col=0; col<conf.cols; col++) {
         for(let row=0; row<conf.rows; row++) {
             const idx = d.grid[col][row];
             const cell = columns[col].strip.children[row];
-
             if (conf.scatter !== null && idx === conf.scatter) {
                 cell.style.boxShadow = '0 0 15px #ffd700';
                 hasScatters = true;
@@ -723,7 +694,6 @@ function handleSpinResult(d) {
         }
     }
 
-    // Логика бонуса (Скаттеры)
     if (hasScatters && d.scatters >= 3 && !d.is_free_spin) {
         SFX.scatter();
         $('top-bar').style.boxShadow = "0 0 50px #ffd700";
@@ -735,7 +705,6 @@ function handleSpinResult(d) {
         let actualWin = d.win;
         const big = actualWin >= currentBet * 20;
         if (big) { SFX.bigWin(); triggerWinFlash(); } else { SFX.win(); }
-        
         showMsg(`+${actualWin}`, true);
         toast(`+${actualWin}`);
 
@@ -747,7 +716,6 @@ function handleSpinResult(d) {
                 }
             });
         }
-
         if (currentGame === 'fishing' && d.fish_data && d.fish_data.length > 0) {
             setTimeout(() => { SFX.fish(); showMsg(`РЫБАК ПОЙМАЛ: +${d.win}`, true); }, 1000);
         }
@@ -756,16 +724,13 @@ function handleSpinResult(d) {
         showMsg('пусто', false);
     }
 
-    // Обновление переменных состояния
     freeSpins = d.free_spins_left;
     currentFishCaught = d.fish_caught;
     spinning = false;
     updateUIState(d.level, d.xp);
 
-    // Обновление горизонтальной шкалы рыбака
     if (currentGame === 'fishing' && freeSpins > 0) {
         $('fisher-scale').style.display = 'block';
-        
         let totalW = d.total_wilds || 0;
         for (let i = 1; i <= 12; i++) {
             const cell = $('fcell-' + i);
@@ -778,7 +743,6 @@ function handleSpinResult(d) {
         $('fisher-scale').style.display = 'none';
     }
 
-    // Автозапуск фриспинов
     if (freeSpins > 0) {
         showMsg(`ФРИСПИН (осталось: ${freeSpins})`, false);
         setTimeout(() => { 
@@ -793,7 +757,6 @@ function handleSpinResult(d) {
         $('buy-bonus-btn').disabled = false;
         if (d.is_free_spin) showMsg(`ФРИСПИНЫ ОКОНЧЕНЫ`, false);
     }
-    
     refresh();
 }
 
@@ -805,7 +768,8 @@ function triggerWinFlash() {
     setTimeout(() => $('pixi-container').style.transform = "translate(-5px, -5px)", 50);
     setTimeout(() => $('pixi-container').style.transform = "translate(0, 0)", 100);
 }
-  // --- РУЛЕТКА ЛОГИКА ---
+
+// --- РУЛЕТКА ЛОГИКА ---
 let currentRouletteBets = [];
 let currentRouletteAmount = 10;
 
@@ -872,7 +836,6 @@ function startRoulette() {
 function drawRouletteWheel() {
     const container = $('r-wheel-sectors');
     container.innerHTML = '';
-    
     const redNumbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
     const wheelOrder = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
     const totalSectors = wheelOrder.length;
@@ -882,11 +845,9 @@ function drawRouletteWheel() {
     reversedOrder.forEach((num, index) => {
         const sector = document.createElement('div');
         sector.className = 'wheel-sector';
-        
         let color = '#222';
         if (num === 0) color = '#008800';
         else if (redNumbers.includes(num)) color = '#cc0000';
-        
         sector.style.backgroundColor = color;
         sector.style.transform = `rotate(${index * anglePerSector}deg) skewY(${90 - anglePerSector}deg)`;
         
@@ -917,10 +878,12 @@ function drawRouletteWheel() {
 
 function addBet(type, value) {
     if (currentRouletteAmount <= 0) { toast("Введи ставку!"); return; }
-    if (state.balance < currentRouletteAmount) { toast("Мало фишек"); return; }
+    let currentBalance = parseInt(state.balance) || 0;
+    if (currentBalance < currentRouletteAmount) { toast("Мало фишек"); return; }
     
-    state.balance -= currentRouletteAmount;
+    state.balance = currentBalance - currentRouletteAmount;
     $('r-bal').textContent = state.balance;
+    $('bal').textContent = state.balance;
 
     currentRouletteBets.push({ type, value, amount: currentRouletteAmount });
     $('r-total-bet').textContent = currentRouletteBets.reduce((a,b)=>a+b.amount,0);
@@ -938,16 +901,19 @@ $('r-spin-btn').onclick = async () => {
     if (currentRouletteBets.length === 0) { toast("Сделай ставку"); return; }
     
     try {
-        const d = await api('/roulette/bet', { bets: currentRouletteBets });
-        
+        await api('/roulette/bet', { bets: currentRouletteBets });
         $('r-result').textContent = "Крутим...";
         SFX.reelTick();
         
         setTimeout(async () => {
             try {
                 const res = await api('/roulette/spin');
-                $('r-result').textContent = `Выпало: ${res.win_num}`;
-                $('r-bal').textContent = res.balance;
+                const winNum = parseInt(res.win_num);
+                const winAmount = parseInt(res.win_amount);
+                const newBalance = parseInt(res.balance);
+
+                $('r-result').textContent = `Выпало: ${winNum}`;
+                $('r-bal').textContent = newBalance;
                 
                 const wheel = $('r-wheel');
                 const ball = $('r-ball');
@@ -964,7 +930,7 @@ $('r-spin-btn').onclick = async () => {
                     const wheelOrder = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
                     const reversedOrder = [...wheelOrder].reverse();
                     
-                    const winIndex = reversedOrder.indexOf(res.win_num);
+                    const winIndex = reversedOrder.indexOf(winNum);
                     const totalSectors = wheelOrder.length;
                     const anglePerSector = 360 / totalSectors;
                     
@@ -975,9 +941,9 @@ $('r-spin-btn').onclick = async () => {
                     ball.style.transform = `rotate(${ballTargetAngle}deg) translateY(-110px)`;
                     
                     setTimeout(() => {
-                        if (res.win_amount > 0) {
+                        if (winAmount > 0) {
                             SFX.bigWin();
-                            toast(`+${res.win_amount}₽`);
+                            toast(`+${winAmount}₽`);
                         } else {
                             SFX.lose();
                         }
@@ -986,12 +952,9 @@ $('r-spin-btn').onclick = async () => {
                         [...$('r-board').children].forEach(c => c.classList.remove('active'));
                         refresh();
                     }, 4000);
-                    
                 }, 50);
-                
             } catch (e) { toast(e.message); }
         }, 1000);
-        
     } catch(e) { toast(e.message); }
 };
 
@@ -1018,10 +981,11 @@ $('menu-rating').onclick = () => { $('dropdown-menu').style.display = 'none'; SF
 $('menu-ad').onclick = async () => {
   $('dropdown-menu').style.display = 'none';
   SFX.click(); $('menu-ad').disabled = true; showMsg('показ рекламы…', false);
+  showMsg('показ рекламы…', false);
   setTimeout(async () => { try { const d = await api('/ad'); SFX.win(); toast(`за рекламу +${d.amount}`); refresh(); } catch(e) { showMsg(e.message, false); refresh(); } }, 5000);
 };
 
-// --- БОНУСНАЯ РУЛЕТКА ---
+// --- КОЛЕСО УДАЧИ ---
 const wheelCanvas = $('wheel-canvas');
 const ctx = wheelCanvas.getContext('2d');
 const slices = [
@@ -1112,7 +1076,6 @@ $('wheel-spin-btn').onclick = async () => {
 
     let spins = 5 * Math.PI * 2;
     let stopAngle = spins + (Math.PI*2 - targetIdx * sliceAngle);
-    
     let startTime = performance.now();
     let duration = 4000;
 
@@ -1145,7 +1108,7 @@ $('wheel-spin-btn').onclick = async () => {
 
 $('wheel-close').onclick = () => { $('wheel-modal').style.display = 'none'; };
 
-// ================== АВТООБНОВЛЕНИЕ ТАЙМЕРОВ ==================
+// АВТООБНОВЛЕНИЕ ТАЙМЕРОВ
 setInterval(() => {
     if (!spinning && !isSpinningWheel && $('welcome-screen').style.display === 'none') {
         refresh();
