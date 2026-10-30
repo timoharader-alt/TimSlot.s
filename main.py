@@ -39,10 +39,8 @@ def set_user(uid, **kw):
 
 def verify(init_data: str) -> dict:
     if not BOT_TOKEN: raise HTTPException(500, "BOT_TOKEN не задан")
-    try:
-        p = dict(parse_qsl(init_data, strict_parsing=True))
-    except Exception:
-        raise HTTPException(400, "bad init_data")
+    try: p = dict(parse_qsl(init_data, strict_parsing=True))
+    except: raise HTTPException(400, "bad init_data")
     h = p.pop("hash", None)
     if not h: raise HTTPException(400, "no hash")
     check = "\n".join(f"{k}={v}" for k, v in sorted(p.items()))
@@ -66,19 +64,16 @@ def generate_grid(game_key, is_bonus=False):
     cols, rows = g["cols"], g["rows"]
     grid = [[None]*rows for _ in range(cols)]
     fish_prices = {}
-    
     if game_key == "fishing":
         for c in range(cols):
             for r in range(rows):
                 rand = random.random()
                 if rand < 0.01: grid[c][r] = g["scatter"]
                 elif rand < (0.20 if is_bonus else 0.05): 
-                    grid[c][r] = random.choice(g["fish_cash"])
-                    fish_prices[(c, r)] = random.choice([2, 5, 10, 20, 50, 100])
+                    grid[c][r] = random.choice(g["fish_cash"]); fish_prices[(c, r)] = random.choice([2, 5, 10, 20, 50, 100])
                 elif rand < (0.22 if is_bonus else 0.07): grid[c][r] = g["wild"]
                 else: grid[c][r] = random.choice(range(10))
         return grid, fish_prices
-
     weights = [70, 60, 50, 40, 20, 5]
     pool = [s["id"] for s in g["symbols"] for _ in range(weights[s["id"]] if s["id"] < len(weights) else 1)]
     for _ in range(cols):
@@ -88,31 +83,22 @@ def generate_grid(game_key, is_bonus=False):
             else: col.append(random.choice(pool))
         grid[_] = col
     return grid, fish_prices
-    def check_win(grid, game_key, bet, fish_prices, fish_caught=0):
-    g = GAMES[game_key]
-    lines = LINES[game_key]
-    total_win = 0
-    win_lines = []
-    scatters = 0
-    wilds_count = 0
-    fish_data = []
 
+def check_win(grid, game_key, bet, fish_prices, fish_caught=0):
+    g = GAMES[game_key]; lines = LINES[game_key]; total_win = 0; win_lines = []; scatters = 0; wilds_count = 0; fish_data = []
     if g.get("scatter") is not None:
         for col in grid:
             for sym in col:
                 if sym == g["scatter"]: scatters += 1
-
     if game_key == "fishing":
         wild_coords = [(c, r) for c in range(len(grid)) for r in range(len(grid[c])) if grid[c][r] == g["wild"]]
         wilds_count = len(wild_coords)
-        
         if wilds_count >= 1:
             mult = 1
             if fish_caught >= 9: mult = 10
             elif fish_caught >= 6: mult = 5
             elif fish_caught >= 3: mult = 3
             elif fish_caught >= 1: mult = 2
-            
             for c in range(len(grid)):
                 for r in range(len(grid[c])):
                     if grid[c][r] in g["fish_cash"]:
@@ -120,22 +106,17 @@ def generate_grid(game_key, is_bonus=False):
                         val = price_mult * bet
                         total_win += val * mult
                         fish_data.append({"col": c, "row": r, "val": val, "mult": mult})
-
     for line_idx, line in enumerate(lines):
         first_sym = grid[0][line[0]]
         if first_sym is None or first_sym >= 10: continue
-        
         count = 1
         for col in range(1, len(grid)):
             sym = grid[col][line[col]]
             if sym == first_sym or (game_key == "fishing" and sym == g["wild"]): count += 1
             elif first_sym == g.get("wild") and game_key == "fishing": 
-                first_sym = sym
-                count += 1
+                first_sym = sym; count += 1
             else: break
-        
         min_match = 2 if game_key == "fruits" else 3
-        
         if count >= min_match:
             if game_key == "fishing":
                 sym_data = g["symbols"][first_sym] if first_sym < 10 else g["symbols"][0]
@@ -143,13 +124,10 @@ def generate_grid(game_key, is_bonus=False):
             else:
                 sym_data = next(s for s in g["symbols"] if s["id"] == first_sym)
                 idx = count - min_match
-                if idx < len(sym_data["pay"]): mult = sym_data["pay"][idx]
-                else: mult = sym_data["pay"][-1]
-            
+                mult = sym_data["pay"][idx] if idx < len(sym_data["pay"]) else sym_data["pay"][-1]
             payout = bet * mult
             total_win += payout
             win_lines.append({"line": line_idx, "count": count, "win": payout})
-            
     return total_win, win_lines, scatters, fish_data, wilds_count
 
 class Req(BaseModel): init_data: str
@@ -162,8 +140,10 @@ def state(r: Req):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid); now = int(time.time())
     today = int(time.strftime("%j"))
     if d["wheel_day"] != today:
-        set_user(uid, wheel_daily=0, wheel_day=today)
-        d["wheel_daily"] = 0
+        set_user(uid, wheel_daily=0, wheel_day=today); d["wheel_daily"] = 0
+    # СБРОС ЗАВИСШЕГО ФЛАГА СПИНА (не влияет на логику, только фикс бага)
+    if d["is_spinning"] == 1:
+        set_user(uid, is_spinning=0); d["is_spinning"] = 0
     can_wheel = (d["wheel_daily"] < 5) and (now >= d["wheel_time"])
     time_left = max(0, d["wheel_time"] - now)
     return {"balance": d["balance"], "wheel_ready": can_wheel, "wheel_time_left": time_left, "wheel_daily": d["wheel_daily"], "ad_ready": now - d["last_ad"] > 60, "ad_allowed": d["balance"] < 5000, "free_spins": d["free_spins"], "level": d["level"], "xp": d["xp"], "next_level_xp": d["level"] * 15000, "ref_count": d["ref_count"], "fish_caught": d["fish_caught"]}
@@ -172,35 +152,25 @@ def state(r: Req):
 def spin(r: SpinReq):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
     if d["is_spinning"] == 1: raise HTTPException(400, "Спин уже в процессе")
-
     game_conf = GAMES[r.game]
     is_fs = d["free_spins"] > 0
     if not r.free_spins and not r.bonus_buy and d["free_spins"] > 0:
-        set_user(uid, free_spins=0, fish_caught=0)
-        d["free_spins"] = 0; d["fish_caught"] = 0; is_fs = False
-
+        set_user(uid, free_spins=0, fish_caught=0); d["free_spins"] = 0; d["fish_caught"] = 0; is_fs = False
     actual_bet = d["fs_bet"] if is_fs else (r.bet * 15 if r.bonus_buy else r.bet)
     cost = 0 if is_fs else actual_bet
-
     if not is_fs and r.bet < game_conf["min_bet"]: raise HTTPException(400, f"Мин. ставка {game_conf['min_bet']}")
     if d["balance"] < cost: raise HTTPException(400, "Недостаточно фишек")
-
     set_user(uid, is_spinning=1)
     bal = d["balance"] - cost
     grid, fish_prices = generate_grid(r.game, is_fs or r.bonus_buy)
     scatters = 0
-    
     if r.bonus_buy:
         for c in range(len(grid)):
             for row in range(len(grid[c])):
                 if grid[c][row] == game_conf.get("scatter"): grid[c][row] = 0
-        grid[1][0] = game_conf["scatter"]; grid[3][1] = game_conf["scatter"]; grid[2][2] = game_conf["scatter"]
-        scatters = 3
+        grid[1][0] = game_conf["scatter"]; grid[3][1] = game_conf["scatter"]; grid[2][2] = game_conf["scatter"]; scatters = 3
         if r.game == "fishing":
-            grid[2][1] = game_conf["wild"]
-            grid[1][1] = game_conf["fish_cash"][0]
-            grid[3][1] = game_conf["fish_cash"][1]
-            grid[2][0] = game_conf["fish_cash"][2]
+            grid[2][1] = game_conf["wild"]; grid[1][1] = game_conf["fish_cash"][0]; grid[3][1] = game_conf["fish_cash"][1]; grid[2][0] = game_conf["fish_cash"][2]
             fish_prices[(1,1)] = 10; fish_prices[(3,1)] = 20; fish_prices[(2,0)] = 5
     else:
         if not is_fs and game_conf.get("scatter") is not None:
@@ -211,47 +181,30 @@ def spin(r: SpinReq):
              for c in range(len(grid)):
                 for row in range(len(grid[c])):
                     if grid[c][row] == game_conf.get("scatter"): grid[c][row] = 0
-             
              if d["free_spins"] == 10 and r.game == "fishing":
-                 grid[2][1] = game_conf["wild"]
-                 grid[1][1] = game_conf["fish_cash"][0]
-                 grid[3][1] = game_conf["fish_cash"][1]
-                 fish_prices[(1,1)] = 10; fish_prices[(3,1)] = 20
-                     win_amount, win_lines, scatters_nat, fish_data, wilds_count = check_win(grid, r.game, actual_bet, fish_prices, d["fish_caught"])
+                 grid[2][1] = game_conf["wild"]; grid[1][1] = game_conf["fish_cash"][0]; grid[3][1] = game_conf["fish_cash"][1]; fish_prices[(1,1)] = 10; fish_prices[(3,1)] = 20
+    win_amount, win_lines, scatters_nat, fish_data, wilds_count = check_win(grid, r.game, actual_bet, fish_prices, d["fish_caught"])
     if not r.bonus_buy and not is_fs: scatters = scatters_nat
-    
-    new_free_spins = d["free_spins"]
-    new_fish_caught = d["fish_caught"]
-    new_fs_bet = d["fs_bet"]
-    
+    new_free_spins = d["free_spins"]; new_fish_caught = d["fish_caught"]; new_fs_bet = d["fs_bet"]
     if is_fs:
         new_free_spins -= 1
         if wilds_count > 0:
             new_fish_caught += wilds_count
             if new_fish_caught % 3 == 0 and new_fish_caught <= 12:
                 if new_free_spins < 10: new_free_spins = 10
-        if new_free_spins <= 0:
-            new_fs_bet = 0; new_fish_caught = 0
+        if new_free_spins <= 0: new_fs_bet = 0; new_fish_caught = 0
     elif scatters >= 3:
         new_free_spins = 10; new_fish_caught = 0; new_fs_bet = r.bet
-    
     bal += win_amount
     new_xp = d["xp"] + win_amount 
-    new_level = d["level"]
-    next_level_xp = new_level * 15000
-    if new_xp >= next_level_xp:
-        new_level += 1
-        bal += 5000
-        new_xp = new_xp - next_level_xp
-        
+    new_level = d["level"]; next_level_xp = new_level * 15000
+    if new_xp >= next_level_xp: new_level += 1; bal += 5000; new_xp -= next_level_xp
     set_user(uid, balance=bal, free_spins=new_free_spins, fs_bet=new_fs_bet, xp=new_xp, level=new_level, is_spinning=0, fish_caught=new_fish_caught)
-    
     ui_mult = 1
     if new_fish_caught >= 9: ui_mult = 10
     elif new_fish_caught >= 6: ui_mult = 5
     elif new_fish_caught >= 3: ui_mult = 3
     elif new_fish_caught >= 1: ui_mult = 2
-
     return {"grid": grid, "win": win_amount, "balance": bal, "lines": win_lines, "scatters": scatters, "bonus_mult": ui_mult, "fish_data": fish_data, "is_free_spin": is_fs, "free_spins_left": new_free_spins, "fish_caught": new_fish_caught, "level": new_level, "xp": new_xp, "wilds_count": wilds_count}
 
 @app.post("/roulette/bet")
@@ -259,36 +212,24 @@ def roul_bet(r: RoulBetReq):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
     total_bet = sum(b['amount'] for b in r.bets)
     if d["balance"] < total_bet: raise HTTPException(400, "Мало фишек")
-    
-    c = db()
-    c.execute("DELETE FROM roulette_bets WHERE uid=?", (uid,))
-    for b in r.bets:
-        c.execute("INSERT INTO roulette_bets(uid, bet_type, bet_value, amount) VALUES (?,?,?,?)", (uid, b['type'], b['value'], b['amount']))
+    c = db(); c.execute("DELETE FROM roulette_bets WHERE uid=?", (uid,))
+    for b in r.bets: c.execute("INSERT INTO roulette_bets(uid, bet_type, bet_value, amount) VALUES (?,?,?,?)", (uid, b['type'], b['value'], b['amount']))
     c.commit(); c.close()
-    
     set_user(uid, balance=d["balance"] - total_bet)
     return {"status": "ok", "balance": d["balance"] - total_bet}
 
 @app.post("/roulette/spin")
 def roul_spin(r: Req):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
-    
-    c = db()
-    bets = c.execute("SELECT bet_type, bet_value, amount FROM roulette_bets WHERE uid=?", (uid,)).fetchall()
+    c = db(); bets = c.execute("SELECT bet_type, bet_value, amount FROM roulette_bets WHERE uid=?", (uid,)).fetchall()
     if not bets: c.close(); raise HTTPException(400, "Нет ставок")
-    
-    c.execute("DELETE FROM roulette_bets WHERE uid=?", (uid,))
-    c.commit(); c.close()
-
+    c.execute("DELETE FROM roulette_bets WHERE uid=?", (uid,)); c.commit(); c.close()
     win_num = random.randint(0, 36)
     is_red = win_num in [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]
     is_black = win_num != 0 and not is_red
-    
     total_win = 0
-    
     for b_type, b_val, amount in bets:
-        if b_type == 'number' and int(b_val) == win_num:
-            total_win += amount * 36
+        if b_type == 'number' and int(b_val) == win_num: total_win += amount * 36
         elif b_type == 'color':
             if b_val == 'red' and is_red: total_win += amount * 2
             if b_val == 'black' and is_black: total_win += amount * 2
@@ -298,7 +239,6 @@ def roul_spin(r: Req):
         elif b_type == 'half':
             if b_val == 'low' and 1 <= win_num <= 18: total_win += amount * 2
             if b_val == 'high' and 19 <= win_num <= 36: total_win += amount * 2
-            
     set_user(uid, balance=d["balance"] + total_win)
     return {"win_num": win_num, "win_amount": total_win, "balance": d["balance"] + total_win}
 
@@ -306,8 +246,7 @@ def roul_spin(r: Req):
 def referral(r: RefReq):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
     if uid == r.referrer_id or d["referrer_id"] != 0: return {"status": "error"}
-    c = db()
-    ref_row = c.execute("SELECT uid FROM users WHERE uid=?", (r.referrer_id,)).fetchone()
+    c = db(); ref_row = c.execute("SELECT uid FROM users WHERE uid=?", (r.referrer_id,)).fetchone()
     if not ref_row: c.close(); return {"status": "error"}
     c.execute("UPDATE users SET referrer_id=?, balance=balance+1000 WHERE uid=?", (r.referrer_id, uid))
     c.execute("UPDATE users SET ref_count=ref_count+1, balance=balance+2000 WHERE uid=?", (r.referrer_id,))
