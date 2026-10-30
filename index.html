@@ -14,7 +14,6 @@
   #welcome-screen h1 { font-size: 42px; color: #ffd700; text-shadow: 0 0 20px #ff8c00; margin-bottom: 10px; text-transform: uppercase; text-align: center; }
   #welcome-screen p { color: #aaa; margin-bottom: 40px; font-size: 14px; }
   #start-btn { padding: 20px 60px; font-size: 24px; font-weight: 900; border-radius: 30px; border: none; background: linear-gradient(to right, #ffd700, #ff8c00); color: #000; box-shadow: 0 0 30px rgba(255, 215, 0, 0.5); cursor: pointer; }
-  
   #lobby-screen { position: fixed; inset: 0; z-index: 150; background: #0a0a0c; display: none; flex-direction: column; }
   .lobby-header { padding: 20px; text-align: center; }
   .lobby-header h2 { color: #fff; font-size: 24px; margin: 0; }
@@ -42,7 +41,6 @@
   .level-bar { width: 100px; height: 6px; background: #333; border-radius: 3px; margin-top: 5px; overflow: hidden; }
   .level-fill { height: 100%; background: #00ff88; width: 0%; transition: width 0.3s; }
   .menu-btn { background: rgba(0,0,0,0.6); border: 1px solid #555; color: #fff; width: 45px; height: 45px; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 24px; cursor: pointer; font-weight: bold; }
-
   #dropdown-menu { position: absolute; top: 70px; right: 15px; background: rgba(20,20,25,0.95); border: 1px solid #ffd700; border-radius: 12px; display: none; flex-direction: column; min-width: 200px; z-index: 50; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
   #dropdown-menu button { background: none; border: none; color: #fff; padding: 15px; text-align: left; font-size: 16px; font-weight: bold; border-bottom: 1px solid #333; cursor: pointer; font-family: inherit;}
   #dropdown-menu button:last-child { border-bottom: none; color: #ff3333; }
@@ -54,17 +52,14 @@
   .reel-col:last-child { border-right: none; }
   .reel-strip { display: flex; flex-direction: column; width: 100%; height: calc((var(--rows) + 2) * 100%); transition: none; }
   .cell { display: flex; justify-content: center; align-items: center; width: 100%; height: calc(100% / (var(--rows) + 2)); min-height: 0; flex-shrink: 0; text-align: center; font-size: 32px; line-height: 1; background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.05); }
-
   .win-cell { background: rgba(255, 215, 0, 0.3) !important; box-shadow: inset 0 0 15px #ffd700; border-radius: 8px; }
   .win-flash { position: fixed; inset: 0; background: #fff; z-index: 90; pointer-events: none; opacity: 0; transition: opacity 0.1s; }
   .win-flash.active { opacity: 0.8; }
-
   #fisher-scale { display: none; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); border: 2px solid #ffd700; border-radius: 20px; padding: 5px 15px; z-index: 20; text-align: center; box-shadow: 0 0 20px rgba(255,215,0,0.5); }
   .fisher-icons { display: flex; gap: 5px; justify-content: center; margin-top: 5px; }
   .fisher-icon { width: 25px; height: 25px; border-radius: 50%; background: #333; border: 2px solid #555; display: flex; justify-content: center; align-items: center; font-size: 14px; filter: grayscale(1); }
   .fisher-icon.active { background: #00c853; border-color: #fff; filter: none; box-shadow: 0 0 10px #00c853; }
   #fisher-mult { font-size: 18px; font-weight: 900; color: #ffd700; margin-top: 5px; text-shadow: 0 0 10px #ffd700;}
-
   #controls-panel { background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); padding: 15px; padding-bottom: 25px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; z-index: 10;}
   #msg { min-height: 20px; text-align: center; font-weight: 900; font-size: 16px; color: #ffd700; opacity: 0; transition: 0.2s; text-transform: uppercase; text-shadow: 0 0 10px #000; }
   #msg.show { opacity: 1; }
@@ -79,7 +74,6 @@
   #spin-btn { grid-column: 1 / -1; background: linear-gradient(to bottom, #ff3b30, #a30000); color: #fff; font-size: 24px; padding: 20px; box-shadow: 0 6px 0 #600000; }
   #buy-bonus-btn { grid-column: 1 / -1; background: linear-gradient(to bottom, #f1c40f, #b8860b); color: #000; box-shadow: 0 4px 0 #7a5a00; display: none; }
   #back-btn { grid-column: 1 / -1; background: #333; color: #ccc; padding: 10px; font-size: 12px; margin-top: 5px; }
-
   /* MODALS */
   .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 300; display: none; justify-content: center; align-items: center; flex-direction: column; padding: 20px; overflow-y: auto;}
   .modal-content { background: #1a1a2e; width: 100%; max-width: 400px; border-radius: 20px; border: 2px solid #ffd700; padding: 20px; text-align: center; position: relative;}
@@ -89,10 +83,8 @@
   .copy-btn { width: 100%; padding: 15px; background: #00c853; color: #fff; border: none; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer; }
   #toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); background: rgba(0,0,0,0.9); color: #ffd700; padding: 15px 30px; border-radius: 15px; border: 2px solid #ffd700; font-size: 24px; font-weight: 900; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 999; }
   #toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-
   #wheel-wrapper { position:relative; width:300px; height:300px; margin: 0 auto; }
   #wheel-canvas { border-radius:50%; border:4px solid #ffd700; box-shadow:0 0 40px #ffd700; width: 100%; height: 100%; display: block;}
-
   /* ROULETTE */
   #roulette-screen { position: fixed; inset: 0; z-index: 150; background: #0a0a0c; display: none; flex-direction: column; padding: 15px; overflow-y: auto;}
   .roulette-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
@@ -103,28 +95,23 @@
   .r-cell.black { background: #000; }
   .r-cell.green { background: #008800; }
   .r-cell.active { box-shadow: 0 0 10px #ffd700; border-color: #ffd700; transform: scale(0.95); }
-  
   .roulette-bets { margin: 20px auto; max-width: 400px; width: 100%; background: rgba(0,0,0,0.8); padding: 15px; border-radius: 12px;}
   .r-bet-btn { display: inline-block; padding: 10px 15px; background: #222; border: 1px solid #444; border-radius: 8px; margin: 5px; cursor: pointer; font-weight: bold; }
   #r-spin-btn { width: 100%; margin-top: 20px; padding: 20px; font-size: 20px; background: linear-gradient(to bottom, #ff0000, #990000); color: #fff; border: none; border-radius: 12px; font-weight: 900; cursor: pointer; }
 </style>
 </head>
 <body>
-
 <div class="win-flash" id="win-flash"></div>
 <div id="toast"></div>
-
 <div id="welcome-screen">
   <h1>TIM SLOT</h1>
   <p>Добро пожаловать в клуб удачи</p>
   <button id="start-btn">ИГРАТЬ</button>
 </div>
-
 <div id="lobby-screen">
   <div class="lobby-header"><h2>Выбери игру</h2></div>
   <div id="games-carousel"></div>
 </div>
-
 <div id="game-screen">
   <div id="top-bar">
     <div class="profile-info">
@@ -136,7 +123,6 @@
     </div>
     <div class="menu-btn" id="menu-toggle">⋮</div>
   </div>
-
   <div id="dropdown-menu">
     <button id="menu-music">🎵 Музыка: ВКЛ</button>
     <button id="menu-bonus">🎰 Рулетка</button>
@@ -145,7 +131,6 @@
     <button id="menu-ref">👥 Рефералы</button>
     <button id="menu-back">⬅ В меню</button>
   </div>
-
   <div id="pixi-container">
     <div id="fisher-scale">
         <div class="fisher-icons">
@@ -158,7 +143,6 @@
     </div>
     <div id="slot-grid"></div>
   </div>
-
   <div id="controls-panel">
     <div id="msg"></div>
     <div class="bet-controls" id="betrow">
@@ -180,11 +164,8 @@
     <button class="main-btn" onclick="document.getElementById('roulette-screen').style.display='none'; document.getElementById('lobby-screen').style.display='flex';" style="width:100px; background:#333; color:#fff; padding:10px;">⬅ Назад</button>
     <div class="balance-box"><span>Баланс</span><strong id="r-bal">0</strong></div>
   </div>
-  
   <div style="text-align:center; margin-bottom:10px; font-size:24px; font-weight:900;" id="r-result">Крути!</div>
-
   <div class="roulette-board" id="r-board"></div>
-
   <div class="roulette-bets" id="r-bets">
     <div style="text-align:center; margin-bottom:10px;">Твои ставки: <span id="r-total-bet">0</span></div>
     <div style="text-align:center;">
@@ -198,7 +179,6 @@
     <button id="r-spin-btn">КРУТИТЬ (Списать ставки)</button>
   </div>
 </div>
-
 <div class="modal" id="ref-modal">
   <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('ref-modal').style.display='none'">×</span>
@@ -209,7 +189,6 @@
     <p style="margin-top:15px; font-weight:bold; color:#fff;">Приглашено: <span id="ref-count" style="color:#00ff88;">0</span></p>
   </div>
 </div>
-
 <div class="modal" id="rating-modal">
   <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('rating-modal').style.display='none'">×</span>
@@ -217,7 +196,6 @@
     <p style="color:#aaa; margin-top:50px; margin-bottom:50px;">Скоро здесь появится таблица лидеров...</p>
   </div>
 </div>
-
 <div class="modal" id="wheel-modal" style="backdrop-filter: blur(5px);">
   <div id="wheel-wrapper">
     <div style="position:absolute; top:-20px; left:50%; transform:translateX(-50%); width:0; height:0; border-left:20px solid transparent; border-right:20px solid transparent; border-top:30px solid #ff0000; z-index:10; filter:drop-shadow(0 4px 4px rgba(0,0,0,0.8));"></div>
@@ -230,13 +208,11 @@
     <button class="main-btn" id="wheel-close" style="background:#ffd700; color:#000; width:200px; padding:15px; display:none; margin-top:10px;">ЗАБРАТЬ</button>
   </div>
 </div>
-
 <script>
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 const init = tg?.initData || '';
 const $ = id => document.getElementById(id);
-
 let myId = 0;
 try {
     if (init) {
@@ -245,7 +221,6 @@ try {
         if (userStr) myId = JSON.parse(userStr).id;
     }
 } catch(e) {}
-
 const AC = window.AudioContext || window.webkitAudioContext;
 let actx = null;
 let isMusicPlaying = true;
