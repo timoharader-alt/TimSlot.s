@@ -162,6 +162,13 @@ class SpinReq(BaseModel): init_data: str; bet: int; game: str; bonus_buy: bool =
 def state(r: Req):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid); now = int(time.time())
     today = int(time.strftime("%j"))
+    
+    # БАГ-ФИКС: Если при входе есть активные фриспины, сжигаем их.
+    # Это предотвращает абуз "вышел-зашел-получил новые гарантированные спины".
+    if d["free_spins"] > 0:
+        set_user(uid, free_spins=0)
+        d["free_spins"] = 0
+
     if d["wheel_day"] != today:
         set_user(uid, wheel_daily=0, wheel_day=today)
         d["wheel_daily"] = 0
@@ -208,6 +215,7 @@ def spin(r: SpinReq):
                 for row in range(len(grid[c])):
                     if grid[c][row] == game_conf.get("scatter"): grid[c][row] = 0
              
+             # Гарантированный рыбак на первом спине бонуса
              if d["free_spins"] == 10 and r.game == "fishing":
                  grid[2][1] = game_conf["wild"]
                  grid[1][1] = game_conf["fish_cash"][0]
