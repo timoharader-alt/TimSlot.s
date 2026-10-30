@@ -266,13 +266,23 @@ if (tg) { tg.ready(); tg.expand(); }
 const init = tg?.initData || '';
 const $ = id => document.getElementById(id);
 
-const SPIN_COOLDOWN = 5000;
+// НОВЫЙ КУЛДАУН (2 секунды)
+const SPIN_COOLDOWN = 2000;
 let lastSpinTime = 0;
 let lastRouletteTime = 0;
 
 async function api(path, body={}) {
-  const r = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ init_data: init, ...body }) });
-  const j = await r.json(); if (!r.ok) throw new Error(j.detail || 'ошибка'); return j;
+  try {
+    const r = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ init_data: init, ...body }) });
+    const text = await r.text();
+    let j;
+    try { j = JSON.parse(text); } catch (e) { 
+        console.error("Сервер вернул не JSON:", text);
+        throw new Error("Ошибка сервера. Попробуйте позже."); 
+    }
+    if (!r.ok) throw new Error(j.detail || 'ошибка'); 
+    return j;
+  } catch (e) { throw e; }
 }
 
 async function exitToLobby() {
@@ -623,7 +633,7 @@ $('spin-btn').onclick = async () => {
   
   const btn = $('spin-btn');
   btn.disabled = true;
-  let timeLeft = 5;
+  let timeLeft = 2;
   let origTxt = btn.textContent;
   btn.textContent = `WAIT (${timeLeft})`;
   let cdInt = setInterval(() => {
@@ -780,7 +790,7 @@ function triggerWinFlash() {
     $('pixi-container').style.transform = "translate(5px, 5px)";
     setTimeout(() => $('pixi-container').style.transform = "translate(-5px, -5px)", 50);
     setTimeout(() => $('pixi-container').style.transform = "translate(0, 0)", 100);
-              }
+  }
   // --- РУЛЕТКА ЛОГИКА ---
 let currentRouletteBets = [];
 let currentRouletteAmount = 10;
@@ -927,7 +937,7 @@ $('r-spin-btn').onclick = async () => {
     const btn = $('r-spin-btn');
     btn.disabled = true;
     const origTxt = btn.textContent;
-    let timeLeft = 5;
+    let timeLeft = 2;
     btn.textContent = `КРУТИМ... (${timeLeft})`;
     const cdInt = setInterval(() => {
         timeLeft--;
