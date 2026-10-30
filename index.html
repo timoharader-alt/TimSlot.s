@@ -87,26 +87,10 @@
   #wheel-wrapper { position:relative; width:300px; height:300px; margin: 0 auto; }
   #wheel-canvas { border-radius:50%; border:4px solid #ffd700; box-shadow:0 0 40px #ffd700; width: 100%; height: 100%; display: block;}
 
-  /* РУЛЕТКА СТИЛИ */
   #roulette-screen { position: fixed; inset: 0; z-index: 150; background: #0a0a0c; display: none; flex-direction: column; padding: 15px; overflow-y: auto;}
   .roulette-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-  .roulette-board { 
-    display: grid; 
-    grid-template-columns: repeat(4, 1fr); 
-    gap: 5px; 
-    max-width: 400px; 
-    margin: 0 auto; 
-    background: #111; 
-    padding: 10px; 
-    border-radius: 12px;
-    border: 2px solid #333;
-  }
-  .r-cell { 
-    background: #222; color: #fff; border: 1px solid #444; border-radius: 5px; 
-    display: flex; justify-content: center; align-items: center; 
-    height: 40px; font-weight: bold; cursor: pointer; transition: 0.2s;
-    font-size: 14px;
-  }
+  .roulette-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; max-width: 400px; margin: 0 auto; background: #111; padding: 10px; border-radius: 12px; border: 2px solid #333; }
+  .r-cell { background: #222; color: #fff; border: 1px solid #444; border-radius: 5px; display: flex; justify-content: center; align-items: center; height: 40px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
   .r-cell:hover { background: #333; }
   .r-cell.red { background: #cc0000; }
   .r-cell.black { background: #000; }
@@ -115,9 +99,7 @@
   
   .roulette-bets { margin: 20px auto; max-width: 400px; width: 100%; background: rgba(0,0,0,0.8); padding: 15px; border-radius: 12px;}
   .r-bet-btn { display: inline-block; padding: 10px 15px; background: #222; border: 1px solid #444; border-radius: 8px; margin: 5px; cursor: pointer; font-weight: bold; }
-  
   #r-spin-btn { width: 100%; margin-top: 20px; padding: 20px; font-size: 20px; background: linear-gradient(to bottom, #ff0000, #990000); color: #fff; border: none; border-radius: 12px; font-weight: 900; cursor: pointer; }
-
 </style>
 </head>
 <body>
@@ -167,7 +149,6 @@
         </div>
         <div id="fisher-mult">x1</div>
     </div>
-    
     <div id="slot-grid"></div>
   </div>
 
@@ -187,7 +168,6 @@
   </div>
 </div>
 
-<!-- РУЛЕТКА ЭКРАН -->
 <div id="roulette-screen">
   <div class="roulette-top">
     <button class="main-btn" onclick="document.getElementById('roulette-screen').style.display='none'; document.getElementById('lobby-screen').style.display='flex';" style="width:100px; background:#333; color:#fff;">⬅ Назад</button>
@@ -196,9 +176,7 @@
   
   <div style="text-align:center; margin-bottom:10px; font-size:24px; font-weight:900;" id="r-result">Крути!</div>
 
-  <div class="roulette-board" id="r-board">
-    <!-- Поле генерируется JS -->
-  </div>
+  <div class="roulette-board" id="r-board"></div>
 
   <div class="roulette-bets" id="r-bets">
     <div style="text-align:center; margin-bottom:10px;">Твои ставки: <span id="r-total-bet">0</span></div>
@@ -244,8 +222,8 @@
     <button class="main-btn" id="wheel-spin-btn" style="background:linear-gradient(to bottom, #9b59b6, #5e2c76); width:200px; padding:15px;">КРУТИТЬ</button>
     <button class="main-btn" id="wheel-close" style="background:#ffd700; color:#000; width:200px; padding:15px; display:none; margin-top:10px;">ЗАБРАТЬ</button>
   </div>
-  </div>
-  <script>
+</div>
+<script>
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 const init = tg?.initData || '';
@@ -320,7 +298,6 @@ function stopBackgroundMusic() {
     if (musicTimer) clearTimeout(musicTimer);
 }
 
-// ТЕПЕРЬ ТУТ ТОЛЬКО КЛАССИКА И РЫБАЛКА
 const GAME_CONFIG = {
   fruits: { cols: 3, rows: 1, min_bet: 10, syms: ['🍒','🍋','🫐','🍊','🍉','🍇','🔔','7️⃣'], bg: 'bg-fruits', scatter: null },
   fishing: { cols: 5, rows: 3, min_bet: 10, syms: ['10','J','Q','K','A','🐟','🧰','🪰','🎣','✨','🦈','🧔','🐠','🐡','🐠'], bg: 'bg-fishing', scatter: 10, wild: 11 }
@@ -586,7 +563,6 @@ function handleSpinResult(d) {
     const conf = GAME_CONFIG[currentGame];
     let hasScatters = false;
 
-    // Сброс эффектов и базовых эмодзи
     for(let col=0; col<conf.cols; col++) {
         for(let row=0; row<conf.rows; row++) {
             const cell = columns[col].strip.children[row];
@@ -598,7 +574,6 @@ function handleSpinResult(d) {
         }
     }
 
-    // Подсветка и вывод цены
     for(let col=0; col<conf.cols; col++) {
         for(let row=0; row<conf.rows; row++) {
             const idx = d.grid[col][row];
@@ -713,10 +688,8 @@ function startRoulette() {
     $('lobby-screen').style.display = 'none';
     $('roulette-screen').style.display = 'flex';
     
-    // Генерация поля (0-36)
     const board = $('r-board');
     if (board.innerHTML === '') {
-        // Числа от 1 до 36
         for (let i=1; i<=36; i++) {
             const cell = document.createElement('div');
             const isRed = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].includes(i);
@@ -725,7 +698,6 @@ function startRoulette() {
             cell.onclick = () => addBet('number', i, 100);
             board.appendChild(cell);
         }
-        // Добавим Зеро в начало
         const zero = document.createElement('div');
         zero.className = 'r-cell green';
         zero.textContent = '0';
@@ -738,11 +710,10 @@ function startRoulette() {
 function addBet(type, value, amount) {
     if (state.balance < 100) { toast("Мало фишек"); return; }
     
-    // Списываем сразу (или можно списывать в конце, но так честнее)
     currentRouletteBets.push({ type, value, amount });
     $('r-total-bet').textContent = currentRouletteBets.reduce((a,b)=>a+b.amount,0);
     SFX.click();
-    // Визуально подсветим выбранную ячейку (если это число)
+    
     if (type === 'number') {
         [...$('r-board').children].forEach(c => c.classList.remove('active'));
         const numCells = [...$('r-board').children];
@@ -758,7 +729,6 @@ $('r-spin-btn').onclick = async () => {
         const d = await api('/roulette/bet', { bets: currentRouletteBets });
         $('r-bal').textContent = d.balance;
         
-        // Крутим
         $('r-result').textContent = "Крутим...";
         SFX.reelTick();
         setTimeout(async () => {
@@ -786,4 +756,153 @@ $('r-spin-btn').onclick = async () => {
 // --- МЕНЮ ---
 $('menu-toggle').onclick = () => { const menu = $('dropdown-menu'); menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex'; };
 $('menu-music').onclick = () => {
-    if (isMusicPlaying) { stopBackgroundMusic(); $('menu-music').textC
+    if (isMusicPlaying) { stopBackgroundMusic(); $('menu-music').textContent = '🎵 Музыка: ВЫКЛ'; }
+    else { isMusicPlaying = true; playBackgroundMusic(); $('menu-music').textContent = '🎵 Музыка: ВКЛ'; }
+};
+$('menu-back').onclick = () => { location.reload(); };
+$('menu-ref').onclick = () => {
+    $('dropdown-menu').style.display = 'none'; SFX.click();
+    $('ref-link').textContent = `https://t.me/Tim_slot_bot/slot?startapp=ref_${myId}`;
+    $('ref-modal').style.display = 'flex';
+};
+$('copy-ref-btn').onclick = () => {
+    const link = $('ref-link').textContent;
+    navigator.clipboard.writeText(link).then(() => {
+        $('copy-ref-btn').textContent = 'СКОПИРОВАНО!';
+        setTimeout(() => $('copy-ref-btn').textContent = 'КОПИРОВАТЬ', 2000);
+    });
+};
+$('menu-rating').onclick = () => { $('dropdown-menu').style.display = 'none'; SFX.click(); $('rating-modal').style.display = 'flex'; };
+$('menu-ad').onclick = async () => {
+  $('dropdown-menu').style.display = 'none';
+  SFX.click(); $('menu-ad').disabled = true; showMsg('показ рекламы…', false);
+  setTimeout(async () => { try { const d = await api('/ad'); SFX.win(); toast(`за рекламу +${d.amount}`); refresh(); } catch(e) { showMsg(e.message, false); refresh(); } }, 5000);
+};
+
+// --- РУЛЕТКА БОНУСНАЯ ---
+const wheelCanvas = $('wheel-canvas');
+const ctx = wheelCanvas.getContext('2d');
+const slices = [
+    { label: '1000', color: '#ff0000' }, { label: '0', color: '#333333' }, 
+    { label: '500', color: '#ffd700' }, { label: '20', color: '#111111' },
+    { label: '250', color: '#8a2be2' }, { label: '50', color: '#111111' },
+    { label: '100', color: '#00c853' }, { label: '0', color: '#333333' }
+];
+const sliceAngle = Math.PI * 2 / slices.length;
+let currentRotation = 0;
+let isSpinningWheel = false;
+const offsetAngle = -Math.PI / 2 - sliceAngle / 2; 
+let wheelStartTime = 0;
+
+function drawWheel() {
+    ctx.clearRect(0, 0, 300, 300);
+    for (let i = 0; i < slices.length; i++) {
+        const angle = i * sliceAngle + currentRotation + offsetAngle;
+        ctx.beginPath();
+        ctx.fillStyle = slices[i].color;
+        ctx.moveTo(150, 150);
+        ctx.arc(150, 150, 140, angle, angle + sliceAngle);
+        ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+
+        ctx.save();
+        ctx.translate(150, 150);
+        ctx.rotate(angle + sliceAngle / 2);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 20px Arial";
+        ctx.fillText(slices[i].label, 130, 10);
+        ctx.restore();
+    }
+    ctx.beginPath(); ctx.fillStyle = '#d4af37'; ctx.arc(150, 150, 30, 0, Math.PI*2); ctx.fill();
+}
+
+$('menu-bonus').onclick = async () => {
+  $('dropdown-menu').style.display = 'none';
+  if (isSpinningWheel || freeSpins > 0) return;
+  
+  $('wheel-modal').style.display = 'flex';
+  $('wheel-result').style.opacity = '0';
+  $('wheel-close').style.display = 'none';
+  $('wheel-spin-btn').style.display = 'block';
+  
+  if (state.wheel_ready) {
+      $('wheel-spin-btn').disabled = false;
+      $('wheel-timer').textContent = `Доступно круток: ${5 - state.wheel_daily}/5`;
+  } else {
+      $('wheel-spin-btn').disabled = true;
+      if (state.wheel_daily >= 5) {
+          $('wheel-timer').textContent = `Лимит на сегодня исчерпан (5/5)`;
+      } else {
+          let m = Math.floor(state.wheel_time_left / 60);
+          let s = state.wheel_time_left % 60;
+          $('wheel-timer').textContent = `Ждать: ${m}:${s < 10 ? '0':''}${s}`;
+          if(wheelTimerInterval) clearInterval(wheelTimerInterval);
+          
+          wheelStartTime = Date.now();
+          wheelTimerInterval = setInterval(() => {
+             let tl = Math.max(0, state.wheel_time_left - (Date.now() - wheelStartTime) / 1000);
+             if (tl <= 0) {
+                 $('wheel-spin-btn').disabled = false;
+                 $('wheel-timer').textContent = `Доступно круток: ${5 - state.wheel_daily}/5`;
+                 clearInterval(wheelTimerInterval);
+             } else {
+                 let mm = Math.floor(tl / 60);
+                 let ss = Math.floor(tl % 60);
+                 $('wheel-timer').textContent = `Ждать: ${mm}:${ss < 10 ? '0':''}${ss}`;
+             }
+          }, 1000);
+      }
+  }
+  drawWheel();
+};
+
+$('wheel-spin-btn').onclick = async () => {
+  if (isSpinningWheel) return;
+  isSpinningWheel = true;
+  $('wheel-spin-btn').style.display = 'none';
+  if(wheelTimerInterval) clearInterval(wheelTimerInterval);
+
+  try {
+    const d = await api('/bonus');
+    let targetIdx = slices.findIndex(s => s.label == d.amount.toString());
+    if (targetIdx === -1) targetIdx = 1;
+
+    let spins = 5 * Math.PI * 2;
+    let stopAngle = spins + (Math.PI*2 - targetIdx * sliceAngle);
+    
+    let startTime = performance.now();
+    let duration = 4000;
+
+    function animateWheel(time) {
+        let progress = (time - startTime) / duration;
+        if (progress > 1) progress = 1;
+        let ease = 1 - Math.pow(1 - progress, 3);
+        currentRotation = stopAngle * ease;
+        drawWheel();
+
+        if (progress < 1) {
+            requestAnimationFrame(animateWheel);
+            if (Math.random() < 0.1) SFX.reelTick();
+        } else {
+            $('wheel-result').textContent = `+${d.amount}`;
+            $('wheel-result').style.opacity = '1';
+            $('wheel-close').style.display = 'block';
+            if(d.amount > 0) SFX.bigWin(); else SFX.lose();
+            isSpinningWheel = false;
+            refresh();
+        }
+    }
+    requestAnimationFrame(animateWheel);
+  } catch(e) {
+    showMsg(e.message, false);
+    $('wheel-modal').style.display = 'none';
+    isSpinningWheel = false;
+  }
+};
+
+$('wheel-close').onclick = () => { $('wheel-modal').style.display = 'none'; };
+
+</script>
+</body>
+</html>_
