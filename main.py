@@ -20,6 +20,9 @@ def db():
     c.execute("""CREATE TABLE IF NOT EXISTS roulette_bets(
         uid INTEGER, bet_type TEXT, bet_value TEXT, amount INTEGER
     )""")
+    c.execute("""CREATE TABLE IF NOT EXISTS roulette_history(
+        uid INTEGER, amount INTEGER, timestamp INTEGER
+    )""")
     return c
 
 def get_user(uid):
@@ -122,8 +125,9 @@ def check_win(grid, game_key, bet, fish_prices, fish_caught=0, total_wilds=0):
     if game_key == "fishing":
         wild_coords = [(c, r) for c in range(len(grid)) for r in range(len(grid[c])) if grid[c][r] == g["wild"]]
         wilds_count = len(wild_coords)
+        has_fish_cash = any(grid[c][r] in g["fish_cash"] for c in range(len(grid)) for r in range(len(grid[c])))
         
-        if wilds_count >= 1:
+        if wilds_count >= 1 and has_fish_cash:
             mult = 1
             if total_wilds >= 12: mult = 10
             elif total_wilds >= 8: mult = 5
@@ -196,9 +200,10 @@ def spin(r: SpinReq):
     if not r.free_spins and not r.bonus_buy and d["free_spins"] > 0:
         set_user(uid, free_spins=0, fish_caught=0, total_wilds=0); d["free_spins"] = 0; d["fish_caught"] = 0; d["total_wilds"] = 0; is_fs = False
         
-    actual_bet = d["fs_bet"] if is_fs else (r.bet * 15 if r.bonus_buy else r.bet)
+    actual_bet = d["fs_bet"] if is_fs else (r.bet * 150 if r.bonus_buy else r.bet)
     cost = 0 if is_fs else actual_bet
     if not is_fs and r.bet < game_conf["min_bet"]: raise HTTPException(400, f"Мин. ставка {game_conf['min_bet']}")
+    if not is_fs and r.bet > 5000: raise HTTPException(400, "Максимальная ставка — 5000")
     if d["balance"] < cost: raise HTTPException(400, "Недостаточно фишек")
     set_user(uid, is_spinning=1)
     bal = d["balance"] - cost
@@ -237,9 +242,8 @@ def spin(r: SpinReq):
             old_wilds = new_total_wilds
             new_total_wilds += wilds_count
             
-            # Выдаем 10 фриспинов при пересечении порога 4, 8, 12
             if (new_total_wilds // 4) > (old_wilds // 4):
-                new_free_spins = 10 # Заменяем, а не суммируем
+                new_free_spins = 10 
                 if new_total_wilds > 12: new_total_wilds = 12
                 
         if new_free_spins <= 0: 
@@ -276,13 +280,31 @@ def reset_fs(r: Req):
 
 @app.post("/roulette/bet")
 def roul_bet(r: RoulBetReq):
-    u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
+    u = verify(r.init_data); uid = u["id"]; d = get_user(uid); now = int(time.time())
     total_bet = sum(b['amount'] for b in r.bets)
-    if d["balance"] < total_bet: raise HTTPException(400, "Мало фишек")
-    c = db(); c.execute("DELETE FROM roulette_bets WHERE uid=?", (uid,))
+    if total_bet <= 0: raise HTTPException(400, "Ставка не может быть 0")
+    if total_bet > 5000: raise HTTPException(400, "Максимальная общая ставка — 5000")
+    
+    c = db()
+    one_hour_ago = now - 3600
+    c.execute("DELETE FROM roulette_history WHERE timestamp < ?", (now - 86400,))
+    total_last_hour = c.execute("SELECT SUM(amount) FROM roulette_history WHERE uid=? AND timestamp > ?", (uid, one_hour_ago)).fetchone()[0] or 0
+    
+    if total_last_hour + total_bet > 100000:
+        c.close()
+        raise HTTPException(400, f"Лимит 100000 в час. Вы поставили: {total_last_hour}")
+        
+    if d["balance"] < total_bet: 
+        c.close()
+        raise HTTPException(400, "Мало фишек")
+    new_balance = int(d["balance"] - total_bet)
+    set_user(uid, balance=new_balance)
+    
+    c.execute("INSERT INTO roulette_history(uid, amount, timestamp) VALUES(?,?,?)", (uid, total_bet, now))
+    c.execute("DELETE FROM roulette_bets WHERE uid=?", (uid,))
     for b in r.bets: c.execute("INSERT INTO roulette_bets(uid, bet_type, bet_value, amount) VALUES (?,?,?,?)", (uid, b['type'], b['value'], b['amount']))
     c.commit(); c.close()
-    return {"status": "ok", "balance": d["balance"]}
+    return {"status": "ok", "balance": new_balance}
 
 @app.post("/roulette/spin")
 def roul_spin(r: Req):
@@ -298,7 +320,9 @@ def roul_spin(r: Req):
     
     for b_type, b_val, amount in bets:
         amount = int(amount)
-        if b_type == 'number' and int(b_val) == win_num: total_win += amount * 36
+        if b_type == 'number':
+            if int(b_val) == win_num:
+                total_win += amount * (10 if win_num == 0 else 36)
         elif b_type == 'color':
             if b_val == 'red' and is_red: total_win += amount * 2
             if b_val == 'black' and is_black: total_win += amount * 2
@@ -306,12 +330,11 @@ def roul_spin(r: Req):
             if b_val == 'even' and win_num != 0 and win_num % 2 == 0: total_win += amount * 2
             if b_val == 'odd' and win_num % 2 != 0: total_win += amount * 2
         elif b_type == 'half':
-            if b_val == 'low' and 1 <= win_num <= 18: total_win += amount * 2
-            if b_val == 'high' and 19 <= win_num <= 36: total_win += amount * 2
+            if b_val == 'low' and 1 <= win_num <= 18: total_win += amount * 3
+            if b_val == 'high' and 19 <= win_num <= 36: total_win += amount * 3
             
     new_balance = int(d["balance"] + total_win)
     set_user(uid, balance=new_balance)
-    
     return {"win_num": win_num, "win_amount": int(total_win), "balance": new_balance}
 
 @app.post("/referral")
