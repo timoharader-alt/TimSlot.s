@@ -166,7 +166,8 @@ def check_win(grid, game_key, bet, fish_prices, fish_caught=0, total_wilds=0):
                 win_lines.append({"line": line_idx, "count": count, "win": payout})
                 
     return total_win, win_lines, scatters, fish_data, wilds_count
-    class Req(BaseModel): init_data: str
+
+class Req(BaseModel): init_data: str
 class RefReq(BaseModel): init_data: str; referrer_id: int
 class SpinReq(BaseModel): init_data: str; bet: int; game: str; bonus_buy: bool = False; free_spins: int = 0
 class RoulBetReq(BaseModel): init_data: str; bets: list
@@ -181,7 +182,7 @@ def state(r: Req):
         set_user(uid, is_spinning=0); d["is_spinning"] = 0
     can_wheel = (d["wheel_daily"] < 5) and (now >= d["wheel_time"])
     time_left = max(0, d["wheel_time"] - now)
-    return {"balance": d["balance"], "wheel_ready": can_wheel, "wheel_time_left": time_left, "wheel_daily": d["wheel_daily"], "ad_ready": now - d["last_ad"] > 60, "ad_allowed": d["balance"] < 5000, "free_spins": d["free_spins"], "level": d["level"], "xp": d["xp"], "next_level_xp": d["level"] * 15000, "ref_count": d["ref_count"], "fish_caught": d["fish_caught"], "total_wilds": d["total_wilds"]}
+    return {"balance": int(d["balance"]), "wheel_ready": can_wheel, "wheel_time_left": time_left, "wheel_daily": d["wheel_daily"], "ad_ready": now - d["last_ad"] > 60, "ad_allowed": d["balance"] < 5000, "free_spins": d["free_spins"], "level": d["level"], "xp": d["xp"], "next_level_xp": d["level"] * 15000, "ref_count": d["ref_count"], "fish_caught": d["fish_caught"], "total_wilds": d["total_wilds"]}
 
 @app.post("/spin")
 def spin(r: SpinReq):
@@ -202,7 +203,6 @@ def spin(r: SpinReq):
     set_user(uid, is_spinning=1)
     bal = d["balance"] - cost
     
-    # Передаем текущее количество WILD для расчета шанса
     grid, fish_prices = generate_grid(r.game, is_fs or r.bonus_buy, d["total_wilds"])
     scatters = 0
     
@@ -234,12 +234,13 @@ def spin(r: SpinReq):
     if is_fs:
         new_free_spins -= 1
         if wilds_count > 0:
+            old_wilds = new_total_wilds
             new_total_wilds += wilds_count
-            # Каждые 4 WILD дают +10 спинов и множитель
-            if new_total_wilds >= 4:
-                new_free_spins += 10
-                new_total_wilds -= 4 
-                if new_free_spins > 40: new_free_spins = 40
+            
+            # Выдаем 10 фриспинов при пересечении порога 4, 8, 12
+            if (new_total_wilds // 4) > (old_wilds // 4):
+                new_free_spins = 10 # Заменяем, а не суммируем
+                if new_total_wilds > 12: new_total_wilds = 12
                 
         if new_free_spins <= 0: 
             new_fs_bet = 0
@@ -261,11 +262,17 @@ def spin(r: SpinReq):
     set_user(uid, balance=bal, free_spins=new_free_spins, fs_bet=new_fs_bet, xp=new_xp, level=new_level, is_spinning=0, fish_caught=new_fish_caught, total_wilds=new_total_wilds)
     
     ui_mult = 1
-    if new_total_wilds >= 3: ui_mult = 10
-    elif new_total_wilds >= 2: ui_mult = 5
-    elif new_total_wilds >= 1: ui_mult = 2
+    if new_total_wilds >= 12: ui_mult = 10
+    elif new_total_wilds >= 8: ui_mult = 5
+    elif new_total_wilds >= 4: ui_mult = 2
     
     return {"grid": grid, "win": win_amount, "balance": bal, "lines": win_lines, "scatters": scatters, "bonus_mult": ui_mult, "fish_data": fish_data, "is_free_spin": is_fs, "free_spins_left": new_free_spins, "fish_caught": new_fish_caught, "level": new_level, "xp": new_xp, "wilds_count": wilds_count, "total_wilds": new_total_wilds}
+
+@app.post("/reset_fs")
+def reset_fs(r: Req):
+    u = verify(r.init_data); uid = u["id"]
+    set_user(uid, free_spins=0, fs_bet=0, fish_caught=0, total_wilds=0)
+    return {"status": "ok"}
 
 @app.post("/roulette/bet")
 def roul_bet(r: RoulBetReq):
@@ -283,11 +290,14 @@ def roul_spin(r: Req):
     c = db(); bets = c.execute("SELECT bet_type, bet_value, amount FROM roulette_bets WHERE uid=?", (uid,)).fetchall()
     if not bets: c.close(); raise HTTPException(400, "Нет ставок")
     c.execute("DELETE FROM roulette_bets WHERE uid=?", (uid,)); c.commit(); c.close()
-    win_num = random.randint(0, 36)
+    
+    win_num = int(random.randint(0, 36))
     is_red = win_num in [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]
     is_black = win_num != 0 and not is_red
     total_win = 0
+    
     for b_type, b_val, amount in bets:
+        amount = int(amount)
         if b_type == 'number' and int(b_val) == win_num: total_win += amount * 36
         elif b_type == 'color':
             if b_val == 'red' and is_red: total_win += amount * 2
@@ -298,8 +308,11 @@ def roul_spin(r: Req):
         elif b_type == 'half':
             if b_val == 'low' and 1 <= win_num <= 18: total_win += amount * 2
             if b_val == 'high' and 19 <= win_num <= 36: total_win += amount * 2
-    set_user(uid, balance=d["balance"] + total_win)
-    return {"win_num": win_num, "win_amount": total_win, "balance": d["balance"] + total_win}
+            
+    new_balance = int(d["balance"] + total_win)
+    set_user(uid, balance=new_balance)
+    
+    return {"win_num": win_num, "win_amount": int(total_win), "balance": new_balance}
 
 @app.post("/referral")
 def referral(r: RefReq):
