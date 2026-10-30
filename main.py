@@ -17,6 +17,10 @@ def db():
         is_spinning INTEGER DEFAULT 0, fs_bet INTEGER DEFAULT 0, last_ad INTEGER DEFAULT 0,
         fish_caught INTEGER DEFAULT 0
     )""")
+    # Таблица для ставок в рулетке (чтобы сохранять, если игрок вышел)
+    c.execute("""CREATE TABLE IF NOT EXISTS roulette_bets(
+        uid INTEGER, bet_type TEXT, bet_value TEXT, amount INTEGER
+    )""")
     return c
 
 def get_user(uid):
@@ -48,17 +52,14 @@ def verify(init_data: str) -> dict:
         raise HTTPException(401, "bad signature")
     return json.loads(p["user"])
 
+# Оставили только фрукты и рыбалку
 GAMES = {
     "fruits": {"cols": 3, "rows": 1, "min_bet": 10, "symbols": [{"id":0, "pay":[0, 10, 30]}, {"id":1, "pay":[0, 15, 50]}, {"id":2, "pay":[0, 20, 100]}, {"id":3, "pay":[0, 50, 200]}, {"id":4, "pay":[0, 100, 500]}, {"id":5, "pay":[0, 200, 1000]}], "scatter": None},
-    "space": {"cols": 7, "rows": 3, "min_bet": 10, "symbols": [{"id":0, "pay":[1.2, 2, 5]}, {"id":1, "pay":[1.5, 3, 6]}, {"id":2, "pay":[2, 4, 8]}, {"id":3, "pay":[3, 6, 12]}, {"id":4, "pay":[5, 10, 20]}, {"id":5, "pay":[10, 20, 50]}], "scatter": 99},
-    "egypt": {"cols": 5, "rows": 3, "min_bet": 10, "symbols": [{"id":0, "pay":[1.5, 3, 6]}, {"id":1, "pay":[2, 4, 8]}, {"id":2, "pay":[3, 6, 12]}, {"id":3, "pay":[5, 10, 20]}, {"id":4, "pay":[8, 16, 30]}, {"id":5, "pay":[15, 30, 60]}], "scatter": 99},
     "fishing": {"cols": 5, "rows": 3, "min_bet": 10, "symbols": [{"id":0, "pay":[5, 25, 100]}, {"id":1, "pay":[5, 25, 100]}, {"id":2, "pay":[5, 25, 100]}, {"id":3, "pay":[5, 25, 100]}, {"id":4, "pay":[5, 25, 100]}, {"id":5, "pay":[10, 50, 200]}, {"id":6, "pay":[20, 100, 500]}, {"id":7, "pay":[20, 100, 500]}, {"id":8, "pay":[30, 150, 1000]}, {"id":9, "pay":[50, 200, 2000]}], "scatter": 10, "wild": 11, "fish_cash": [12, 13, 14, 15]}
 }
 
 LINES = {
     "fruits": [[0,0,0]],
-    "space": [[1,1,1,1,1,1,1], [0,0,0,0,0,0,0], [2,2,2,2,2,2,2], [0,1,2,1,0,1,0], [2,1,0,1,2,1,2], [0,0,1,2,2,1,0]],
-    "egypt": [[1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2]],
     "fishing": [[1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2], [0,0,1,2,2], [2,2,1,0,0], [0,1,2,2,2], [2,1,0,0,0], [0,0,1,0,0]]
 }
 
@@ -72,15 +73,12 @@ def generate_grid(game_key, is_bonus=False):
         for c in range(cols):
             for r in range(rows):
                 rand = random.random()
-                if rand < 0.01: 
-                    grid[c][r] = g["scatter"]
+                if rand < 0.01: grid[c][r] = g["scatter"]
                 elif rand < (0.20 if is_bonus else 0.05): 
                     grid[c][r] = random.choice(g["fish_cash"])
                     fish_prices[(c, r)] = random.choice([2, 5, 10, 20, 50, 100])
-                elif rand < (0.22 if is_bonus else 0.07): 
-                    grid[c][r] = g["wild"]
-                else: 
-                    grid[c][r] = random.choice(range(10))
+                elif rand < (0.22 if is_bonus else 0.07): grid[c][r] = g["wild"]
+                else: grid[c][r] = random.choice(range(10))
         return grid, fish_prices
 
     weights = [70, 60, 50, 40, 20, 5]
@@ -88,15 +86,12 @@ def generate_grid(game_key, is_bonus=False):
     for _ in range(cols):
         col = []
         for _ in range(rows):
-            # УВЕЛИЧЕННЫЙ ШАНС СКАТТЕРА В БОНУСЕ
-            if g["scatter"] is not None and random.random() < (0.05 if is_bonus else 0.02): 
-                col.append(g["scatter"])
-            else: 
-                col.append(random.choice(pool))
+            if g["scatter"] is not None and random.random() < 0.02: col.append(g["scatter"])
+            else: col.append(random.choice(pool))
         grid[_] = col
     return grid, fish_prices
 
-def check_win(grid, game_key, bet, fish_prices, fish_caught=0, is_bonus=False):
+def check_win(grid, game_key, bet, fish_prices, fish_caught=0):
     g = GAMES[game_key]
     lines = LINES[game_key]
     total_win = 0
@@ -151,10 +146,8 @@ def check_win(grid, game_key, bet, fish_prices, fish_caught=0, is_bonus=False):
             else:
                 sym_data = next(s for s in g["symbols"] if s["id"] == first_sym)
                 idx = count - min_match
-                if idx < len(sym_data["pay"]):
-                    mult = sym_data["pay"][idx]
-                else:
-                    mult = sym_data["pay"][-1]
+                if idx < len(sym_data["pay"]): mult = sym_data["pay"][idx]
+                else: mult = sym_data["pay"][-1]
             
             payout = bet * mult
             total_win += payout
@@ -165,6 +158,8 @@ def check_win(grid, game_key, bet, fish_prices, fish_caught=0, is_bonus=False):
 class Req(BaseModel): init_data: str
 class RefReq(BaseModel): init_data: str; referrer_id: int
 class SpinReq(BaseModel): init_data: str; bet: int; game: str; bonus_buy: bool = False; free_spins: int = 0
+
+class RoulBetReq(BaseModel): init_data: str; bets: list
 
 @app.post("/state")
 def state(r: Req):
@@ -220,19 +215,16 @@ def spin(r: SpinReq):
              for c in range(len(grid)):
                 for row in range(len(grid[c])):
                     if grid[c][row] == game_conf.get("scatter"): grid[c][row] = 0
-             
              if d["free_spins"] == 10 and r.game == "fishing":
                  grid[2][1] = game_conf["wild"]
                  grid[1][1] = game_conf["fish_cash"][0]
                  grid[3][1] = game_conf["fish_cash"][1]
                  fish_prices[(1,1)] = 10; fish_prices[(3,1)] = 20
 
-    win_amount, win_lines, scatters_nat, fish_data, wilds_count = check_win(grid, r.game, actual_bet, fish_prices, d["fish_caught"], is_fs)
+    win_amount, win_lines, scatters_nat, fish_data, wilds_count = check_win(grid, r.game, actual_bet, fish_prices, d["fish_caught"])
     if not r.bonus_buy and not is_fs: scatters = scatters_nat
     
-    new_free_spins = d["free_spins"]
-    new_fish_caught = d["fish_caught"]
-    new_fs_bet = d["fs_bet"]
+    new_free_spins = d["free_spins"]; new_fish_caught = d["fish_caught"]; new_fs_bet = d["fs_bet"]
     
     if is_fs:
         new_free_spins -= 1
@@ -240,14 +232,9 @@ def spin(r: SpinReq):
             new_fish_caught += wilds_count
             if new_fish_caught % 3 == 0 and new_fish_caught <= 12:
                 if new_free_spins < 10: new_free_spins = 10
-        if new_free_spins <= 0:
-            new_fs_bet = 0; new_fish_caught = 0
+        if new_free_spins <= 0: new_fs_bet = 0; new_fish_caught = 0
     elif scatters >= 3:
         new_free_spins = 10; new_fish_caught = 0; new_fs_bet = r.bet
-        
-        # БОНУС ЗА 3 СКАТТЕРА В КОСМОСЕ И ЕГИПТЕ (чтобы не было 0)
-        if r.game in ["space", "egypt"]:
-            win_amount += actual_bet * 5
     
     bal += win_amount
     new_xp = d["xp"] + win_amount 
@@ -263,6 +250,55 @@ def spin(r: SpinReq):
     elif new_fish_caught >= 1: ui_mult = 2
 
     return {"grid": grid, "win": win_amount, "balance": bal, "lines": win_lines, "scatters": scatters, "bonus_mult": ui_mult, "fish_data": fish_data, "is_free_spin": is_fs, "free_spins_left": new_free_spins, "fish_caught": new_fish_caught, "level": new_level, "xp": new_xp, "wilds_count": wilds_count}
+
+# --- РУЛЕТКА ---
+@app.post("/roulette/bet")
+def roul_bet(r: RoulBetReq):
+    u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
+    total_bet = sum(b['amount'] for b in r.bets)
+    if d["balance"] < total_bet: raise HTTPException(400, "Мало фишек")
+    
+    c = db()
+    c.execute("DELETE FROM roulette_bets WHERE uid=?", (uid,))
+    for b in r.bets:
+        c.execute("INSERT INTO roulette_bets(uid, bet_type, bet_value, amount) VALUES (?,?,?,?)", (uid, b['type'], b['value'], b['amount']))
+    c.commit(); c.close()
+    
+    set_user(uid, balance=d["balance"] - total_bet)
+    return {"status": "ok", "balance": d["balance"] - total_bet}
+
+@app.post("/roulette/spin")
+def roul_spin(r: Req):
+    u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
+    
+    c = db()
+    bets = c.execute("SELECT bet_type, bet_value, amount FROM roulette_bets WHERE uid=?", (uid,)).fetchall()
+    if not bets: c.close(); raise HTTPException(400, "Нет ставок")
+    
+    c.execute("DELETE FROM roulette_bets WHERE uid=?", (uid,))
+    c.commit(); c.close()
+
+    win_num = random.randint(0, 36)
+    is_red = win_num in [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]
+    is_black = win_num != 0 and not is_red
+    
+    total_win = 0
+    
+    for b_type, b_val, amount in bets:
+        if b_type == 'number' and int(b_val) == win_num:
+            total_win += amount * 36
+        elif b_type == 'color':
+            if b_val == 'red' and is_red: total_win += amount * 2
+            if b_val == 'black' and is_black: total_win += amount * 2
+        elif b_type == 'parity':
+            if b_val == 'even' and win_num != 0 and win_num % 2 == 0: total_win += amount * 2
+            if b_val == 'odd' and win_num % 2 != 0: total_win += amount * 2
+        elif b_type == 'half':
+            if b_val == 'low' and 1 <= win_num <= 18: total_win += amount * 2
+            if b_val == 'high' and 19 <= win_num <= 36: total_win += amount * 2
+            
+    set_user(uid, balance=d["balance"] + total_win)
+    return {"win_num": win_num, "win_amount": total_win, "balance": d["balance"] + total_win}
 
 @app.post("/referral")
 def referral(r: RefReq):
