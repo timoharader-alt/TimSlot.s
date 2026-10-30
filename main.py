@@ -94,11 +94,12 @@ def check_win(grid, game_key, bet, fish_prices, fish_caught=0):
         wild_coords = [(c, r) for c in range(len(grid)) for r in range(len(grid[c])) if grid[c][r] == g["wild"]]
         wilds_count = len(wild_coords)
         if wilds_count >= 1:
+            # Логика множителя изменена в spin()
             mult = 1
-            if fish_caught >= 9: mult = 10
-            elif fish_caught >= 6: mult = 5
-            elif fish_caught >= 3: mult = 3
-            elif fish_caught >= 1: mult = 2
+            if fish_caught >= 20: mult = 10
+            elif fish_caught >= 12: mult = 5
+            elif fish_caught >= 8: mult = 3
+            elif fish_caught >= 4: mult = 2
             for c in range(len(grid)):
                 for r in range(len(grid[c])):
                     if grid[c][r] in g["fish_cash"]:
@@ -141,7 +142,6 @@ def state(r: Req):
     today = int(time.strftime("%j"))
     if d["wheel_day"] != today:
         set_user(uid, wheel_daily=0, wheel_day=today); d["wheel_daily"] = 0
-    # СБРОС ЗАВИСШЕГО ФЛАГА СПИНА (не влияет на логику, только фикс бага)
     if d["is_spinning"] == 1:
         set_user(uid, is_spinning=0); d["is_spinning"] = 0
     can_wheel = (d["wheel_daily"] < 5) and (now >= d["wheel_time"])
@@ -151,7 +151,9 @@ def state(r: Req):
 @app.post("/spin")
 def spin(r: SpinReq):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
-    if d["is_spinning"] == 1: raise HTTPException(400, "Спин уже в процессе")
+    if d["is_spinning"] == 1: 
+        set_user(uid, is_spinning=0)
+        d["is_spinning"] = 0
     game_conf = GAMES[r.game]
     is_fs = d["free_spins"] > 0
     if not r.free_spins and not r.bonus_buy and d["free_spins"] > 0:
@@ -186,25 +188,32 @@ def spin(r: SpinReq):
     win_amount, win_lines, scatters_nat, fish_data, wilds_count = check_win(grid, r.game, actual_bet, fish_prices, d["fish_caught"])
     if not r.bonus_buy and not is_fs: scatters = scatters_nat
     new_free_spins = d["free_spins"]; new_fish_caught = d["fish_caught"]; new_fs_bet = d["fs_bet"]
+    
     if is_fs:
         new_free_spins -= 1
         if wilds_count > 0:
-            new_fish_caught += wilds_count
-            if new_fish_caught % 3 == 0 and new_fish_caught <= 12:
-                if new_free_spins < 10: new_free_spins = 10
-        if new_free_spins <= 0: new_fs_bet = 0; new_fish_caught = 0
+            # НОВАЯ ЛОГИКА: +2 рыбки и +2 фриспина за каждого дикого
+            new_fish_caught += (wilds_count * 2)
+            new_free_spins += (wilds_count * 2)
+            if new_free_spins > 30: new_free_spins = 30
+        if new_free_spins <= 0: 
+            new_fs_bet = 0
+            new_fish_caught = 0
     elif scatters >= 3:
         new_free_spins = 10; new_fish_caught = 0; new_fs_bet = r.bet
+        
     bal += win_amount
     new_xp = d["xp"] + win_amount 
     new_level = d["level"]; next_level_xp = new_level * 15000
     if new_xp >= next_level_xp: new_level += 1; bal += 5000; new_xp -= next_level_xp
     set_user(uid, balance=bal, free_spins=new_free_spins, fs_bet=new_fs_bet, xp=new_xp, level=new_level, is_spinning=0, fish_caught=new_fish_caught)
+    
     ui_mult = 1
-    if new_fish_caught >= 9: ui_mult = 10
-    elif new_fish_caught >= 6: ui_mult = 5
-    elif new_fish_caught >= 3: ui_mult = 3
-    elif new_fish_caught >= 1: ui_mult = 2
+    if new_fish_caught >= 20: ui_mult = 10
+    elif new_fish_caught >= 12: ui_mult = 5
+    elif new_fish_caught >= 8: ui_mult = 3
+    elif new_fish_caught >= 4: ui_mult = 2
+    
     return {"grid": grid, "win": win_amount, "balance": bal, "lines": win_lines, "scatters": scatters, "bonus_mult": ui_mult, "fish_data": fish_data, "is_free_spin": is_fs, "free_spins_left": new_free_spins, "fish_caught": new_fish_caught, "level": new_level, "xp": new_xp, "wilds_count": wilds_count}
 
 @app.post("/roulette/bet")
@@ -215,8 +224,8 @@ def roul_bet(r: RoulBetReq):
     c = db(); c.execute("DELETE FROM roulette_bets WHERE uid=?", (uid,))
     for b in r.bets: c.execute("INSERT INTO roulette_bets(uid, bet_type, bet_value, amount) VALUES (?,?,?,?)", (uid, b['type'], b['value'], b['amount']))
     c.commit(); c.close()
-    set_user(uid, balance=d["balance"] - total_bet)
-    return {"status": "ok", "balance": d["balance"] - total_bet}
+    # Логика списания баланса перенесена на фронтенд, поэтому здесь не списываем
+    return {"status": "ok", "balance": d["balance"]}
 
 @app.post("/roulette/spin")
 def roul_spin(r: Req):
