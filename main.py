@@ -90,15 +90,15 @@ def verify(init_data: str) -> dict:
         raise HTTPException(401, "bad signature")
     return json.loads(p["user"])
     def generate_grid(game_key, is_bonus=False, current_wilds=0, is_first_fs=False):
-    g = GAMES[game_key]
-    cols, rows = g["cols"], g["rows"]
-    grid = [[None]*rows for _ in range(cols)]
-    fish_prices = {}
+        g = GAMES[game_key]
+        cols, rows = g["cols"], g["rows"]
+        grid = [[None]*rows for _ in range(cols)]
+        fish_prices = {}
     
-    if game_key == "fishing":
-        wild_chance = 0.0
-        if is_bonus:
-            if is_first_fs: wild_chance = 0.0
+            if game_key == "fishing":
+                wild_chance = 0.0
+                if is_bonus:
+                    if is_first_fs: wild_chance = 0.0
             else:
                 if current_wilds < 3: wild_chance = 0.05       
                 elif current_wilds < 6: wild_chance = 0.04     
