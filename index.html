@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<!-- ПОДКЛЮЧАЕМ СКРИПТ ADSGRAM -->
+<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&display=swap');
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
@@ -46,7 +48,6 @@
 
   /* SLOT GRID */
   #pixi-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 10px; position: relative; overflow: hidden; min-height: 0; }
-  
   #slot-grid { width: 100%; max-width: 90%; max-height: 100%; height: auto; aspect-ratio: 3 / 1; border-radius: 12px; box-shadow: 0 0 30px rgba(0,0,0,0.9); border: 3px solid rgba(255,215,0,0.3); position: relative; background: rgba(0,0,0,0.6); overflow: hidden; display: flex; margin: auto; }
   #slot-grid.fishing-mode { aspect-ratio: 5 / 3; }
 
@@ -259,14 +260,12 @@
     <button class="main-btn" id="wheel-close" style="background:#ffd700; color:#000; width:200px; padding:15px; display:none; margin-top:10px;">ЗАБРАТЬ</button>
   </div>
 </div>
-
 <script>
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 const init = tg?.initData || '';
 const $ = id => document.getElementById(id);
 
-// НОВЫЙ КУЛДАУН (2 секунды)
 const SPIN_COOLDOWN = 2000;
 let lastSpinTime = 0;
 let lastRouletteTime = 0;
@@ -390,7 +389,8 @@ let currentBet = 10;
 let wheelTimerInterval = null;
 let spinning = false;
 let currentFishCaught = 0;
-  window.addEventListener('load', () => {
+
+window.addEventListener('load', () => {
     const carousel = $('games-carousel');
     const games = [
         { id: 'fruits', title: 'Классика', desc: '3 барабана, 1 линия', cls: 'bg-fruits' },
@@ -544,7 +544,7 @@ function startSpin(finalGrid) {
             SFX.reelStop();
         }, 800 + i * 200);
     }
-  }
+}
   let state = {};
 async function refresh() {
   try {
@@ -790,8 +790,9 @@ function triggerWinFlash() {
     $('pixi-container').style.transform = "translate(5px, 5px)";
     setTimeout(() => $('pixi-container').style.transform = "translate(-5px, -5px)", 50);
     setTimeout(() => $('pixi-container').style.transform = "translate(0, 0)", 100);
-  }
-  // --- РУЛЕТКА ЛОГИКА ---
+}
+
+// --- РУЛЕТКА ЛОГИКА ---
 let currentRouletteBets = [];
 let currentRouletteAmount = 10;
 
@@ -1045,10 +1046,29 @@ $('copy-ref-btn').onclick = () => {
     });
 };
 $('menu-rating').onclick = () => { $('dropdown-menu').style.display = 'none'; SFX.click(); $('rating-modal').style.display = 'flex'; };
+
+// --- ADSGRAM РЕКЛАМА ---
 $('menu-ad').onclick = async () => {
   $('dropdown-menu').style.display = 'none';
-  SFX.click(); $('menu-ad').disabled = true; showMsg('показ рекламы…', false);
-  setTimeout(async () => { try { const d = await api('/ad'); SFX.win(); toast(`за рекламу +${d.amount}`); refresh(); } catch(e) { showMsg(e.message, false); refresh(); } }, 5000);
+  SFX.click();
+  
+  if ($('menu-ad').disabled) return;
+
+  const AdController = window.Adsgram.init({ blockId: "57029" });
+
+  try {
+      await AdController.show();
+      
+      showMsg('Реклама просмотрена!', false);
+      const d = await api('/ad'); 
+      SFX.win(); 
+      toast(`+${d.amount} за рекламу`); 
+      refresh(); 
+
+  } catch (error) {
+      console.log("Реклама не просмотрена:", error);
+      showMsg('Досмотрите рекламу до конца!', false);
+  }
 };
 
 // --- БОНУСНАЯ РУЛЕТКА ---
