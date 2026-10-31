@@ -90,43 +90,43 @@ def verify(init_data: str) -> dict:
         raise HTTPException(401, "bad signature")
     return json.loads(p["user"])
     def generate_grid(game_key, is_bonus=False, current_wilds=0, is_first_fs=False):
-    g = GAMES[game_key]
-    cols, rows = g["cols"], g["rows"]
-    grid = [[None]*rows for _ in range(cols)]
-    fish_prices = {}
-    
-    if game_key == "fishing":
-        wild_chance = 0.0
-        if is_bonus:
-            if is_first_fs: wild_chance = 0.0
-            else:
-                if current_wilds < 3: wild_chance = 0.05       
-                elif current_wilds < 6: wild_chance = 0.04     
-                elif current_wilds < 9: wild_chance = 0.03     
-                elif current_wilds < 12: wild_chance = 0.02    
-                else: wild_chance = 0.01                       
-        else: wild_chance = 0.07 
-            
-        for c in range(cols):
-            for r in range(rows):
-                rand = random.random()
-                if rand < 0.01: grid[c][r] = g["scatter"]
-                elif rand < (0.20 if is_bonus else 0.05): 
-                    grid[c][r] = random.choice(g["fish_cash"]); 
-                    fish_prices[(c, r)] = random.choice([2, 5, 10, 15, 20, 25, 50, 200])
-                elif rand < (0.20 + wild_chance): grid[c][r] = g["wild"]
-                else: grid[c][r] = random.choice(range(10))
-        return grid, fish_prices
+        g = GAMES[game_key]
+        cols, rows = g["cols"], g["rows"]
+        grid = [[None]*rows for _ in range(cols)]
+        fish_prices = {}
         
-    weights = [70, 60, 50, 40, 20, 5]
-    pool = [s["id"] for s in g["symbols"] for _ in range(weights[s["id"]] if s["id"] < len(weights) else 1)]
-    for _ in range(cols):
-        col = []
-        for _ in range(rows):
-            if g["scatter"] is not None and random.random() < 0.02: col.append(g["scatter"])
-            else: col.append(random.choice(pool))
-        grid[_] = col
-    return grid, fish_prices
+        if game_key == "fishing":
+            wild_chance = 0.0
+            if is_bonus:
+                if is_first_fs: wild_chance = 0.0
+                else:
+                    if current_wilds < 3: wild_chance = 0.05       
+                    elif current_wilds < 6: wild_chance = 0.04     
+                    elif current_wilds < 9: wild_chance = 0.03     
+                    elif current_wilds < 12: wild_chance = 0.02    
+                    else: wild_chance = 0.01                       
+            else: wild_chance = 0.07 
+                
+            for c in range(cols):
+                for r in range(rows):
+                    rand = random.random()
+                    if rand < 0.01: grid[c][r] = g["scatter"]
+                    elif rand < (0.20 if is_bonus else 0.05): 
+                        grid[c][r] = random.choice(g["fish_cash"]); 
+                        fish_prices[(c, r)] = random.choice([2, 5, 10, 15, 20, 25, 50, 200])
+                    elif rand < (0.20 + wild_chance): grid[c][r] = g["wild"]
+                    else: grid[c][r] = random.choice(range(10))
+            return grid, fish_prices
+            
+        weights = [70, 60, 50, 40, 20, 5]
+        pool = [s["id"] for s in g["symbols"] for _ in range(weights[s["id"]] if s["id"] < len(weights) else 1)]
+        for _ in range(cols):
+            col = []
+            for _ in range(rows):
+                if g["scatter"] is not None and random.random() < 0.02: col.append(g["scatter"])
+                else: col.append(random.choice(pool))
+            grid[_] = col
+        return grid, fish_prices
 
 def check_win(grid, game_key, bet, fish_prices, fish_caught=0, total_wilds=0):
     g = GAMES[game_key]; lines = LINES[game_key]; total_win = 0; win_lines = []; scatters = 0; wilds_count = 0; fish_data = []
