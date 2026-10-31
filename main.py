@@ -14,7 +14,6 @@ async def global_exception_handler(request, exc):
 
 
 # ---------- БД ----------
-# Колонки users, которые разрешено обновлять через set_user (whitelist)
 USER_COLS = {
     "balance", "wheel_time", "wheel_daily", "wheel_day", "free_spins", "xp", "level",
     "referrer_id", "ref_count", "is_spinning", "fs_bet", "last_ad",
@@ -42,7 +41,6 @@ def db():
     c.execute("""CREATE TABLE IF NOT EXISTS assets(id INTEGER PRIMARY KEY AUTOINCREMENT, uid INTEGER, item_id TEXT, buy_price INTEGER, buy_time INTEGER)""")
     c.execute("""CREATE TABLE IF NOT EXISTS tournament(uid INTEGER PRIMARY KEY, score INTEGER DEFAULT 0)""")
     c.execute("""CREATE TABLE IF NOT EXISTS quests(uid INTEGER PRIMARY KEY, spins_count INTEGER DEFAULT 0, win_sum INTEGER DEFAULT 0, last_reset INTEGER DEFAULT 0, claimed TEXT DEFAULT '')""")
-    # мягкая миграция для уже существующих БД
     try:
         c.execute("ALTER TABLE quests ADD COLUMN claimed TEXT DEFAULT ''")
     except sqlite3.OperationalError:
@@ -659,7 +657,7 @@ def referral(r: RefReq):
     u = verify(r.init_data)
     uid = u["id"]
     d = get_user(uid)
-        if uid == r.referrer_id or d["referrer_id"] != 0:
+    if uid == r.referrer_id or d["referrer_id"] != 0:
         return {"status": "error"}
     c = db()
     ref_row = c.execute("SELECT uid FROM users WHERE uid=?", (r.referrer_id,)).fetchone()
@@ -671,9 +669,7 @@ def referral(r: RefReq):
     c.commit()
     c.close()
     return {"status": "success"}
-
-
-@app.post("/bonus")
+    @app.post("/bonus")
 def bonus(r: Req):
     u = verify(r.init_data)
     uid = u["id"]
@@ -782,7 +778,6 @@ def collect_income(r: Req):
     d = get_user(uid)
     now = int(time.time())
     last_collect = d.get("last_collect", 0)
-    # первый сбор: фиксируем точку отсчёта без начисления
     if last_collect == 0:
         set_user(uid, last_collect=now)
         raise HTTPException(400, "Доход начнёт копиться с этого момента")
@@ -946,7 +941,6 @@ def claim_quest(r: ClaimQuestReq):
     targets = {"spins_10": 10, "spins_50": 50, "win_100k": 100000, "win_1m": 1000000}
     if r.quest_id not in rewards:
         raise HTTPException(400, "Неизвестный")
-    # защита от повторного клейма
     claimed = set(x for x in claimed_raw.split(",") if x)
     if r.quest_id in claimed:
         raise HTTPException(400, "Уже получено")
@@ -974,7 +968,6 @@ def daily(r: Req):
     today = int(time.strftime("%j"))
     last_daily = d["last_daily"] or 0
     last_day = int(time.strftime("%j", time.localtime(last_daily))) if last_daily else 0
-    # streak продолжается, если зашли вчера/сегодня; иначе сбрасывается
     if last_daily and (today - last_day == 1 or (today == last_day and now - last_daily < 86400)):
         streak = d["daily_streak"] + 1 if today != last_day else d["daily_streak"]
     else:
