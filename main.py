@@ -3,8 +3,14 @@ from urllib.parse import parse_qsl
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
+from datetime import date
+from pathlib import Path
+from typing import Union, List
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
+BASE_DIR = Path(__file__).resolve().parent
+# На Render подключите Persistent Disk и задайте DB_PATH=/data/slot.db, иначе БД стирается при каждом деплое
+DB_PATH = os.getenv("DB_PATH", str(BASE_DIR / "slot.db"))
 app = FastAPI()
 
 
@@ -14,6 +20,7 @@ async def global_exception_handler(request, exc):
 
 
 # ---------- БД ----------
+# Колонки users, которые разрешено обновлять через set_user (whitelist)
 USER_COLS = {
     "balance", "wheel_time", "wheel_daily", "wheel_day", "free_spins", "xp", "level",
     "referrer_id", "ref_count", "is_spinning", "fs_bet", "last_ad",
@@ -23,7 +30,7 @@ USER_COLS = {
 
 
 def db():
-    c = sqlite3.connect("slot.db", timeout=10)
+    c = sqlite3.connect(DB_PATH, timeout=10)
     c.execute("PRAGMA journal_mode=WAL")
     c.execute("""CREATE TABLE IF NOT EXISTS users(
         uid INTEGER PRIMARY KEY, balance INTEGER DEFAULT 5000,
@@ -41,6 +48,7 @@ def db():
     c.execute("""CREATE TABLE IF NOT EXISTS assets(id INTEGER PRIMARY KEY AUTOINCREMENT, uid INTEGER, item_id TEXT, buy_price INTEGER, buy_time INTEGER)""")
     c.execute("""CREATE TABLE IF NOT EXISTS tournament(uid INTEGER PRIMARY KEY, score INTEGER DEFAULT 0)""")
     c.execute("""CREATE TABLE IF NOT EXISTS quests(uid INTEGER PRIMARY KEY, spins_count INTEGER DEFAULT 0, win_sum INTEGER DEFAULT 0, last_reset INTEGER DEFAULT 0, claimed TEXT DEFAULT '')""")
+    # мягкая миграция для уже существующих БД
     try:
         c.execute("ALTER TABLE quests ADD COLUMN claimed TEXT DEFAULT ''")
     except sqlite3.OperationalError:
@@ -200,15 +208,16 @@ def generate_grid(game_key, is_bonus=False, current_wilds=0, is_first_fs=False):
         else:
             wild_chance = 0.07
 
+        fish_thr = 0.20 if is_bonus else 0.05
         for c in range(cols):
             for r in range(rows):
                 rand = random.random()
                 if rand < 0.01:
                     grid[c][r] = g["scatter"]
-                elif rand < (0.20 if is_bonus else 0.05):
+                elif rand < fish_thr:
                     grid[c][r] = random.choice(g["fish_cash"])
                     fish_prices[(c, r)] = random.choice([2, 5, 10, 15, 20, 25, 50, 200])
-                elif rand < (0.20 + wild_chance):
+                elif rand < (fish_thr + wild_chance):
                     grid[c][r] = g["wild"]
                 else:
                     grid[c][r] = random.choice(range(10))
@@ -216,14 +225,14 @@ def generate_grid(game_key, is_bonus=False, current_wilds=0, is_first_fs=False):
 
     weights = [70, 60, 50, 40, 20, 5]
     pool = [s["id"] for s in g["symbols"] for _ in range(weights[s["id"]] if s["id"] < len(weights) else 1)]
-    for _ in range(cols):
+    for ci in range(cols):
         col = []
         for _ in range(rows):
             if g["scatter"] is not None and random.random() < 0.02:
                 col.append(g["scatter"])
             else:
                 col.append(random.choice(pool))
-        grid[_] = col
+        grid[ci] = col
     return grid, fish_prices
 
 
@@ -292,9 +301,7 @@ def check_win(grid, game_key, bet, fish_prices, fish_caught=0, total_wilds=0):
                 total_win += payout
                 win_lines.append({"line": line_idx, "count": count, "win": payout})
     return total_win, win_lines, scatters, fish_data, wilds_count
-
-
-# ---------- Модели запросов ----------
+    # ---------- Модели запросов ----------
 class Req(BaseModel):
     init_data: str
 
@@ -312,9 +319,15 @@ class SpinReq(BaseModel):
     free_spins: int = 0
 
 
+class RoulBet(BaseModel):
+    type: str
+    value: Union[int, str]
+    amount: int
+
+
 class RoulBetReq(BaseModel):
     init_data: str
-    bets: list
+    bets: List[RoulBet]
 
 
 class BuyAssetReq(BaseModel):
@@ -356,7 +369,7 @@ def state(r: Req):
     uid = u["id"]
     d = get_user(uid)
     now = int(time.time())
-    today = int(time.strftime("%j"))
+    today = date.today().toordinal()
     if d["wheel_day"] != today:
         set_user(uid, wheel_daily=0, wheel_day=today)
         d["wheel_daily"] = 0
@@ -397,6 +410,10 @@ def spin(r: SpinReq):
     if d["is_spinning"] == 1:
         set_user(uid, is_spinning=0)
         d["is_spinning"] = 0
+    if r.game not in GAMES:
+        raise HTTPException(400, "Неизвестная игра")
+    if r.bonus_buy and r.game != "fishing":
+        raise HTTPException(400, "Покупка бонуса недоступна в этой игре")
     game_conf = GAMES[r.game]
     is_fs = d["free_spins"] > 0
 
@@ -576,7 +593,23 @@ def roul_bet(r: RoulBetReq):
     uid = u["id"]
     d = get_user(uid)
     now = int(time.time())
-    total_bet = sum(b['amount'] for b in r.bets)
+    if not r.bets or len(r.bets) > 100:
+        raise HTTPException(400, "Неверные ставки")
+    for b in r.bets:
+        if b.amount <= 0:
+            raise HTTPException(400, "Ставка должна быть > 0")
+        if b.type == 'number':
+            try:
+                if not 0 <= int(b.value) <= 36:
+                    raise ValueError
+            except (ValueError, TypeError):
+                raise HTTPException(400, "Неверное число")
+        elif (b.type, str(b.value)) not in {
+            ('color', 'red'), ('color', 'black'), ('parity', 'even'), ('parity', 'odd'),
+            ('half', 'low'), ('half', 'high'),
+        }:
+            raise HTTPException(400, "Неверная ставка")
+    total_bet = sum(b.amount for b in r.bets)
     if total_bet <= 0:
         raise HTTPException(400, "Ставка не может быть 0")
     if total_bet > 5000:
@@ -603,7 +636,7 @@ def roul_bet(r: RoulBetReq):
     for b in r.bets:
         c.execute(
             "INSERT INTO roulette_bets(uid, bet_type, bet_value, amount) VALUES (?,?,?,?)",
-            (uid, b['type'], b['value'], b['amount']),
+            (uid, b.type, str(b.value), b.amount),
         )
     c.commit()
     c.close()
@@ -616,6 +649,7 @@ def roul_spin(r: Req):
     uid = u["id"]
     d = get_user(uid)
     c = db()
+    c.execute("BEGIN IMMEDIATE")
     bets = c.execute("SELECT bet_type, bet_value, amount FROM roulette_bets WHERE uid=?", (uid,)).fetchall()
     if not bets:
         c.close()
@@ -669,7 +703,9 @@ def referral(r: RefReq):
     c.commit()
     c.close()
     return {"status": "success"}
-    @app.post("/bonus")
+
+
+@app.post("/bonus")
 def bonus(r: Req):
     u = verify(r.init_data)
     uid = u["id"]
@@ -711,9 +747,7 @@ def ad(r: Req):
     amount = random.choice([100, 200, 300, 500])
     set_user(uid, balance=d["balance"] + amount, last_ad=now)
     return {"amount": amount, "balance": d["balance"] + amount}
-
-
-@app.post("/get_assets")
+    @app.post("/get_assets")
 def get_assets(r: Req):
     u = verify(r.init_data)
     uid = u["id"]
@@ -778,6 +812,7 @@ def collect_income(r: Req):
     d = get_user(uid)
     now = int(time.time())
     last_collect = d.get("last_collect", 0)
+    # первый сбор: фиксируем точку отсчёта без начисления
     if last_collect == 0:
         set_user(uid, last_collect=now)
         raise HTTPException(400, "Доход начнёт копиться с этого момента")
@@ -941,6 +976,7 @@ def claim_quest(r: ClaimQuestReq):
     targets = {"spins_10": 10, "spins_50": 50, "win_100k": 100000, "win_1m": 1000000}
     if r.quest_id not in rewards:
         raise HTTPException(400, "Неизвестный")
+    # защита от повторного клейма
     claimed = set(x for x in claimed_raw.split(",") if x)
     if r.quest_id in claimed:
         raise HTTPException(400, "Уже получено")
@@ -965,9 +1001,10 @@ def daily(r: Req):
     uid = u["id"]
     d = get_user(uid)
     now = int(time.time())
-    today = int(time.strftime("%j"))
+    today = date.today().toordinal()
     last_daily = d["last_daily"] or 0
-    last_day = int(time.strftime("%j", time.localtime(last_daily))) if last_daily else 0
+    last_day = date.fromtimestamp(last_daily).toordinal() if last_daily else 0
+    # streak продолжается, если зашли вчера/сегодня; иначе сбрасывается
     if last_daily and (today - last_day == 1 or (today == last_day and now - last_daily < 86400)):
         streak = d["daily_streak"] + 1 if today != last_day else d["daily_streak"]
     else:
@@ -995,6 +1032,10 @@ def create_clan(r: CreateClanReq):
     uid = u["id"]
     d = get_user(uid)
     COST = 1000000
+    name = r.name.strip()
+    if not 3 <= len(name) <= 24:
+        raise HTTPException(400, "Название: от 3 до 24 символов")
+    r.name = name
     if d["balance"] < COST:
         raise HTTPException(400, "Нужно 1 000 000")
     c = db()
@@ -1003,8 +1044,8 @@ def create_clan(r: CreateClanReq):
         c.close()
         raise HTTPException(400, "Вы уже в клане")
     try:
-        c.execute("INSERT INTO clans(name, owner_id) VALUES(?, ?)", (r.name, uid))
-        clan_id = c.lastrowid
+        cur = c.execute("INSERT INTO clans(name, owner_id) VALUES(?, ?)", (r.name, uid))
+        clan_id = cur.lastrowid
         c.execute("INSERT INTO clan_members(uid, clan_id, role) VALUES(?, ?, 'owner')", (uid, clan_id))
         new_bal = d["balance"] - COST
         c.execute("UPDATE users SET balance=? WHERE uid=?", (new_bal, uid))
@@ -1113,6 +1154,21 @@ def rating(r: Req):
     return {"top": top}
 
 
+@app.on_event("startup")
+def _startup():
+    db().close()  # создаём таблицы сразу при старте
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 @app.get("/")
 def index():
-    return FileResponse("index.html")
+    return FileResponse(BASE_DIR / "index.html")
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8000")))
