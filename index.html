@@ -800,7 +800,6 @@ const SFX = {
 
 function playBackgroundMusic() {
     if (!isMusicPlaying) return;
-    // Более приятная мелодия (ля-минор)
     const melody = [440.00, 493.88, 523.25, 587.33, 523.25, 493.88, 440.00, 392.00];
     let i = 0;
     function playNote() {
@@ -2237,6 +2236,13 @@ $('menu-tournament').onclick = async () => {
 };
 
 // --- РЕЙТИНГ (FORBES) ---
+const FRAMES_CATALOG = {
+    "default": { "name": "Стандарт", "price": 0, "css": "border: 2px solid #555; border-radius: 50%;" },
+    "neon": { "name": "Неон", "price": 10000000, "css": "border: 3px solid #00ffff; border-radius: 50%; box-shadow: 0 0 15px #00ffff;" },
+    "gold": { "name": "Золото", "price": 50000000, "css": "border: 3px solid #ffd700; border-radius: 50%; box-shadow: 0 0 15px #ffd700;" },
+    "fire": { "name": "Огонь", "price": 150000000, "css": "border: 3px solid #ff3b30; border-radius: 50%; box-shadow: 0 0 15px #ff3b30;" }
+};
+
 $('menu-rating').onclick = async () => { 
     $('dropdown-menu').style.display = 'none'; SFX.click(); $('rating-modal').style.display = 'flex';
     $('rating-list').innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
@@ -2287,12 +2293,6 @@ $('copy-ref-btn').onclick = () => {
 
 // --- ПРОФИЛЬ ---
 const AVATARS = { "dog": { "emoji": "🐶", "price": 100000 }, "wolf": { "emoji": "🐺", "price": 500000 }, "lion": { "emoji": "🦁", "price": 1000000 }, "diamond": { "emoji": "💎", "price": 5000000 }, "crown": { "emoji": "👑", "price": 10000000 }, "rocket": { "emoji": "🚀", "price": 20000000 }, "alien": { "emoji": "👽", "price": 50000000 } };
-const FRAMES_CATALOG = {
-    "default": { "name": "Стандарт", "price": 0, "css": "border: 2px solid #555; border-radius: 50%;" },
-    "neon": { "name": "Неон", "price": 10000000, "css": "border: 3px solid #00ffff; border-radius: 50%; box-shadow: 0 0 15px #00ffff;" },
-    "gold": { "name": "Золото", "price": 50000000, "css": "border: 3px solid #ffd700; border-radius: 50%; box-shadow: 0 0 15px #ffd700;" },
-    "fire": { "name": "Огонь", "price": 150000000, "css": "border: 3px solid #ff3b30; border-radius: 50%; box-shadow: 0 0 15px #ff3b30;" }
-};
 
 $('menu-profile').onclick = () => {
     $('dropdown-menu').style.display = 'none'; SFX.click(); $('profile-modal').style.display = 'flex';
