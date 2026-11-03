@@ -35,7 +35,7 @@ def db():
                 last_collect INTEGER DEFAULT 0, daily_streak INTEGER DEFAULT 0, last_daily INTEGER DEFAULT 0,
                 avatar TEXT DEFAULT '👤', ref_earnings INTEGER DEFAULT 0, vip_expires INTEGER DEFAULT 0,
                 last_black_market INTEGER DEFAULT 0, energy INTEGER DEFAULT 1000, pickaxe_lvl INTEGER DEFAULT 1,
-                active_skin TEXT DEFAULT 'default', active_frame TEXT DEFAULT 'default'
+                active_skin TEXT DEFAULT 'default', active_frame TEXT DEFAULT 'default', last_energy_time INTEGER DEFAULT 0
             )""")
             conn.execute("""CREATE TABLE IF NOT EXISTS roulette_bets(uid INTEGER, bet_type TEXT, bet_value TEXT, amount INTEGER)""")
             conn.execute("""CREATE TABLE IF NOT EXISTS roulette_history(uid INTEGER, amount INTEGER, timestamp INTEGER)""")
@@ -56,10 +56,10 @@ def db():
             conn.execute("""CREATE TABLE IF NOT EXISTS clan_wars(id INTEGER PRIMARY KEY, clan1_id INTEGER, clan2_id INTEGER, start_time INTEGER, end_time INTEGER, clan1_score INTEGER DEFAULT 0, clan2_score INTEGER DEFAULT 0, status TEXT DEFAULT 'active')""")
             conn.execute("""CREATE TABLE IF NOT EXISTS chat_messages(id INTEGER PRIMARY KEY AUTOINCREMENT, uid INTEGER, clan_id INTEGER DEFAULT 0, text TEXT, timestamp INTEGER)""")
             conn.execute("""CREATE TABLE IF NOT EXISTS player_house(uid INTEGER PRIMARY KEY, level INTEGER DEFAULT 0)""")
-            conn.execute("""CREATE TABLE IF NOT EXISTS tech_tree(uid INTEGER, node_id TEXT, level INTEGER DEFAULT 1, PRIMARY KEY(uid, node_id))""")
-            conn.execute("""CREATE TABLE IF NOT EXISTS story_progress(uid INTEGER PRIMARY KEY, chapter INTEGER DEFAULT 0, last_claimed INTEGER DEFAULT 0)""")
+            conn.execute("""CREATE TABLE IF NOT EXISTS story_progress(uid INTEGER PRIMARY KEY, chapter INTEGER DEFAULT 0)""")
             conn.execute("""CREATE TABLE IF NOT EXISTS predictions(id INTEGER PRIMARY KEY AUTOINCREMENT, question TEXT, option_yes TEXT, option_no TEXT, end_time INTEGER, result TEXT DEFAULT NULL)""")
             conn.execute("""CREATE TABLE IF NOT EXISTS prediction_bets(id INTEGER PRIMARY KEY AUTOINCREMENT, uid INTEGER, prediction_id INTEGER, choice TEXT, amount INTEGER)""")
+            conn.execute("""CREATE TABLE IF NOT EXISTS tech_tree(uid INTEGER, node_id TEXT, level INTEGER DEFAULT 1, PRIMARY KEY(uid, node_id))""")
             conn.execute("""CREATE TABLE IF NOT EXISTS clan_chest(clan_id INTEGER PRIMARY KEY, current_amount INTEGER DEFAULT 0, goal_amount INTEGER DEFAULT 100000000)""")
             conn.execute("""CREATE TABLE IF NOT EXISTS clan_chest_history(id INTEGER PRIMARY KEY AUTOINCREMENT, clan_id INTEGER, uid INTEGER, amount INTEGER, timestamp INTEGER)""")
             conn.commit()
@@ -89,41 +89,28 @@ ASSETS_CATALOG = {
     "luxury_heli": {"name": "Вертолет", "price": 200000000, "emoji": "🚁", "income": 0}
 }
 
-HOUSE_UPGRADES = {
-    1: {"name": "Фундамент", "price": 5000000, "desc": "Начало строительства"},
-    2: {"name": "Гараж", "price": 15000000, "desc": "+5% к продаже машин"},
-    3: {"name": "Сейф", "price": 50000000, "desc": "Защита 10% баланса от проигрыша"},
-    4: {"name": "Казино-стол", "price": 150000000, "desc": "Доступ к VIP-рулетке"},
-    5: {"name": "Особняк", "price": 500000000, "desc": "Максимальный статус и +20% к пассивному доходу"}
-}
-
-TECH_TREE = {
-    "eco_income": {"name": "Экономика: Доход", "desc": "+10% к доходу с бизнеса", "price": 50000000, "max_lvl": 5, "effect": 0.10},
-    "eco_sell": {"name": "Экономика: Продажа", "desc": "+5% к продаже имущества", "price": 100000000, "max_lvl": 3, "effect": 0.05},
-    "lucky_roulette": {"name": "Азарт: Рулетка", "desc": "+10% к выплатам в рулетке", "price": 150000000, "max_lvl": 5, "effect": 0.10},
-    "social_ref": {"name": "Социалка: Рефералы", "desc": "+1% к реферальным отчислениям", "price": 50000000, "max_lvl": 5, "effect": 0.01}
-}
-
+HOUSE_UPGRADES = {1: {"name": "Фундамент", "price": 5000000, "desc": "Начало строительства"},2: {"name": "Гараж", "price": 15000000, "desc": "+5% к продаже машин"},3: {"name": "Сейф", "price": 50000000, "desc": "Защита 10% баланса от проигрыша"},4: {"name": "Казино-стол", "price": 150000000, "desc": "Доступ к VIP-рулетке"},5: {"name": "Особняк", "price": 500000000, "desc": "Максимальный статус и +20% к пассивному доходу"}}
 CURRENCY_RATES = {"usd": {"buy": 95, "sell": 85}, "eur": {"buy": 105, "sell": 95}, "aed": {"buy": 26, "sell": 22}}
 AVATARS_CATALOG = {"dog": {"emoji": "🐶", "price": 100000}, "wolf": {"emoji": "🐺", "price": 500000}, "lion": {"emoji": "🦁", "price": 1000000}, "diamond": {"emoji": "💎", "price": 5000000}, "crown": {"emoji": "👑", "price": 10000000}, "rocket": {"emoji": "🚀", "price": 20000000}, "alien": {"emoji": "👽", "price": 50000000}}
-SKINS_CATALOG = {"default": {"name": "Стандарт", "price": 0, "syms": None}, "space": {"name": "Космос", "price": 10000000, "syms": ['🌍','🌕','🌟','☄️','🚀','👽','🛸','🌠']}, "cyber": {"name": "Киберпанк", "price": 25000000, "syms": ['💻','🔋','🔌','📡','🤖','👾','⚡','🧬']}}
-FRAMES_CATALOG = {"default": {"name": "Стандарт", "price": 0, "css": "border: 2px solid #555; border-radius: 50%;"}, "neon": {"name": "Неон", "price": 10000000, "css": "border: 3px solid #00ffff; border-radius: 50%; box-shadow: 0 0 15px #00ffff;"}, "gold": {"name": "Золото", "price": 50000000, "css": "border: 3px solid #ffd700; border-radius: 50%; box-shadow: 0 0 15px #ffd700;"}, "fire": {"name": "Огонь", "price": 150000000, "css": "border: 3px solid #ff3b30; border-radius: 50%; box-shadow: 0 0 15px #ff3b30;"}}
+SKINS_CATALOG = {"default": {"name": "Стандарт", "price": 0, "syms": None},"space": {"name": "Космос", "price": 10000000, "syms": ['🌍','🌕','🌟','☄️','🚀','👽','🛸','🌠']},"cyber": {"name": "Киберпанк", "price": 25000000, "syms": ['💻','🔋','🔌','📡','🤖','👾','⚡','🧬']}}
+FRAMES_CATALOG = {"default": {"name": "Стандарт", "price": 0, "css": "border: 2px solid #555; border-radius: 50%;"},"neon": {"name": "Неон", "price": 10000000, "css": "border: 3px solid #00ffff; border-radius: 50%; box-shadow: 0 0 15px #00ffff;"},"gold": {"name": "Золото", "price": 50000000, "css": "border: 3px solid #ffd700; border-radius: 50%; box-shadow: 0 0 15px #ffd700;"},"fire": {"name": "Огонь", "price": 150000000, "css": "border: 3px solid #ff3b30; border-radius: 50%; box-shadow: 0 0 15px #ff3b30;"}}
+TECH_TREE = {"eco_income": {"name": "Экономика: Доход", "desc": "+10% к доходу с бизнеса", "price": 50000000, "max_lvl": 5, "effect": 0.10},"eco_sell": {"name": "Экономика: Продажа", "desc": "+5% к продаже имущества", "price": 100000000, "max_lvl": 3, "effect": 0.05},"lucky_scatter": {"name": "Азарт: Скаттеры", "desc": "+5% к шансу скаттеров", "price": 200000000, "max_lvl": 1, "effect": 0.05},"lucky_roulette": {"name": "Азарт: Рулетка", "desc": "+10% к выплатам в рулетке", "price": 150000000, "max_lvl": 5, "effect": 0.10},"social_ref": {"name": "Социалка: Рефералы", "desc": "+1% к реферальным отчислениям", "price": 50000000, "max_lvl": 5, "effect": 0.01},"social_clan": {"name": "Социалка: Кланы", "desc": "+5% к очкам клана", "price": 100000000, "max_lvl": 3, "effect": 0.05}}
+STORY_CHAPTERS = {1: {"title": "Первая сделка", "desc": "Купи Кофейню за 25 млн", "reward_chips": 5000000, "reward_usd": 0, "req_type": "asset", "req_id": "business_cafe"},2: {"title": "Отмывание", "desc": "Купи 3 бизнеса", "reward_chips": 15000000, "reward_usd": 10, "req_type": "assets_count", "req_id": 3},3: {"title": "Влияние", "desc": "Вступи в клан", "reward_chips": 50000000, "reward_usd": 50, "req_type": "clan", "req_id": 1},4: {"title": "Теневой король", "desc": "Купи Завод", "reward_chips": 200000000, "reward_usd": 200, "req_type": "asset", "req_id": "business_factory"}}
+DONATE_CATALOG = {"chips_small": {"name": "100 000 фишек", "price_stars": 50, "type": "chips", "value": 100000},"chips_medium": {"name": "1 000 000 фишек", "price_stars": 400, "type": "chips", "value": 1000000},"vip_month": {"name": "VIP на 30 дней", "price_stars": 500, "type": "vip", "value": 30},"skin_exclusive": {"name": "Эксклюзивный скин", "price_stars": 300, "type": "skin", "value": "exclusive"}}
 
 GAMES = {
     "fruits": {"cols": 3, "rows": 1, "min_bet": 10, "symbols": [{"id":0, "pay":[0, 10, 30]}, {"id":1, "pay":[0, 15, 50]}, {"id":2, "pay":[0, 20, 100]}, {"id":3, "pay":[0, 50, 200]}, {"id":4, "pay":[0, 100, 500]}, {"id":5, "pay":[0, 200, 1000]}], "scatter": None},
     "fishing": {"cols": 5, "rows": 3, "min_bet": 10, "symbols": [{"id":0, "pay":[0, 5, 10, 25, 100]}, {"id":1, "pay":[0, 5, 10, 25, 100]}, {"id":2, "pay":[0, 5, 10, 25, 100]}, {"id":3, "pay":[0, 5, 10, 25, 100]}, {"id":4, "pay":[0, 5, 10, 25, 100]}, {"id":5, "pay":[0, 10, 20, 50, 200]}, {"id":6, "pay":[0, 20, 100, 500, 500]}, {"id":7, "pay":[0, 20, 100, 500, 500]}, {"id":8, "pay":[0, 30, 150, 1000, 1000]}, {"id":9, "pay":[5, 50, 200, 2000, 2000]}], "scatter": 10, "wild": 11, "fish_cash": [12, 13, 14, 15]}
 }
-
 LINES = {"fruits": [[0,0,0]], "fishing": [[1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2], [0,0,1,2,2], [2,2,1,0,0], [0,1,2,2,2], [2,1,0,0,0], [0,0,1,0,0]]}
-
 def get_user(uid):
     conn = db()
-    row = conn.execute("SELECT balance, wheel_time, wheel_daily, wheel_day, free_spins, xp, level, referrer_id, ref_count, fs_bet, last_ad, is_spinning, fish_caught, total_wilds, usd, eur, aed, last_collect, daily_streak, last_daily, avatar, ref_earnings, vip_expires, last_black_market, energy, pickaxe_lvl, active_skin, active_frame FROM users WHERE uid=?", (uid,)).fetchone()
+    row = conn.execute("SELECT balance, wheel_time, wheel_daily, wheel_day, free_spins, xp, level, referrer_id, ref_count, fs_bet, last_ad, is_spinning, fish_caught, total_wilds, usd, eur, aed, last_collect, daily_streak, last_daily, avatar, ref_earnings, vip_expires, last_black_market, energy, pickaxe_lvl, active_skin, active_frame, last_energy_time FROM users WHERE uid=?", (uid,)).fetchone()
     if not row:
         conn.execute("INSERT INTO users(uid, balance) VALUES(?, 5000)", (uid,))
         conn.commit()
-        row = (5000, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '👤', 0, 0, 0, 1000, 1, 'default', 'default')
-    return {"balance": row[0], "wheel_time": row[1], "wheel_daily": row[2], "wheel_day": row[3], "free_spins": row[4], "xp": row[5], "level": row[6], "referrer_id": row[7], "ref_count": row[8], "fs_bet": row[9], "last_ad": row[10], "is_spinning": row[11], "fish_caught": row[12], "total_wilds": row[13], "usd": row[14], "eur": row[15], "aed": row[16], "last_collect": row[17], "daily_streak": row[18], "last_daily": row[19], "avatar": row[20], "ref_earnings": row[21], "vip_expires": row[22], "last_black_market": row[23], "energy": row[24], "pickaxe_lvl": row[25], "active_skin": row[26], "active_frame": row[27]}
+        row = (5000, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '👤', 0, 0, 0, 1000, 1, 'default', 'default', 0)
+    return {"balance": row[0], "wheel_time": row[1], "wheel_daily": row[2], "wheel_day": row[3], "free_spins": row[4], "xp": row[5], "level": row[6], "referrer_id": row[7], "ref_count": row[8], "fs_bet": row[9], "last_ad": row[10], "is_spinning": row[11], "fish_caught": row[12], "total_wilds": row[13], "usd": row[14], "eur": row[15], "aed": row[16], "last_collect": row[17], "daily_streak": row[18], "last_daily": row[19], "avatar": row[20], "ref_earnings": row[21], "vip_expires": row[22], "last_black_market": row[23], "energy": row[24], "pickaxe_lvl": row[25], "active_skin": row[26], "active_frame": row[27], "last_energy_time": row[28]}
 
 def set_user(uid, **kw):
     conn = db()
@@ -245,13 +232,15 @@ class ChatSendReq(BaseModel): init_data: str; text: str; is_clan: bool = False
 class ChatGetReq(BaseModel): init_data: str; is_clan: bool = False; last_id: int = 0
 class BuyVipReq(BaseModel): init_data: str
 class HouseReq(BaseModel): init_data: str
+class ClaimPrizeReq(BaseModel): init_data: str; prize_type: str; prize_value: int
 class TapReq(BaseModel): init_data: str; taps: int
 class UpgradePickReq(BaseModel): init_data: str
+class DonateReq(BaseModel): init_data: str; item_id: str
+class CheckPayReq(BaseModel): init_data: str; item_id: str
 class TechReq(BaseModel): init_data: str; node_id: str
 class StoryClaimReq(BaseModel): init_data: str; chapter_id: int
 class PredBetReq(BaseModel): init_data: str; prediction_id: int; choice: str; amount: int
 class DonateClanReq(BaseModel): init_data: str; amount: int
-class ClaimPrizeReq(BaseModel): init_data: str; prize_type: str; prize_value: int
 @app.post("/state")
 def state(r: Req):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid); now = int(time.time())
@@ -262,21 +251,12 @@ def state(r: Req):
         set_user(uid, is_spinning=0); d["is_spinning"] = 0
         
     conn = db()
-    time_passed = now - d["last_ad"]
-    if time_passed > 0:
-        energy_regen = time_passed // 60
-        new_energy = min(1000, d["energy"] + energy_regen)
-        if new_energy != d["energy"]:
-            set_user(uid, energy=new_energy, last_ad=now)
-            d["energy"] = new_energy
-            
     market = conn.execute("SELECT price, last_update FROM crypto_market WHERE id=1").fetchone()
     if now - market[1] > 1800:
         change = random.uniform(-0.2, 0.3)
         new_price = max(10.0, market[0] * (1 + change))
         conn.execute("UPDATE crypto_market SET price=?, last_update=? WHERE id=1", (new_price, now))
         conn.commit()
-        
     conn.execute("DELETE FROM black_market WHERE expires_at < ?", (now,))
     conn.execute("DELETE FROM active_events WHERE expires_at < ?", (now,))
     
@@ -290,24 +270,22 @@ def state(r: Req):
 
     event_row = conn.execute("SELECT event_type, multiplier, expires_at FROM active_events LIMIT 1").fetchone()
     event_data = {"type": event_row[0], "multiplier": event_row[1], "time_left": event_row[2] - now} if event_row else None
-
-    member = conn.execute("SELECT clan_id FROM clan_members WHERE uid=?", (uid,)).fetchone()
-    clan_id = member[0] if member else 0
     
     house_row = conn.execute("SELECT level FROM player_house WHERE uid=?", (uid,)).fetchone()
     house_level = house_row[0] if house_row else 0
+    
+    member = conn.execute("SELECT clan_id FROM clan_members WHERE uid=?", (uid,)).fetchone()
+    clan_id = member[0] if member else 0
 
     can_wheel = (d["wheel_daily"] < 5) and (now >= d["wheel_time"])
     time_left = max(0, d["wheel_time"] - now)
-    
-    return {"balance": int(d["balance"]), "wheel_ready": can_wheel, "wheel_time_left": time_left, "wheel_daily": d["wheel_daily"], "ad_ready": now - d["last_ad"] > 60, "ad_allowed": d["balance"] < 5000, "free_spins": d["free_spins"], "level": d["level"], "xp": d["xp"], "next_level_xp": d["level"] * 15000, "ref_count": d["ref_count"], "fish_caught": d["fish_caught"], "total_wilds": d["total_wilds"], "usd": d["usd"], "eur": d["eur"], "aed": d["aed"], "daily_streak": d["daily_streak"], "last_daily": d["last_daily"], "avatar": d["avatar"], "vip_expires": d["vip_expires"], "active_event": event_data, "energy": d["energy"], "pickaxe_lvl": d["pickaxe_lvl"], "active_skin": d["active_skin"], "active_frame": d["active_frame"], "house_level": house_level, "clan_id": clan_id, "last_black_market": d["last_black_market"]}
+    return {"balance": int(d["balance"]), "wheel_ready": can_wheel, "wheel_time_left": time_left, "wheel_daily": d["wheel_daily"], "ad_ready": now - d["last_ad"] > 60, "ad_allowed": True, "free_spins": d["free_spins"], "level": d["level"], "xp": d["xp"], "next_level_xp": d["level"] * 15000, "ref_count": d["ref_count"], "fish_caught": d["fish_caught"], "total_wilds": d["total_wilds"], "usd": d["usd"], "eur": d["eur"], "aed": d["aed"], "daily_streak": d["daily_streak"], "last_daily": d["last_daily"], "avatar": d["avatar"], "vip_expires": d["vip_expires"], "active_event": event_data, "house_level": house_level, "clan_id": clan_id, "active_skin": d["active_skin"], "active_frame": d["active_frame"]}
 
 @app.post("/spin")
 def spin(r: SpinReq):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
     if d["is_spinning"] == 1: 
-        set_user(uid, is_spinning=0)
-        d["is_spinning"] = 0
+        set_user(uid, is_spinning=0); d["is_spinning"] = 0
     game_conf = GAMES[r.game]
     is_fs = d["free_spins"] > 0
     
@@ -491,6 +469,7 @@ def roul_spin(r: Req):
     new_balance = int(d["balance"] + total_win)
     set_user(uid, balance=new_balance)
     return {"win_num": win_num, "win_amount": int(total_win), "balance": new_balance}
+
 @app.post("/referral")
 def referral(r: RefReq):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
@@ -514,23 +493,21 @@ def ref_stats(r: Req):
 @app.post("/bonus")
 def bonus(r: Req):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid); now = int(time.time())
-    if d["wheel_daily"] >= 5: raise HTTPException(400, "Лимит 5 круток")
-    if now < d["wheel_time"]: raise HTTPException(400, "Кулдаун 1 час")
+    if now < d["wheel_time"]: raise HTTPException(400, f"Кулдаун! Ждать: {((d['wheel_time'] - now) // 60)} мин.")
     rnd = random.random() * 100
-    if rnd < 1: amount = 1000
-    elif rnd < 4: amount = 500
-    elif rnd < 12: amount = 250
-    elif rnd < 32: amount = 100
-    elif rnd < 62: amount = 50
-    elif rnd < 87: amount = 20
+    if rnd < 1: amount = 1000000
+    elif rnd < 4: amount = 500000
+    elif rnd < 12: amount = 100000
+    elif rnd < 32: amount = 25000
+    elif rnd < 62: amount = 5000
+    elif rnd < 87: amount = 1000
     else: amount = 0
-    set_user(uid, balance=d["balance"] + amount, wheel_time=now + 3600, wheel_daily=d["wheel_daily"] + 1)
+    set_user(uid, balance=d["balance"] + amount, wheel_time=now + 86400)
     return {"amount": amount, "balance": d["balance"] + amount}
 
 @app.post("/ad_energy")
 def ad_energy(r: Req):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid); now = int(time.time())
-    if d["balance"] >= 5000: raise HTTPException(400, "реклама доступна только при балансе < 5000")
     boost = 300
     new_energy = min(1000, d["energy"] + boost)
     set_user(uid, energy=new_energy, last_ad=now)
@@ -682,39 +659,31 @@ def buy_house_upgrade(r: HouseReq):
 
 @app.post("/open_case")
 def open_case(r: Req):
-    u = verify(r.init_data); uid = u["id"]; d = get_user(uid); now = int(time.time())
+    u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
     COST = 50000
     if d["balance"] < COST: raise HTTPException(400, f"Нужно {COST} фишек")
     new_bal = d["balance"] - COST
+    set_user(uid, balance=new_bal)
     rnd = random.random() * 100
     prize_type = ""; prize_value = 0; prize_text = ""
-    if rnd < 1:
-        prize_type = "car_lambo"; prize_text = "🚀 Lamborghini!"
-    elif rnd < 5:
-        prize_type = "usd"; prize_value = 10; prize_text = "💵 10 USD"
-    elif rnd < 15:
-        prize_type = "chips"; prize_value = 500000; prize_text = "💰 500 000 фишек"
-    elif rnd < 40:
-        prize_type = "chips"; prize_value = 100000; prize_text = "💰 100 000 фишек"
-    elif rnd < 70:
-        prize_type = "chips"; prize_value = 50000; prize_text = "💰 50 000 фишек"
-    else:
-        prize_type = "empty"; prize_text = "😢 Пусто"
-    set_user(uid, balance=new_bal)
+    if rnd < 1: prize_type = "car_lambo"; prize_text = "🚀 Lamborghini!"
+    elif rnd < 5: prize_type = "usd"; prize_value = 10; prize_text = "💵 10 USD"
+    elif rnd < 15: prize_type = "chips"; prize_value = 500000; prize_text = "💰 500 000 фишек"
+    elif rnd < 40: prize_type = "chips"; prize_value = 100000; prize_text = "💰 100 000 фишек"
+    elif rnd < 70: prize_type = "chips"; prize_value = 50000; prize_text = "💰 50 000 фишек"
+    else: prize_type = "empty"; prize_text = "😢 Пусто"
     return {"status": "ok", "prize_type": prize_type, "prize_value": prize_value, "prize_text": prize_text, "balance": new_bal}
 
 @app.post("/claim_case_prize")
 def claim_case_prize(r: ClaimPrizeReq):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid); now = int(time.time())
     if r.prize_type == "car_lambo":
-        conn = db()
-        conn.execute("INSERT INTO assets(uid, item_id, buy_price, buy_time) VALUES(?,?,?,?)", (uid, "car_lambo", 15000000, now))
-        conn.commit()
+        conn = db(); conn.execute("INSERT INTO assets(uid, item_id, buy_price, buy_time) VALUES(?,?,?,?)", (uid, "car_lambo", 15000000, now)); conn.commit()
     elif r.prize_type == "usd":
         set_user(uid, usd=d["usd"] + r.prize_value)
     elif r.prize_type == "chips":
         set_user(uid, balance=d["balance"] + r.prize_value)
-    return {"status": "ok", "balance": d["balance"] + (r.prize_value if r.prize_type == "chips" else 0)}
+    return {"status": "ok", "balance": get_user(uid)["balance"]}
 
 @app.post("/get_quests")
 def get_quests(r: Req):
@@ -890,6 +859,23 @@ def get_market(r: Req):
         conn.commit()
     return {"rates": rates}
 
+@app.post("/trade_asset")
+def trade_asset(r: BuyAssetReq):
+    u = verify(r.init_data); uid = u["id"]
+    conn = db()
+    row = conn.execute("SELECT item_id, buy_price FROM assets WHERE id=? AND uid=?", (int(r.item_id), uid)).fetchone()
+    if not row: raise HTTPException(400, "Имущество не найдено")
+    item_id, buy_price = row
+    market_row = conn.execute("SELECT current_price FROM market_rates WHERE item_id=?", (item_id,)).fetchone()
+    current_price = market_row[0] if market_row else ASSETS_CATALOG.get(item_id, {"price": buy_price})["price"]
+    refund = current_price
+    conn.execute("DELETE FROM assets WHERE id=? AND uid=?", (int(r.item_id), uid))
+    conn.commit()
+    d = get_user(uid)
+    new_bal = d["balance"] + refund
+    set_user(uid, balance=new_bal)
+    return {"status": "ok", "balance": new_bal, "message": f"Продано за {refund} фишек (по курсу)"}
+
 @app.post("/crypto_state")
 def crypto_state(r: Req):
     u = verify(r.init_data); uid = u["id"]; now = int(time.time())
@@ -942,11 +928,7 @@ def get_black_market(r: Req):
     items = conn.execute("SELECT id, item_name, description, price, reward_value, risk_chance FROM black_market").fetchall()
     if len(items) < 3:
         conn.execute("DELETE FROM black_market")
-        possible = [
-            ("Украденный iPhone", "Контрабанда. Прибыль через час.", 50000, 150000, 0.15),
-            ("Подпольное казино", "Приносит доход, но может сгореть.", 500000, 1000000, 0.20),
-            ("Фальшивые дирхамы", "Валюта по грязному курсу.", 10000, 26000, 0.10)
-        ]
+        possible = [("Украденный iPhone", "Контрабанда. Прибыль через час.", 50000, 150000, 0.15),("Подпольное казино", "Приносит доход, но может сгореть.", 500000, 1000000, 0.20),("Фальшивые дирхамы", "Валюта по грязному курсу.", 10000, 26000, 0.10)]
         for name, desc, price, reward, risk in possible:
             conn.execute("INSERT INTO black_market(item_name, description, price, reward_value, risk_chance, expires_at) VALUES(?,?,?,?,?,?)", (name, desc, price, reward, risk, now + 3600))
         conn.commit()
@@ -955,14 +937,13 @@ def get_black_market(r: Req):
 
 @app.post("/black_buy")
 def black_buy(r: BlackMarketReq):
-    u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
-    conn = db()
-    item = conn.execute("SELECT item_name, price, reward_value, risk_chance FROM black_market WHERE id=?", (r.item_id,)).fetchone()
-    if not item: raise HTTPException(400, "Товар пропал")
-    now = int(time.time())
+    u = verify(r.init_data); uid = u["id"]; d = get_user(uid); now = int(time.time())
     if now - d["last_black_market"] < 1800:
         wait_time = 1800 - (now - d["last_black_market"])
         raise HTTPException(400, f"Подожди {wait_time // 60} мин. до следующей сделки")
+    conn = db()
+    item = conn.execute("SELECT item_name, price, reward_value, risk_chance FROM black_market WHERE id=?", (r.item_id,)).fetchone()
+    if not item: raise HTTPException(400, "Товар пропал")
     name, price, reward, risk = item
     if d["balance"] < price: raise HTTPException(400, "Мало фишек")
     new_bal = d["balance"] - price
@@ -976,25 +957,109 @@ def black_buy(r: BlackMarketReq):
     conn.commit()
     return {"status": "ok", "balance": new_bal, "message": msg, "busted": is_busted}
 
-@app.post("/buy_skin")
-def buy_skin(r: BuyAvatarReq):
-    u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
-    skin = SKINS_CATALOG.get(r.avatar_id)
-    if not skin: raise HTTPException(400, "Скин не найден")
-    if d["balance"] < skin["price"]: raise HTTPException(400, "Недостаточно фишек")
-    new_bal = d["balance"] - skin["price"]
-    set_user(uid, balance=new_bal, active_skin=r.avatar_id)
-    return {"status": "ok", "balance": new_bal, "active_skin": r.avatar_id, "message": f"Скин '{skin['name']}' активирован!"}
+@app.post("/chat_send")
+def chat_send(r: ChatSendReq):
+    u = verify(r.init_data); uid = u["id"]
+    if not r.text.strip(): raise HTTPException(400, "Пустое сообщение")
+    if len(r.text) > 100: raise HTTPException(400, "Слишком длинное сообщение")
+    now = int(time.time())
+    conn = db()
+    last_msg = conn.execute("SELECT timestamp FROM chat_messages WHERE uid=? ORDER BY timestamp DESC LIMIT 1", (uid,)).fetchone()
+    if last_msg and now - last_msg[0] < 3: raise HTTPException(400, "Не так быстро! Подожди 3 сек.")
+    clan_id = 0
+    if r.is_clan:
+        member = conn.execute("SELECT clan_id FROM clan_members WHERE uid=?", (uid,)).fetchone()
+        if not member: raise HTTPException(400, "Вы не в клане")
+        clan_id = member[0]
+    conn.execute("INSERT INTO chat_messages(uid, clan_id, text, timestamp) VALUES(?,?,?,?)", (uid, clan_id, r.text.strip(), now))
+    conn.commit()
+    return {"status": "ok"}
 
-@app.post("/buy_frame")
-def buy_frame(r: BuyAvatarReq):
+@app.post("/chat_get")
+def chat_get(r: ChatGetReq):
+    u = verify(r.init_data); uid = u["id"]
+    conn = db()
+    if r.is_clan:
+        member = conn.execute("SELECT clan_id FROM clan_members WHERE uid=?", (uid,)).fetchone()
+        if not member: return {"messages": []}
+        clan_id = member[0]
+        rows = conn.execute("""SELECT m.id, m.uid, m.text, m.timestamp, CASE WHEN m.uid = 0 THEN '🤖' ELSE u.avatar END as avatar FROM chat_messages m LEFT JOIN users u ON m.uid = u.uid WHERE m.clan_id = ? AND m.id > ? ORDER BY m.id ASC LIMIT 50""", (clan_id, r.last_id)).fetchall()
+    else:
+        rows = conn.execute("""SELECT m.id, m.uid, m.text, m.timestamp, CASE WHEN m.uid = 0 THEN '🤖' ELSE u.avatar END as avatar FROM chat_messages m LEFT JOIN users u ON m.uid = u.uid WHERE m.clan_id = 0 AND m.id > ? ORDER BY m.id ASC LIMIT 50""", (r.last_id,)).fetchall()
+    msgs = []
+    for row in rows:
+        name = "СИСТЕМА" if row[1] == 0 else f"{str(row[1])[:3]}***{str(row[1])[-2:]}"
+        msgs.append({"id": row[0], "name": name, "text": row[2], "time": row[3], "avatar": row[4] or '👤', "uid": row[1]})
+    return {"messages": msgs}
+
+@app.post("/get_mine")
+def get_mine(r: Req):
+    u = verify(r.init_data); uid = u["id"]; d = get_user(uid); now = int(time.time())
+    time_passed = now - d["last_energy_time"]
+    energy_regen = 0
+    if time_passed > 0:
+        energy_regen = time_passed // 60
+        new_energy = min(1000, d["energy"] + energy_regen)
+        if new_energy != d["energy"]:
+            set_user(uid, energy=new_energy, last_energy_time=now)
+            d["energy"] = new_energy
+    return {"energy": d["energy"], "pickaxe_lvl": d["pickaxe_lvl"], "tap_power": d["pickaxe_lvl"] * 10, "max_energy": 1000}
+
+@app.post("/tap")
+def tap(r: TapReq):
+    u = verify(r.init_data); uid = u["id"]; d = get_user(uid); now = int(time.time())
+    if d["energy"] < r.taps: raise HTTPException(400, "Недостаточно энергии")
+    tap_power = d["pickaxe_lvl"] * 10
+    reward = r.taps * tap_power
+    new_energy = d["energy"] - r.taps
+    new_bal = d["balance"] + reward
+    set_user(uid, energy=new_energy, balance=new_bal, last_energy_time=now)
+    conn = db()
+    row_q = conn.execute("SELECT 1 FROM quests WHERE uid=?", (uid,)).fetchone()
+    if row_q:
+        conn.execute("UPDATE quests SET taps_count = taps_count + ?, mine_earned = mine_earned + ? WHERE uid=?", (r.taps, reward, uid))
+        conn.commit()
+    return {"status": "ok", "balance": new_bal, "energy": new_energy, "reward": reward}
+
+@app.post("/upgrade_pickaxe")
+def upgrade_pickaxe(r: UpgradePickReq):
     u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
-    frame = FRAMES_CATALOG.get(r.avatar_id)
-    if not frame: raise HTTPException(400, "Рамка не найдена")
-    if d["balance"] < frame["price"]: raise HTTPException(400, "Недостаточно фишек")
-    new_bal = d["balance"] - frame["price"]
-    set_user(uid, balance=new_bal, active_frame=r.avatar_id)
-    return {"status": "ok", "balance": new_bal, "active_frame": r.avatar_id, "message": f"Рамка '{frame['name']}' активирована!"}
+    upgrade_cost = d["pickaxe_lvl"] * 50000
+    if d["balance"] < upgrade_cost: raise HTTPException(400, f"Нужно {upgrade_cost} фишек")
+    new_bal = d["balance"] - upgrade_cost
+    new_lvl = d["pickaxe_lvl"] + 1
+    set_user(uid, balance=new_bal, pickaxe_lvl=new_lvl)
+    conn = db()
+    conn.execute("UPDATE quests SET pickaxe_upgrades = pickaxe_upgrades + 1 WHERE uid=?", (uid,))
+    conn.commit()
+    return {"status": "ok", "balance": new_bal, "pickaxe_lvl": new_lvl, "message": f"Кирка улучшена до ур. {new_lvl}!"}
+
+@app.post("/get_donate")
+def get_donate(r: Req):
+    items = []
+    for key, data in DONATE_CATALOG.items():
+        items.append({"id": key, "name": data["name"], "price": data["price_stars"], "type": data["type"]})
+    return {"items": items}
+
+@app.post("/create_invoice")
+def create_invoice(r: DonateReq):
+    item = DONATE_CATALOG.get(r.item_id)
+    if not item: raise HTTPException(400, "Товар не найден")
+    return {"status": "ok", "item_id": r.item_id, "title": item["name"], "price": item["price_stars"]}
+
+@app.post("/check_payment")
+def check_payment(r: CheckPayReq):
+    u = verify(r.init_data); uid = u["id"]
+    item = DONATE_CATALOG.get(r.item_id)
+    if not item: raise HTTPException(400, "Товар не найден")
+    d = get_user(uid)
+    if item["type"] == "chips":
+        set_user(uid, balance=d["balance"] + item["value"])
+    elif item["type"] == "vip":
+        now = int(time.time())
+        new_expire = (d["vip_expires"] if d["vip_expires"] > now else now) + (item["value"] * 86400)
+        set_user(uid, vip_expires=new_expire)
+    return {"status": "ok", "message": f"Оплата прошла! Выдан: {item['name']}"}
 
 @app.post("/get_tech")
 def get_tech(r: Req):
@@ -1026,83 +1091,6 @@ def buy_tech(r: TechReq):
     else: conn.execute("INSERT INTO tech_tree(uid, node_id, level) VALUES(?, ?, 1)", (uid, r.node_id))
     conn.commit()
     return {"status": "ok", "balance": new_bal, "message": f"Технология '{tech['name']}' улучшена!"}
-
-@app.post("/get_mine")
-def get_mine(r: Req):
-    u = verify(r.init_data); uid = u["id"]; d = get_user(uid); now = int(time.time())
-    max_energy = 1000
-    time_passed = now - d["last_ad"]
-    if time_passed > 0:
-        energy_regen = time_passed // 60
-        new_energy = min(max_energy, d["energy"] + energy_regen)
-        if new_energy != d["energy"]:
-            set_user(uid, energy=new_energy, last_ad=now)
-            d["energy"] = new_energy
-    return {"energy": d["energy"], "pickaxe_lvl": d["pickaxe_lvl"], "tap_power": d["pickaxe_lvl"] * 10, "max_energy": max_energy}
-
-@app.post("/tap")
-def tap(r: TapReq):
-    u = verify(r.init_data); uid = u["id"]; d = get_user(uid); now = int(time.time())
-    if d["energy"] < r.taps: raise HTTPException(400, "Недостаточно энергии")
-    tap_power = d["pickaxe_lvl"] * 10
-    reward = r.taps * tap_power
-    new_energy = d["energy"] - r.taps
-    new_bal = d["balance"] + reward
-    set_user(uid, energy=new_energy, balance=new_bal, last_ad=now)
-    conn = db()
-    row_q = conn.execute("SELECT spins_count, win_sum, last_reset, taps_count, mine_earned, pickaxe_upgrades FROM quests WHERE uid=?", (uid,)).fetchone()
-    if row_q:
-        conn.execute("UPDATE quests SET taps_count = taps_count + ?, mine_earned = mine_earned + ? WHERE uid=?", (r.taps, reward, uid))
-        conn.commit()
-    return {"status": "ok", "balance": new_bal, "energy": new_energy, "reward": reward}
-
-@app.post("/upgrade_pickaxe")
-def upgrade_pickaxe(r: UpgradePickReq):
-    u = verify(r.init_data); uid = u["id"]; d = get_user(uid)
-    upgrade_cost = d["pickaxe_lvl"] * 50000
-    if d["balance"] < upgrade_cost: raise HTTPException(400, f"Нужно {upgrade_cost} фишек")
-    new_bal = d["balance"] - upgrade_cost
-    new_lvl = d["pickaxe_lvl"] + 1
-    set_user(uid, balance=new_bal, pickaxe_lvl=new_lvl)
-    conn = db()
-    conn.execute("UPDATE quests SET pickaxe_upgrades = pickaxe_upgrades + 1 WHERE uid=?", (uid,))
-    conn.commit()
-    return {"status": "ok", "balance": new_bal, "pickaxe_lvl": new_lvl, "message": f"Кирка улучшена до ур. {new_lvl}!"}
-
-@app.post("/chat_send")
-def chat_send(r: ChatSendReq):
-    u = verify(r.init_data); uid = u["id"]
-    if not r.text.strip(): raise HTTPException(400, "Пустое сообщение")
-    if len(r.text) > 100: raise HTTPException(400, "Слишком длинное сообщение")
-    now = int(time.time())
-    conn = db()
-    last_msg = conn.execute("SELECT timestamp FROM chat_messages WHERE uid=? ORDER BY timestamp DESC LIMIT 1", (uid,)).fetchone()
-    if last_msg and now - last_msg[0] < 3: raise HTTPException(400, "Не так быстро! Подожди 3 сек.")
-    clan_id = 0
-    if r.is_clan:
-        member = conn.execute("SELECT clan_id FROM clan_members WHERE uid=?", (uid,)).fetchone()
-        if not member: raise HTTPException(400, "Вы не в клане")
-        clan_id = member[0]
-    conn.execute("INSERT INTO chat_messages(uid, clan_id, text, timestamp) VALUES(?,?,?,?)", (uid, clan_id, r.text.strip(), now))
-    conn.commit()
-    return {"status": "ok"}
-
-@app.post("/chat_get")
-def chat_get(r: ChatGetReq):
-    u = verify(r.init_data); uid = u["id"]
-    conn = db()
-    if r.is_clan:
-        member = conn.execute("SELECT clan_id FROM clan_members WHERE uid=?", (uid,)).fetchone()
-        if not member: return {"messages": []}
-        clan_id = member[0]
-        rows = conn.execute("""SELECT m.id, m.uid, m.text, m.timestamp, u.avatar FROM chat_messages m JOIN users u ON m.uid = u.uid WHERE m.clan_id = ? AND m.id > ? ORDER BY m.id ASC LIMIT 50""", (clan_id, r.last_id)).fetchall()
-    else:
-        rows = conn.execute("""SELECT m.id, m.uid, m.text, m.timestamp, CASE WHEN m.uid = 0 THEN '🤖' ELSE u.avatar END as avatar FROM chat_messages m LEFT JOIN users u ON m.uid = u.uid WHERE m.clan_id = 0 AND m.id > ? ORDER BY m.id ASC LIMIT 50""", (r.last_id,)).fetchall()
-    msgs = []
-    for row in rows:
-        name = f"{str(row[1])[:3]}***{str(row[1])[-2:]}" if row[1] != 0 else "СИСТЕМА"
-        msgs.append({"id": row[0], "name": name, "text": row[2], "time": row[3], "avatar": row[4] or '👤'})
-    return {"messages": msgs}
 
 @app.post("/get_story")
 def get_story(r: Req):
@@ -1198,13 +1186,7 @@ def get_clan_chest(r: Req):
         current, goal = 0, 100000000
     else:
         current, goal = row[0], row[1]
-    donors = conn.execute("""
-        SELECT u.uid, u.avatar, COALESCE(SUM(ch.amount), 0) as total 
-        FROM users u 
-        JOIN clan_chest_history ch ON u.uid = ch.uid 
-        WHERE ch.clan_id = ? 
-        GROUP BY u.uid ORDER BY total DESC LIMIT 5
-    """, (clan_id,)).fetchall() if conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='clan_chest_history'").fetchone() else []
+    donors = conn.execute("SELECT u.uid, u.avatar, COALESCE(SUM(ch.amount), 0) as total FROM users u JOIN clan_chest_history ch ON u.uid = ch.uid WHERE ch.clan_id = ? GROUP BY u.uid ORDER BY total DESC LIMIT 5", (clan_id,)).fetchall()
     return {"current": current, "goal": goal, "donors": [{"name": f"{str(d[0])[:3]}***{str(d[0])[-2:]}", "avatar": d[1] or '👤', "amount": d[2]} for d in donors]}
 
 @app.post("/donate_clan")
@@ -1225,9 +1207,6 @@ def donate_clan(r: DonateClanReq):
     else:
         current, goal = row[0] + r.amount, row[1]
         conn.execute("UPDATE clan_chest SET current_amount = ? WHERE clan_id=?", (current, clan_id))
-    conn.execute("""CREATE TABLE IF NOT EXISTS clan_chest_history(
-        id INTEGER PRIMARY KEY AUTOINCREMENT, clan_id INTEGER, uid INTEGER, amount INTEGER, timestamp INTEGER
-    )""")
     conn.execute("INSERT INTO clan_chest_history(clan_id, uid, amount, timestamp) VALUES(?,?,?,?)", (clan_id, uid, r.amount, int(time.time())))
     conn.commit()
     if current >= goal:
@@ -1236,7 +1215,7 @@ def donate_clan(r: DonateClanReq):
             set_user(m[0], balance=get_user(m[0])["balance"] + 5000000)
         conn.execute("UPDATE clan_chest SET current_amount = 0 WHERE clan_id=?", (clan_id,))
         conn.commit()
-        return {"status": "ok", "balance": new_bal, "current": 0, "message": "🎉 ЦЕЛЬ ДОСТИГНУТА! Все участники получили по 5 млн фишек!"}
+        return {"status": "ok", "balance": new_bal, "current": 0, "message": "🎉 ЦЕЛЬ ДОСТИГНУТА! Все получили по 5 млн фишек!"}
     return {"status": "ok", "balance": new_bal, "current": current, "message": f"Ты внес {r.amount.toLocaleString()} фишек в сундук клана"}
 
 @app.post("/buy_skin")
