@@ -6,47 +6,100 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&display=swap');
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
-  html, body { margin:0; padding:0; background:#000; color:#fff; font-family: 'Montserrat', sans-serif; overflow:hidden; height:100%; }
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800;900&display=swap');
   
+  :root {
+    --bg-dark: #05050a;
+    --bg-panel: rgba(20, 20, 35, 0.6);
+    --gold: #ffd700;
+    --gold-dark: #b8860b;
+    --neon-green: #00ff88;
+    --neon-red: #ff3b30;
+    --neon-blue: #00d2ff;
+    --text-muted: #8a8a9e;
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; font-family: 'Montserrat', sans-serif;}
+  html, body { margin:0; padding:0; background: var(--bg-dark); color:#fff; overflow:hidden; height:100%; }
+
+  /* --- АНИМАЦИИ --- */
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulseGold { 0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(255, 215, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); } }
+  @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-8px); } 100% { transform: translateY(0px); } }
+  @keyframes shine { to { background-position: 200% center; } }
+
+  /* --- ОБЩИЕ ЭЛЕМЕНТЫ --- */
+  .glass-panel { background: var(--bg-panel); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow); border-radius: 20px; }
+  
+  .main-btn { 
+    padding: 15px; font-size: 16px; font-weight: 800; border-radius: 16px; border: none; 
+    text-transform: uppercase; cursor: pointer; transition: all 0.2s ease; font-family: inherit;
+    position: relative; overflow: hidden; letter-spacing: 0.5px;
+  }
+  .main-btn:active { transform: scale(0.95); filter: brightness(0.8); }
+  .main-btn:disabled { opacity: 0.4; filter: grayscale(1); cursor: not-allowed; }
+  
+  .btn-gold { background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%); color: #000; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3); }
+  .btn-red { background: linear-gradient(135deg, #ff3b30 0%, #a30000 100%); color: #fff; box-shadow: 0 4px 15px rgba(255, 59, 48, 0.3); }
+  .btn-green { background: linear-gradient(135deg, #00ff88 0%, #007a33 100%); color: #000; box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3); }
+  .btn-blue { background: linear-gradient(135deg, #00d2ff 0%, #0055ff 100%); color: #fff; box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3); }
+  .btn-dark { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: #fff; }
+
+  /* --- ЭКРАН ПРИВЕТСТВИЯ --- */
   #welcome-screen { position: fixed; inset: 0; z-index: 200; background: radial-gradient(circle at center, #1a1a2e 0%, #000 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s; }
-  #welcome-screen h1 { font-size: 42px; color: #ffd700; text-shadow: 0 0 20px #ff8c00; margin-bottom: 10px; text-transform: uppercase; text-align: center; }
-  #welcome-screen p { color: #aaa; margin-bottom: 40px; font-size: 14px; }
-  #start-btn { padding: 20px 60px; font-size: 24px; font-weight: 900; border-radius: 30px; border: none; background: linear-gradient(to right, #ffd700, #ff8c00); color: #000; box-shadow: 0 0 30px rgba(255, 215, 0, 0.5); cursor: pointer; }
+  #welcome-screen h1 { font-size: 48px; font-weight: 900; background: linear-gradient(to right, #ffd700, #fff, #ffd700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-size: 200% auto; animation: shine 3s linear infinite; text-align: center; margin-bottom: 10px; }
+  #welcome-screen p { color: var(--text-muted); margin-bottom: 40px; font-size: 16px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; }
+  #start-btn { padding: 20px 60px; font-size: 24px; font-weight: 900; border-radius: 30px; border: none; background: linear-gradient(to right, #ffd700, #ff8c00); color: #000; box-shadow: 0 0 30px rgba(255, 215, 0, 0.5); cursor: pointer; animation: pulseGold 2s infinite; }
 
-  #lobby-screen { position: fixed; inset: 0; z-index: 150; background: linear-gradient(180deg, #0a0a0c 0%, #1a1a2e 100%); display: none; flex-direction: column; overflow-y: auto; padding-bottom: 50px; }
-  .lobby-header { padding: 25px 20px 15px; text-align: center; }
-  .lobby-header h2 { color: #ffd700; font-size: 28px; margin: 0; text-shadow: 0 0 15px rgba(255,215,0,0.5); }
-  .lobby-section { padding: 0 20px; margin-bottom: 25px; }
-  .lobby-section h3 { color: #ffd700; font-size: 16px; margin-bottom: 12px; text-transform: uppercase; border-bottom: 1px solid rgba(255,215,0,0.3); padding-bottom: 5px; display: inline-block; }
+  /* --- ЛОББИ --- */
+  #lobby-screen { position: fixed; inset: 0; z-index: 150; background: #05050a; display: none; flex-direction: column; overflow-y: auto; padding-bottom: 50px; animation: fadeIn 0.4s ease-out; }
+  #lobby-screen::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 0%, rgba(30,20,60,0.8) 0%, rgba(5,5,10,1) 80%); z-index: -1; }
   
+  .lobby-header { padding: 30px 20px 20px; text-align: center; }
+  .lobby-header h2 { font-size: 32px; font-weight: 900; background: linear-gradient(135deg, #ffd700, #ff8c00); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; letter-spacing: 1px;}
+  
+  .lobby-section { padding: 0 15px; margin-bottom: 30px; }
+  .lobby-section h3 { color: #fff; font-size: 16px; font-weight: 800; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; opacity: 0.9; }
+  .lobby-section h3::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(255,255,255,0.2), transparent); }
+
   .game-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-  .game-card-new { background: linear-gradient(145deg, #1e1e2f, #12121c); border: 1px solid #333; border-radius: 15px; aspect-ratio: 1 / 1; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.5); position: relative; overflow: hidden; }
-  .game-card-new:active { transform: scale(0.92); border-color: #ffd700; box-shadow: 0 0 20px rgba(255,215,0,0.4); }
-  .game-card-new .icon { font-size: 36px; margin-bottom: 8px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
-  .game-card-new .title { color: #fff; font-size: 12px; font-weight: 700; text-align: center; text-transform: uppercase; text-shadow: 0 1px 2px #000; }
-  .game-card-new .badge { position: absolute; top: 8px; right: 8px; background: #ff3b30; color: #fff; font-size: 9px; padding: 2px 6px; border-radius: 5px; font-weight: bold; }
-  .overlay-dark { position: absolute; inset: 0; background: rgba(0,0,0,0.6); }
+  .game-card-new { 
+    background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255,255,255,0.08); 
+    border-radius: 20px; aspect-ratio: 1 / 1; display: flex; flex-direction: column; 
+    justify-content: center; align-items: center; cursor: pointer; 
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); position: relative; overflow: hidden;
+  }
+  .game-card-new::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at center, rgba(255,215,0,0.1) 0%, transparent 70%); opacity: 0; transition: 0.3s; }
+  .game-card-new:hover::before, .game-card-new:active::before { opacity: 1; }
+  .game-card-new:active { transform: scale(0.92); border-color: #ffd700; box-shadow: 0 0 20px rgba(255,215,0,0.2); }
+  .game-card-new .icon { font-size: 38px; margin-bottom: 10px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5)); transition: transform 0.3s; }
+  .game-card-new:active .icon { transform: scale(1.1); }
+  .game-card-new .title { color: #fff; font-size: 12px; font-weight: 800; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.8; }
+  .game-card-new .badge { position: absolute; top: 10px; right: 10px; background: var(--neon-red); color: #fff; font-size: 9px; padding: 3px 8px; border-radius: 8px; font-weight: 900; box-shadow: 0 0 10px rgba(255,59,48,0.5); }
 
-  #game-screen { position: fixed; inset: 0; z-index: 100; display: none; flex-direction: column; background-size: cover; background-position: center; }
-  #game-screen.bg-fruits { background: radial-gradient(circle at 50% 30%, #2a1a4a 0%, #0a0a0c 80%), repeating-linear-gradient(45deg, rgba(255,215,0,0.05) 0 20px, transparent 20px 40px); }
-  #game-screen.bg-fishing { background: radial-gradient(circle at 50% 20%, #0a3a5a 0%, #001020 80%), repeating-linear-gradient(-30deg, rgba(0,255,255,0.05) 0 20px, transparent 20px 40px); }
+  /* --- ИГРОВОЙ ЭКРАН (СЛОТЫ) --- */
+  #game-screen { position: fixed; inset: 0; z-index: 100; display: none; flex-direction: column; }
+  #game-screen.bg-fruits { background: radial-gradient(circle at 50% 10%, #2a1040 0%, #05050a 80%); }
+  #game-screen.bg-fishing { background: radial-gradient(circle at 50% 10%, #0a3a5a 0%, #05050a 80%); }
   
-  #top-bar { display: flex; justify-content: space-between; align-items: flex-start; padding: 15px; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); z-index: 10; height: 110px; flex-shrink: 0;}
-  .profile-info { display: flex; flex-direction: row; gap: 5px; align-items: center;}
-  .balance-box { background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 10px; border: 1px solid #ffd700; text-align: center;}
-  .balance-box span { font-size: 10px; color: #aaa; display: block; }
-  .balance-box strong { font-size: 16px; color: #ffd700; text-shadow: 0 0 10px #ffd700; }
-  .balance-box.capital { border-color: #00ff88; }
-  .balance-box.capital strong { color: #00ff88; text-shadow: 0 0 10px #00ff88; }
-  .menu-btn { background: rgba(0,0,0,0.6); border: 1px solid #555; color: #fff; width: 40px; height: 40px; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 20px; cursor: pointer; font-weight: bold; }
+  #top-bar { display: flex; justify-content: space-between; align-items: flex-start; padding: 15px; z-index: 10; flex-shrink: 0; }
+  .balance-box { background: rgba(0,0,0,0.5); padding: 8px 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); text-align: center; backdrop-filter: blur(5px); }
+  .balance-box span { font-size: 10px; color: var(--text-muted); display: block; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;}
+  .balance-box strong { font-size: 18px; color: #fff; font-weight: 900; }
+  .balance-box.capital { border-color: rgba(0,255,136,0.3); }
+  .balance-box.capital strong { color: var(--neon-green); text-shadow: 0 0 10px rgba(0,255,136,0.5); }
+  
+  .menu-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; width: 44px; height: 44px; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 22px; cursor: pointer; backdrop-filter: blur(5px); }
+  .menu-btn:active { background: rgba(255,255,255,0.2); }
 
-  #dropdown-menu { position: absolute; top: 70px; right: 15px; background: rgba(20,20,25,0.95); border: 1px solid #ffd700; border-radius: 12px; display: none; flex-direction: column; min-width: 200px; z-index: 50; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); max-height: 80vh; overflow-y: auto; }
-  #dropdown-menu button { background: none; border: none; color: #fff; padding: 15px; text-align: left; font-size: 16px; font-weight: bold; border-bottom: 1px solid #333; cursor: pointer; font-family: inherit;}
-  #dropdown-menu button:last-child { border-bottom: none; color: #ff3333; }
+  #dropdown-menu { position: absolute; top: 70px; right: 15px; background: rgba(15,15,25,0.98); border: 1px solid var(--glass-border); border-radius: 20px; display: none; flex-direction: column; min-width: 220px; z-index: 50; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.8); animation: fadeIn 0.2s ease-out; }
+  #dropdown-menu button { background: none; border: none; color: #fff; padding: 16px 20px; text-align: left; font-size: 15px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: 0.2s; }
+  #dropdown-menu button:active { background: rgba(255,255,255,0.05); color: var(--gold); }
+  #dropdown-menu button:last-child { border-bottom: none; color: var(--neon-red); }
 
-  #pixi-container { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 10px; position: relative; overflow: hidden; min-height: 0; }
+  #pixi-container { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 10px; position: relative; overflow: hidden; }
   
   #fisher-scale { display: none; width: 95%; max-width: 600px; background: #4a2e15; border: 2px solid #b8860b; border-radius: 15px; padding: 5px; z-index: 20; margin-bottom: 10px; flex-shrink: 0; }
   .fisher-track { display: flex; gap: 2px; width: 100%; height: 30px; }
@@ -56,63 +109,61 @@
   .fisher-cell.bonus-cell .plus { color: #00ff88; font-size: 9px; }
   .fisher-cell.bonus-cell .mult { color: #ffd700; font-size: 11px; }
 
-  #slot-grid { width: 100%; max-width: 90%; max-height: 100%; height: auto; aspect-ratio: 3 / 1; border-radius: 12px; box-shadow: 0 0 30px rgba(0,0,0,0.9); border: 3px solid rgba(255,215,0,0.3); position: relative; background: rgba(0,0,0,0.6); overflow: hidden; display: flex; margin: auto; }
+  #slot-grid { width: 95%; max-width: 600px; height: auto; aspect-ratio: 3 / 1; border-radius: 20px; border: 2px solid rgba(255,255,255,0.1); position: relative; background: rgba(0,0,0,0.5); overflow: hidden; display: flex; margin: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
   #slot-grid.fishing-mode { aspect-ratio: 5 / 3; }
-  .reel-col { display: flex; flex-direction: column; flex: 1; height: 100%; overflow: hidden; position: relative; border-right: 1px solid rgba(255,255,255,0.1); min-width: 40px;}
+  .reel-col { display: flex; flex-direction: column; flex: 1; height: 100%; overflow: hidden; position: relative; border-right: 1px solid rgba(255,255,255,0.05); min-width: 40px;}
   .reel-col:last-child { border-right: none; }
   .reel-strip { display: flex; flex-direction: column; width: 100%; height: 100%; transition: none; }
-  .cell { display: flex; justify-content: center; align-items: center; width: 100%; height: calc(100% / var(--rows)); min-height: 0; flex-shrink: 0; text-align: center; font-size: 32px; line-height: 1; background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.05); transition: transform 0.15s; }
-  .win-cell { background: rgba(255, 215, 0, 0.3) !important; box-shadow: inset 0 0 15px #ffd700; border-radius: 8px; }
-  .win-flash { position: fixed; inset: 0; background: #fff; z-index: 90; pointer-events: none; opacity: 0; transition: opacity 0.1s; }
-  .win-flash.active { opacity: 0.8; }
+  .cell { display: flex; justify-content: center; align-items: center; width: 100%; height: calc(100% / var(--rows)); min-height: 0; flex-shrink: 0; text-align: center; font-size: 32px; line-height: 1; background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.03); transition: transform 0.15s; }
+  .win-cell { background: rgba(255, 215, 0, 0.2) !important; box-shadow: inset 0 0 20px #ffd700; border-radius: 10px; border: 1px solid #ffd700; }
 
-  #controls-panel { background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); padding: 15px; padding-bottom: 25px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; z-index: 10;}
-  #msg { min-height: 20px; text-align: center; font-weight: 900; font-size: 16px; color: #ffd700; opacity: 0; transition: 0.2s; text-transform: uppercase; }
+  #controls-panel { background: linear-gradient(to top, rgba(5,5,10,1) 0%, transparent 100%); padding: 15px; padding-bottom: 30px; display: flex; flex-direction: column; gap: 12px; z-index: 10;}
+  #msg { min-height: 20px; text-align: center; font-weight: 900; font-size: 16px; color: #ffd700; opacity: 0; transition: 0.2s; text-transform: uppercase; text-shadow: 0 0 10px rgba(255,215,0,0.5);}
   #msg.show { opacity: 1; }
   .bet-controls { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
-  .bet-btn { padding: 8px 12px; background: rgba(255,255,255,0.1); border: 1px solid #444; color: #aaa; border-radius: 10px; font-weight: bold; cursor: pointer; }
-  .bet-btn.active { background: #ffd700; color: #000; border-color: #fff; }
-  #custom-bet { width: 70px; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid #444; color: #ffd700; border-radius: 10px; text-align: center; font-weight: bold; outline: none; }
+  .bet-btn { padding: 10px 15px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 12px; font-weight: 800; font-size: 14px; cursor: pointer; transition: 0.2s; }
+  .bet-btn.active { background: var(--gold); color: #000; border-color: #fff; box-shadow: 0 0 15px rgba(255,215,0,0.4); }
+  #custom-bet { width: 80px; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); color: var(--gold); border-radius: 12px; text-align: center; font-weight: 800; outline: none; font-size: 14px; }
   
   .action-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .main-btn { padding: 15px; font-size: 16px; font-weight: 900; border-radius: 16px; border: none; text-transform: uppercase; cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.5); transition: transform 0.1s; font-family: inherit;}
-  .main-btn:active { transform: translateY(4px); box-shadow: none; }
-  .main-btn:disabled { opacity: 0.5; filter: grayscale(1); }
-  #spin-btn { grid-column: 1 / 2; background: linear-gradient(to bottom, #ff3b30, #a30000); color: #fff; font-size: 20px; padding: 18px; box-shadow: 0 6px 0 #600000; }
-  #autospin-btn { grid-column: 2 / 3; background: linear-gradient(to bottom, #3498db, #2980b9); color: #fff; font-size: 20px; padding: 18px; box-shadow: 0 6px 0 #1a5276; display: none; }
-  #buy-bonus-btn { grid-column: 1 / -1; background: linear-gradient(to bottom, #f1c40f, #b8860b); color: #000; display: none; }
+  #spin-btn { grid-column: 1 / 2; background: linear-gradient(135deg, #ff3b30 0%, #a30000 100%); color: #fff; font-size: 20px; padding: 18px; box-shadow: 0 8px 0 #600000, 0 10px 20px rgba(255,0,0,0.3); border-radius: 16px; }
+  #autospin-btn { grid-column: 2 / 3; background: linear-gradient(135deg, #00d2ff 0%, #0055ff 100%); color: #fff; font-size: 18px; padding: 18px; box-shadow: 0 8px 0 #0033aa, 0 10px 20px rgba(0,210,255,0.3); border-radius: 16px; display: none; }
+  #buy-bonus-btn { grid-column: 1 / -1; background: linear-gradient(135deg, #ffd700 0%, #b8860b 100%); color: #000; font-size: 18px; border-radius: 16px; box-shadow: 0 8px 0 #7a5900; display: none; }
+  #spin-btn:active, #autospin-btn:active, #buy-bonus-btn:active { transform: translateY(6px); box-shadow: none; }
 
-  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 300; display: none; justify-content: center; align-items: center; flex-direction: column; padding: 20px; overflow-y: auto;}
-  .modal-content { background: #1a1a2e; width: 100%; max-width: 400px; border-radius: 20px; border: 2px solid #ffd700; padding: 20px; text-align: center; position: relative; max-height: 85vh; overflow-y: auto;}
-  .modal-close { position: absolute; top: 15px; right: 15px; font-size: 24px; color: #aaa; cursor: pointer; }
-  .modal h2 { color: #ffd700; margin-top: 0; }
-  .ref-link-box { background: #000; padding: 10px; border-radius: 10px; margin: 15px 0; font-size: 12px; word-break: break-all; border: 1px solid #444; color: #00ff88; }
-  .copy-btn { width: 100%; padding: 15px; background: #00c853; color: #fff; border: none; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer; }
-  #toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); background: rgba(0,0,0,0.9); color: #ffd700; padding: 15px 30px; border-radius: 15px; border: 2px solid #ffd700; font-size: 24px; font-weight: 900; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 999; }
+  /* --- МОДАЛКИ --- */
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 300; display: none; justify-content: center; align-items: center; flex-direction: column; padding: 20px; overflow-y: auto; }
+  .modal-content { background: #0f0f1a; width: 100%; max-width: 420px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); padding: 25px; text-align: center; position: relative; max-height: 85vh; overflow-y: auto; box-shadow: 0 25px 60px rgba(0,0,0,0.9); animation: fadeIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .modal-close { position: absolute; top: 15px; right: 20px; font-size: 28px; color: var(--text-muted); cursor: pointer; transition: 0.2s; }
+  .modal-close:active { color: #fff; transform: scale(1.1); }
+  .modal h2 { font-size: 24px; font-weight: 900; margin-top: 0; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* --- РУЛЕТКА --- */
+  #roulette-screen { position: fixed; inset: 0; z-index: 150; background: radial-gradient(circle at center, #0f1a2e 0%, #05050a 100%); display: none; flex-direction: column; padding: 20px; overflow-y: auto;}
+  .roulette-board { display: grid; grid-template-columns: repeat(3, 1fr); flex: 0 0 45%; max-width: 200px; padding: 8px; gap: 4px; background: rgba(0,0,0,0.5); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); }
+  .r-cell { background: rgba(255,255,255,0.05); color: #fff; border: none; border-radius: 6px; display: flex; justify-content: center; align-items: center; height: 36px; font-weight: 800; cursor: pointer; font-size: 13px; transition: 0.2s; }
+  .r-cell.red { background: #d32f2f; }
+  .r-cell.black { background: #222; }
+  .r-cell.green { background: #2e7d32; grid-column: span 3; }
+  .r-cell.active { box-shadow: 0 0 0 2px #ffd700; transform: scale(0.95); }
+  
+  .roulette-wheel { width: 100%; height: 100%; border-radius: 50%; border: 6px solid #222; box-shadow: 0 0 40px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.8); position: relative; background: #111; transition: transform 4s cubic-bezier(0.1, 0.7, 0.1, 1); }
+  .roulette-bets { margin: 20px auto; max-width: 400px; width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 20px; border-radius: 20px;}
+  .r-bet-btn { display: inline-block; padding: 12px 18px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; margin: 5px; cursor: pointer; font-weight: 800; transition: 0.2s; }
+  .r-bet-btn:active { background: rgba(255,255,255,0.15); transform: scale(0.95); }
+  #r-spin-btn { width: 100%; margin-top: 20px; padding: 20px; font-size: 22px; background: linear-gradient(135deg, #ff3b30 0%, #a30000 100%); color: #fff; border: none; border-radius: 16px; font-weight: 900; cursor: pointer; box-shadow: 0 8px 0 #600000; }
+  #r-reset-btn { width: 100%; margin-top: 10px; padding: 12px; background: rgba(255,255,255,0.05); color: #fff; box-shadow: none; border-radius: 12px; }
+
+  /* --- ШАХТА --- */
+  #mine-modal { background: radial-gradient(circle at 50% 20%, #2a1a0a 0%, #05050a 100%); padding: 0; }
+  #mine-tap-area { font-size: 180px; cursor: pointer; user-select: none; transition: transform 0.08s; filter: drop-shadow(0 10px 30px rgba(255,215,0,0.3)); animation: float 3s ease-in-out infinite; }
+  #mine-tap-area:active { transform: scale(0.85); }
+  
+  /* --- ДРУГОЕ --- */
+  #toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); background: rgba(0,0,0,0.9); color: var(--gold); padding: 15px 30px; border-radius: 20px; border: 2px solid var(--gold); font-size: 24px; font-weight: 900; opacity: 0; pointer-events: none; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 999; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
   #toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-
-  #roulette-screen { position: fixed; inset: 0; z-index: 150; background: #0a0a0c; display: none; flex-direction: column; padding: 15px; overflow-y: auto;}
-  .roulette-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-  .roulette-main-layout { display: flex; justify-content: center; align-items: center; gap: 15px; max-width: 800px; margin: 0 auto; width: 100%; }
-  .roulette-board { display: grid; grid-template-columns: repeat(3, 1fr); flex: 0 0 45%; max-width: 200px; padding: 5px; gap: 3px; background: #111; border-radius: 12px; border: 2px solid #333; }
-  .r-cell { background: #222; color: #fff; border: 1px solid #444; border-radius: 4px; display: flex; justify-content: center; align-items: center; height: 30px; font-weight: bold; cursor: pointer; font-size: 12px; }
-  .r-cell.red { background: #cc0000; }
-  .r-cell.black { background: #000; }
-  .r-cell.green { background: #008800; grid-column: span 3; }
-  .r-cell.active { box-shadow: 0 0 10px #ffd700; border-color: #ffd700; }
-  .roulette-wheel-container { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; aspect-ratio: 1 / 1; max-width: 250px; }
-  .roulette-wheel { width: 100%; height: 100%; border-radius: 50%; border: 8px solid #b8860b; box-shadow: 0 0 20px rgba(0,0,0,0.8); position: relative; background: #111; transition: transform 4s cubic-bezier(0.1, 0.7, 0.1, 1); }
-  #r-wheel-sectors { width: 100%; height: 100%; border-radius: 50%; overflow: hidden; position: absolute; inset: 0; }
-  .roulette-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 30%; height: 30%; background: #222; border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 2px solid #555; z-index: 2; font-size: 20px; }
-  .roulette-ball { position: absolute; top: 50%; left: 50%; width: 12px; height: 12px; background: radial-gradient(circle at 30% 30%, #fff, #ccc); border-radius: 50%; box-shadow: 0 0 10px #fff; z-index: 3; margin-top: -6px; margin-left: -6px; transform-origin: 0 0; transition: transform 4s cubic-bezier(0.2, 0.8, 0.2, 1); }
-  .wheel-sector { position: absolute; top: 0; left: 0; width: 50%; height: 50%; transform-origin: 100% 100%; display: flex; justify-content: center; align-items: center; font-size: 10px; font-weight: bold; color: #fff; clip-path: polygon(0 0, 100% 0, 100% 100%); }
-  .roulette-bets { margin: 20px auto; max-width: 400px; width: 100%; background: rgba(0,0,0,0.8); padding: 15px; border-radius: 12px;}
-  .r-bet-btn { display: inline-block; padding: 10px 15px; background: #222; border: 1px solid #444; border-radius: 8px; margin: 5px; cursor: pointer; font-weight: bold; }
-  #r-spin-btn { width: 100%; margin-top: 20px; padding: 20px; font-size: 20px; background: linear-gradient(to bottom, #ff0000, #990000); color: #fff; border: none; border-radius: 12px; font-weight: 900; cursor: pointer; }
-
-  #wheel-wrapper { position:relative; width:300px; height:300px; margin: 0 auto; }
-  #wheel-canvas, #daily-wheel-canvas { border-radius:50%; border:4px solid #ffd700; box-shadow:0 0 40px #ffd700; width: 100%; height: 100%; display: block;}
-  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .win-flash { position: fixed; inset: 0; background: #fff; z-index: 90; pointer-events: none; opacity: 0; transition: opacity 0.1s; }
+  .win-flash.active { opacity: 0.6; }
 </style>
 </head>
 <body>
@@ -120,9 +171,9 @@
 <div class="win-flash" id="win-flash"></div>
 <div id="toast"></div>
 
-<div id="event-banner" style="display: none; position: fixed; top: 0; left: 0; width: 100%; background: linear-gradient(90deg, #ff0000, #ff8c00); color: #fff; text-align: center; padding: 10px; font-weight: 900; z-index: 9999; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
-    <span id="event-text">🔥 ЗОЛОТАЯ ЛИХОРАДКА!</span>
-    <span id="event-timer" style="margin-left: 10px; background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 5px;">00:00</span>
+<div id="event-banner" style="display: none; position: fixed; top: 0; left: 0; width: 100%; background: linear-gradient(90deg, #ff3b30, #ff8c00); color: #fff; text-align: center; padding: 12px; font-weight: 800; z-index: 9999; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+    <span id="event-text" style="letter-spacing: 1px;">🔥 ЗОЛОТАЯ ЛИХОРАДКА!</span>
+    <span id="event-timer" style="margin-left: 10px; background: rgba(0,0,0,0.2); padding: 4px 10px; border-radius: 8px; font-family: monospace;">00:00</span>
 </div>
 
 <div id="welcome-screen">
@@ -134,22 +185,32 @@
 <div id="lobby-screen">
   <div class="lobby-header"><h2>Выбери игру</h2></div>
   
-  <div class="lobby-section">
-      <h3>🎰 Слоты</h3>
+  <div class="lobby-section" style="margin-top: 10px;">
+      <h3>🎰 Игры</h3>
       <div class="game-grid">
+          <!-- ШАХТА (на 2 колонки) -->
+          <div class="game-card-new" onclick="openMine()" style="grid-column: span 2; aspect-ratio: 2 / 1; background: linear-gradient(135deg, rgba(255,215,0,0.15) 0%, rgba(0,0,0,0) 100%); border-color: #ffd700;">
+              <div style="position: absolute; top: 10px; right: 10px; background: #ff3b30; color: #fff; font-size: 10px; padding: 3px 8px; border-radius: 8px; font-weight: 900; animation: pulseGold 2s infinite;">NEW</div>
+              <div class="icon" style="font-size: 50px; margin-bottom: 5px; filter: drop-shadow(0 0 15px #ffd700);">⛏️</div>
+              <div class="title" style="font-size: 18px; color: #ffd700;">ШАХТА</div>
+              <div style="font-size: 10px; color: #aaa; margin-top: 5px;">Добывай фишки за тапы</div>
+          </div>
+
+          <!-- Классика -->
           <div class="game-card-new" onclick="startGame('fruits')">
-              <div class="overlay-dark"></div>
               <div class="icon" style="z-index:1;">🍒</div>
               <div class="title" style="z-index:1;">Классика</div>
           </div>
+
+          <!-- Рыбалка -->
           <div class="game-card-new" onclick="startGame('fishing')">
-              <div class="overlay-dark"></div>
               <div class="icon" style="z-index:1;">🎣</div>
               <div class="title" style="z-index:1;">Рыбалка</div>
               <div class="badge">БОНУС</div>
           </div>
+
+          <!-- Рулетка -->
           <div class="game-card-new" onclick="startRoulette()">
-              <div class="overlay-dark"></div>
               <div class="icon" style="z-index:1;">🎰</div>
               <div class="title" style="z-index:1;">Рулетка</div>
           </div>
@@ -160,45 +221,31 @@
       <h3>💼 Экономика</h3>
       <div class="game-grid">
           <div class="game-card-new" onclick="document.getElementById('menu-shop').click()">
-              <div class="icon">🏢</div>
-              <div class="title">Магазин</div>
+              <div class="icon">🏢</div><div class="title">Магазин</div>
           </div>
           <div class="game-card-new" onclick="document.getElementById('menu-crypto').click()">
-              <div class="icon">📈</div>
-              <div class="title">Крипта</div>
+              <div class="icon">📈</div><div class="title">Крипта</div>
           </div>
           <div class="game-card-new" onclick="document.getElementById('menu-black').click()">
-              <div class="icon">🕶️</div>
-              <div class="title">Черный рынок</div>
+              <div class="icon">🕶️</div><div class="title">Черный<br>рынок</div>
           </div>
           <div class="game-card-new" onclick="document.getElementById('menu-house').click()">
-              <div class="icon">🏠</div>
-              <div class="title">Особняк</div>
+              <div class="icon">🏠</div><div class="title">Особняк</div>
           </div>
           <div class="game-card-new" onclick="document.getElementById('menu-frames').click()">
-              <div class="icon">🖼️</div>
-              <div class="title">Рамки</div>
+              <div class="icon">🖼️</div><div class="title">Рамки</div>
           </div>
           <div class="game-card-new" onclick="document.getElementById('menu-skins').click()">
-              <div class="icon">🎨</div>
-              <div class="title">Скины</div>
+              <div class="icon">🎨</div><div class="title">Скины</div>
           </div>
           <div class="game-card-new" onclick="document.getElementById('menu-tech').click()">
-              <div class="icon">🧬</div>
-              <div class="title">Технологии</div>
+              <div class="icon">🧬</div><div class="title">Техно</div>
           </div>
           <div class="game-card-new" onclick="document.getElementById('menu-donate').click()">
-              <div class="icon">💎</div>
-              <div class="title">Донат</div>
-          </div>
-          <div class="game-card-new" onclick="openMine()">
-              <div class="icon">⛏️</div>
-              <div class="title">Шахта</div>
-              <div class="badge">NEW</div>
+              <div class="icon">💎</div><div class="title">Донат</div>
           </div>
           <div class="game-card-new" onclick="document.getElementById('menu-vip').click()">
-              <div class="icon">👑</div>
-              <div class="title">VIP-Клуб</div>
+              <div class="icon">👑</div><div class="title">VIP</div>
           </div>
       </div>
   </div>
@@ -207,28 +254,22 @@
       <h3>🏆 Социальное</h3>
       <div class="game-grid">
           <div class="game-card-new" onclick="document.getElementById('menu-clans').click()">
-              <div class="icon">🛡️</div>
-              <div class="title">Кланы</div>
+              <div class="icon">🛡️</div><div class="title">Кланы</div>
           </div>
           <div class="game-card-new" onclick="document.getElementById('menu-clan-war').click()">
-              <div class="icon">⚔️</div>
-              <div class="title">Войны</div>
+              <div class="icon">⚔️</div><div class="title">Войны</div>
           </div>
           <div class="game-card-new" onclick="document.getElementById('menu-auction').click()">
-              <div class="icon">🏛️</div>
-              <div class="title">Аукцион</div>
+              <div class="icon">🏛️</div><div class="title">Аукцион</div>
           </div>
           <div class="game-card-new" onclick="document.getElementById('menu-tournament').click()">
-              <div class="icon">🏆</div>
-              <div class="title">Турнир</div>
+              <div class="icon">🏆</div><div class="title">Турнир</div>
           </div>
           <div class="game-card-new" onclick="document.getElementById('menu-story').click()">
-              <div class="icon">🕶️</div>
-              <div class="title">Империя</div>
+              <div class="icon">🕶️</div><div class="title">Империя</div>
           </div>
           <div class="game-card-new" onclick="document.getElementById('menu-predictions').click()">
-              <div class="icon">📊</div>
-              <div class="title">Прогнозы</div>
+              <div class="icon">📊</div><div class="title">Прогнозы</div>
           </div>
       </div>
   </div>
@@ -237,7 +278,7 @@
 <div id="game-screen">
   <div id="top-bar">
     <div style="display:flex; align-items:center; gap:10px;">
-      <button class="main-btn" onclick="exitToLobby()" style="width:auto; padding:8px 12px; background:rgba(0,0,0,0.7); color:#fff; border:1px solid #555; box-shadow:none; font-size:12px; border-radius:10px;">⬅ Назад</button>
+      <button class="main-btn btn-dark" onclick="exitToLobby()" style="padding:10px 15px; font-size:12px; border-radius:12px;">⬅ Назад</button>
       <div class="profile-info">
         <div class="balance-box"><span>Баланс</span><strong id="bal">0</strong></div>
         <div class="balance-box capital"><span>Капитал</span><strong id="networth">0</strong></div>
@@ -247,37 +288,21 @@
   </div>
 
   <div id="dropdown-menu">
-    <div style="padding: 12px 15px; border-bottom: 1px solid #333; background: rgba(255,215,0,0.1);">
-        <div style="font-size: 14px; color: #fff; font-weight: bold; margin-bottom: 5px;">Уровень <span id="lvl-text">1</span></div>
-        <div class="level-bar" style="width: 100%; height: 8px; background:#333; border-radius:4px; overflow:hidden;"><div class="level-fill" id="lvl-fill" style="width: 0%; height:100%; background:#00ff88;"></div></div>
+    <div style="padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.02);">
+        <div style="font-size: 14px; color: #fff; font-weight: 800; margin-bottom: 8px; display: flex; justify-content: space-between;">Уровень <span id="lvl-text">1</span></div>
+        <div class="level-bar" style="width: 100%; height: 6px; background:rgba(0,0,0,0.5); border-radius:3px; overflow:hidden;"><div class="level-fill" id="lvl-fill" style="width: 0%; height:100%; background: var(--neon-green); box-shadow: 0 0 10px var(--neon-green);"></div></div>
     </div>
     <button id="menu-music">🎵 Музыка: ВКЛ</button>
     <button id="menu-daily">🎡 Колесо Фортуны</button>
     <button id="menu-quests">📜 Задания</button>
-    <button id="menu-auction">🏛️ Аукцион</button>
     <button id="menu-chat">💬 Чат</button>
     <button id="menu-ref">👥 Рефералы</button>
     <button id="menu-promo">🎟️ Промокод</button>
     <button id="menu-donate">💎 Донат</button>
     <button id="menu-back">⬅ В меню</button>
 
-    <!-- Скрытые кнопки для вызова из лобби -->
-    <button id="menu-shop" style="display:none;"></button>
-    <button id="menu-tournament" style="display:none;"></button>
-    <button id="menu-clans" style="display:none;"></button>
-    <button id="menu-clan-war" style="display:none;"></button>
-    <button id="menu-rating" style="display:none;"></button>
-    <button id="menu-profile" style="display:none;"></button>
-    <button id="menu-house" style="display:none;"></button>
-    <button id="menu-jackpot" style="display:none;"></button>
-    <button id="menu-crypto" style="display:none;"></button>
-    <button id="menu-black" style="display:none;"></button>
-    <button id="menu-vip" style="display:none;"></button>
-    <button id="menu-frames" style="display:none;"></button>
-    <button id="menu-skins" style="display:none;"></button>
-    <button id="menu-tech" style="display:none;"></button>
-    <button id="menu-story" style="display:none;"></button>
-    <button id="menu-predictions" style="display:none;"></button>
+    <!-- Скрытые вызовы -->
+    <button id="menu-shop" style="display:none;"></button><button id="menu-tournament" style="display:none;"></button><button id="menu-clans" style="display:none;"></button><button id="menu-clan-war" style="display:none;"></button><button id="menu-rating" style="display:none;"></button><button id="menu-profile" style="display:none;"></button><button id="menu-house" style="display:none;"></button><button id="menu-jackpot" style="display:none;"></button><button id="menu-crypto" style="display:none;"></button><button id="menu-black" style="display:none;"></button><button id="menu-vip" style="display:none;"></button><button id="menu-frames" style="display:none;"></button><button id="menu-skins" style="display:none;"></button><button id="menu-tech" style="display:none;"></button><button id="menu-story" style="display:none;"></button><button id="menu-predictions" style="display:none;"></button>
   </div>
 
   <div id="pixi-container">
@@ -295,9 +320,8 @@
       <button class="bet-btn" data-bet="100">100</button>
       <button class="bet-btn" data-bet="500">500</button>
       <input type="number" id="custom-bet" placeholder="Своя">
-      <button class="bet-btn" onclick="resetBet()" style="background: #cc0000; border-color: #ff3333; color: #fff;">Сброс</button>
+      <button class="bet-btn" onclick="resetBet()" style="background: rgba(255,0,0,0.2); border-color: rgba(255,0,0,0.5); color: #ff3b30;">X</button>
     </div>
-    
     <div class="action-buttons">
       <button class="main-btn" id="spin-btn">SPIN</button>
       <button class="main-btn" id="autospin-btn">АВТО (0)</button>
@@ -309,19 +333,19 @@
 <div id="roulette-screen">
   <div class="roulette-top">
     <div style="display:flex; align-items:center; gap:10px;">
-      <button class="main-btn" onclick="exitRouletteToLobby()" style="width:auto; padding:10px 15px; background:#333; color:#fff; box-shadow:none; font-size:14px; border-radius:12px;">⬅ Назад</button>
+      <button class="main-btn btn-dark" onclick="exitRouletteToLobby()" style="padding:10px 15px; font-size:14px; border-radius:12px;">⬅ Назад</button>
       <div class="balance-box"><span>Баланс</span><strong id="r-bal">0</strong></div>
     </div>
     <div class="menu-btn" id="r-menu-toggle">⋮</div>
   </div>
   
-  <div id="r-dropdown-menu" style="position: absolute; top: 70px; right: 15px; background: rgba(20,20,25,0.95); border: 1px solid #ffd700; border-radius: 12px; display: none; flex-direction: column; min-width: 200px; z-index: 50; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
-    <button onclick="document.getElementById('r-dropdown-menu').style.display='none'; document.getElementById('menu-ref').click();" style="background: none; border: none; color: #fff; padding: 15px; text-align: left; font-size: 16px; font-weight: bold; border-bottom: 1px solid #333; cursor: pointer;">👥 Рефералы</button>
-    <button onclick="document.getElementById('r-dropdown-menu').style.display='none'; document.getElementById('menu-rating').click();" style="background: none; border: none; color: #fff; padding: 15px; text-align: left; font-size: 16px; font-weight: bold; border-bottom: 1px solid #333; cursor: pointer;">🏆 Рейтинг</button>
-    <button onclick="exitRouletteToLobby()" style="background: none; border: none; color: #ff3333; padding: 15px; text-align: left; font-size: 16px; font-weight: bold; cursor: pointer;">⬅ В меню</button>
+  <div id="r-dropdown-menu" style="position: absolute; top: 70px; right: 15px; background: rgba(15,15,25,0.98); border: 1px solid var(--glass-border); border-radius: 20px; display: none; flex-direction: column; min-width: 200px; z-index: 50; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
+    <button onclick="document.getElementById('r-dropdown-menu').style.display='none'; document.getElementById('menu-ref').click();" style="background: none; border: none; color: #fff; padding: 15px; text-align: left; font-size: 15px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer;">👥 Рефералы</button>
+    <button onclick="document.getElementById('r-dropdown-menu').style.display='none'; document.getElementById('menu-rating').click();" style="background: none; border: none; color: #fff; padding: 15px; text-align: left; font-size: 15px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer;">🏆 Рейтинг</button>
+    <button onclick="exitRouletteToLobby()" style="background: none; border: none; color: var(--neon-red); padding: 15px; text-align: left; font-size: 15px; font-weight: 700; cursor: pointer;">⬅ В меню</button>
   </div>
 
-  <div style="text-align:center; margin-bottom:10px; font-size:24px; font-weight:900;" id="r-result">Крути!</div>
+  <div style="text-align:center; margin-bottom:20px; font-size:32px; font-weight:900; color: var(--gold); text-shadow: 0 0 20px rgba(255,215,0,0.5);" id="r-result">Крути!</div>
 
   <div class="roulette-main-layout">
     <div class="roulette-board" id="r-board"></div>
@@ -329,438 +353,365 @@
         <div class="roulette-wheel" id="r-wheel">
             <div id="r-wheel-sectors"></div>
             <div class="roulette-ball" id="r-ball"></div>
-            <div class="roulette-center">🎰</div>
+            <div class="roulette-center" style="background: linear-gradient(135deg, #222, #111); border: 2px solid var(--gold);">🎰</div>
         </div>
     </div>
   </div>
 
   <div class="roulette-bets" id="r-bets">
-    <div style="text-align:center; margin-bottom:10px;">Твои ставки: <span id="r-total-bet">0</span></div>
-    <div style="display:flex; justify-content:center; align-items:center; gap:8px; margin-bottom:15px; flex-wrap:wrap;">
-      <button class="r-bet-btn r-amount-btn active" data-amount="10" style="margin:0; padding:8px 12px; font-size:14px; background:#ffd700; color:#000; border-color:#fff;">10</button>
-      <button class="r-bet-btn r-amount-btn" data-amount="50" style="margin:0; padding:8px 12px; font-size:14px;">50</button>
-      <button class="r-bet-btn r-amount-btn" data-amount="100" style="margin:0; padding:8px 12px; font-size:14px;">100</button>
-      <button class="r-bet-btn r-amount-btn" data-amount="500" style="margin:0; padding:8px 12px; font-size:14px;">500</button>
-      <input type="number" id="r-custom-bet" placeholder="Своя" style="width:70px; padding:8px; background:rgba(0,0,0,0.5); border:1px solid #444; color:#ffd700; border-radius:8px; text-align:center; font-weight:bold; outline:none;">
+    <div style="text-align:center; margin-bottom:15px; font-weight: bold;">Твои ставки: <span id="r-total-bet" style="color: var(--gold);">0</span></div>
+    <div style="display:flex; justify-content:center; align-items:center; gap:8px; margin-bottom:20px; flex-wrap:wrap;">
+      <button class="r-bet-btn r-amount-btn active" data-amount="10" style="margin:0; background: var(--gold); color: #000; border-color: #fff;">10</button>
+      <button class="r-bet-btn r-amount-btn" data-amount="50" style="margin:0;">50</button>
+      <button class="r-bet-btn r-amount-btn" data-amount="100" style="margin:0;">100</button>
+      <button class="r-bet-btn r-amount-btn" data-amount="500" style="margin:0;">500</button>
+      <input type="number" id="r-custom-bet" placeholder="Своя" style="width:80px; padding:10px; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.1); color:var(--gold); border-radius:12px; text-align:center; font-weight:bold; outline:none;">
     </div>
     <div style="text-align:center;">
-      <div class="r-bet-btn" onclick="addBet('color', 'red')">Красное (x2)</div>
-      <div class="r-bet-btn" onclick="addBet('color', 'black')">Черное (x2)</div>
+      <div class="r-bet-btn" onclick="addBet('color', 'red')" style="background: rgba(255,0,0,0.2); border-color: #ff3b30;">Красное (x2)</div>
+      <div class="r-bet-btn" onclick="addBet('color', 'black')" style="background: rgba(0,0,0,0.8); border-color: #555;">Черное (x2)</div>
       <div class="r-bet-btn" onclick="addBet('parity', 'even')">Чет (x2)</div>
       <div class="r-bet-btn" onclick="addBet('parity', 'odd')">Нечет (x2)</div>
       <div class="r-bet-btn" onclick="addBet('half', 'low')">1-18 (x3)</div>
       <div class="r-bet-btn" onclick="addBet('half', 'high')">19-36 (x3)</div>
     </div>
-    <button id="r-spin-btn">КРУТИТЬ (Списать ставки)</button>
-    <button id="r-reset-btn" class="main-btn" style="width: 100%; margin-top: 10px; padding: 12px; background: #333; color: #fff; box-shadow: none;">🔄 СБРОСИТЬ СТАВКИ</button>
+    <button id="r-spin-btn">КРУТИТЬ</button>
+    <button id="r-reset-btn" class="main-btn" onclick="resetRouletteBets()">🔄 СБРОСИТЬ СТАВКИ</button>
   </div>
 </div>
 <!-- МОДАЛКИ -->
-<div class="modal" id="ref-modal">
-  <div class="modal-content" style="background: linear-gradient(145deg, #1a1a2e, #0a0a0c);">
-    <span class="modal-close" onclick="document.getElementById('ref-modal').style.display='none'">×</span>
-    <h2 style="color: #ffd700;">👥 Партнерская программа</h2>
-    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-        <div style="flex: 1; background: #222; padding: 10px; border-radius: 10px; text-align: center;">
-            <div style="color: #aaa; font-size: 10px;">Друзей</div>
-            <div style="color: #fff; font-size: 20px; font-weight: bold;" id="ref-stat-count">0</div>
-        </div>
-        <div style="flex: 1; background: #222; padding: 10px; border-radius: 10px; text-align: center;">
-            <div style="color: #aaa; font-size: 10px;">Заработано</div>
-            <div style="color: #00ff88; font-size: 20px; font-weight: bold;" id="ref-stat-earn">0</div>
-        </div>
-    </div>
-    <div class="ref-link-box" id="ref-link">Загрузка...</div>
-    <button class="copy-btn" id="copy-ref-btn">КОПИРОВАТЬ ССЫЛКУ</button>
-    <h3 style="color: #fff; font-size: 14px; margin-top: 20px; margin-bottom: 10px;">Твои друзья:</h3>
-    <div id="ref-friends-list" style="display: flex; flex-wrap: wrap; gap: 5px;"></div>
-  </div>
-</div>
-
-<div class="modal" id="rating-modal" style="background: rgba(0,0,0,0.95);">
-  <div class="modal-content" style="max-height: 90vh; width: 95%; max-width: 500px;">
-    <span class="modal-close" onclick="document.getElementById('rating-modal').style.display='none'">×</span>
-    <h2 style="color: #ffd700; text-shadow: 0 0 10px #ffd700;">🏆 Forbes Top 10</h2>
-    <div id="rating-list" style="display: flex; flex-direction: column; gap: 10px; width: 100%;"></div>
-  </div>
-</div>
-
-<div class="modal" id="tournament-modal" style="background: rgba(0,0,0,0.95);">
-  <div class="modal-content" style="max-height: 90vh; width: 95%; max-width: 500px;">
-    <span class="modal-close" onclick="document.getElementById('tournament-modal').style.display='none'">×</span>
-    <h2 style="color: #ffd700; text-shadow: 0 0 10px #ffd700;">🏆 Турнир Слотов</h2>
-    <div style="background: #222; padding: 10px; border-radius: 10px; margin-bottom: 15px; text-align: center;">Твои очки: <strong id="tourney-score" style="color: #00ff88; font-size: 20px;">0</strong></div>
-    <div id="tournament-list" style="display: flex; flex-direction: column; gap: 10px; width: 100%;"></div>
-  </div>
-</div>
-
-<div class="modal" id="shop-modal" style="background: rgba(0,0,0,0.95);">
-  <div class="modal-content" style="max-height: 90vh; width: 95%; max-width: 500px;">
+<div class="modal" id="shop-modal">
+  <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('shop-modal').style.display='none'">×</span>
-    <h2 style="color: #00ff88; text-shadow: 0 0 10px #00ff88;">🏢 Магазин</h2>
-    <div style="display: flex; justify-content: space-between; margin-bottom: 15px; background: #222; padding: 10px; border-radius: 10px;">
-        <div>Баланс: <strong id="shop-bal" style="color: #ffd700;">0</strong></div>
-        <div>Имущество: <strong id="shop-assets" style="color: #00ff88;">0</strong></div>
+    <h2 style="color: var(--neon-green);">🏢 Магазин</h2>
+    <div style="display: flex; justify-content: space-between; margin-bottom: 20px; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+        <div>Баланс: <strong id="shop-bal" style="color: var(--gold);">0</strong></div>
+        <div>Имущество: <strong id="shop-assets" style="color: var(--neon-green);">0</strong></div>
     </div>
-    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-        <button id="tab-shop" class="main-btn active-tab" onclick="switchShopTab('shop')" style="flex: 1; padding: 10px; font-size: 14px; background: #ffd700; color: #000; box-shadow: none;">Товары</button>
-        <button id="tab-exchange" class="main-btn" onclick="switchShopTab('exchange')" style="flex: 1; padding: 10px; font-size: 14px; background: #333; color: #fff; box-shadow: none;">💱 Биржа</button>
-        <button id="tab-cases" class="main-btn" onclick="switchShopTab('cases')" style="flex: 1; padding: 10px; font-size: 14px; background: #333; color: #fff; box-shadow: none;">🎁 Кейсы</button>
+    <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+        <button id="tab-shop" class="main-btn btn-gold" onclick="switchShopTab('shop')" style="flex: 1; padding: 12px; font-size: 13px;">Товары</button>
+        <button id="tab-exchange" class="main-btn btn-dark" onclick="switchShopTab('exchange')" style="flex: 1; padding: 12px; font-size: 13px;">💱 Биржа</button>
+        <button id="tab-cases" class="main-btn btn-dark" onclick="switchShopTab('cases')" style="flex: 1; padding: 12px; font-size: 13px;">🎁 Кейсы</button>
     </div>
-    
-    <div style="text-align: center; margin-bottom: 10px; color: #ffd700; font-size: 12px;">
-        ⏳ Ассортимент обновится через: <span id="shop-timer">--:--</span>
-    </div>
-    
+    <div style="text-align: center; margin-bottom: 15px; color: var(--text-muted); font-size: 12px; font-weight: 600;">⏳ Обновление: <span id="shop-timer" style="color: var(--gold);">--:--</span></div>
     <div id="shop-items" style="display: flex; flex-direction: column; gap: 10px; width: 100%;"></div>
 
     <div id="exchange-panel" style="display: none; flex-direction: column; gap: 15px; width: 100%;">
-        <div style="background: #222; padding: 10px; border-radius: 10px; font-size: 14px;">
-            <div style="margin-bottom: 5px; color: #ffd700;">Твой кошелек:</div>
-            <div style="display: flex; justify-content: space-between; color: #fff;">
+        <div style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+            <div style="margin-bottom: 10px; color: var(--gold); font-weight: 800; font-size: 12px; text-transform: uppercase;">Твой кошелек:</div>
+            <div style="display: flex; justify-content: space-between; color: #fff; font-weight: 700;">
                 <span>💵 USD: <strong id="wallet-usd">0</strong></span>
                 <span>💶 EUR: <strong id="wallet-eur">0</strong></span>
                 <span>💵 AED: <strong id="wallet-aed">0</strong></span>
             </div>
         </div>
-        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; border: 1px solid #444;">
-            <select id="ex-currency" style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: #fff; border: 1px solid #555; border-radius: 8px;">
+        <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
+            <select id="ex-currency" style="width: 100%; padding: 15px; margin-bottom: 15px; background: #000; color: #fff; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; font-weight: bold; outline: none;">
                 <option value="usd">Доллар (USD) — продажа за 85 фишек</option>
                 <option value="eur">Евро (EUR) — продажа за 95 фишек</option>
                 <option value="aed">Дирхам (AED) — продажа за 22 фишки</option>
             </select>
-            <input type="number" id="ex-amount" placeholder="Количество" style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: #fff; border: 1px solid #555; border-radius: 8px;">
-            <div style="display: flex; gap: 10px;">
-                <button class="main-btn" onclick="exchangeCurrency('sell')" style="width: 100%; padding: 12px; background: #ff3b30; box-shadow: none;">Продать</button>
-            </div>
+            <input type="number" id="ex-amount" placeholder="Количество" style="width: 100%; padding: 15px; margin-bottom: 15px; background: #000; color: #fff; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; font-weight: bold; outline: none;">
+            <button class="main-btn btn-red" onclick="exchangeCurrency('sell')" style="width: 100%; padding: 15px;">ПРОДАТЬ</button>
         </div>
     </div>
 
     <div id="cases-panel" style="display: none; flex-direction: column; gap: 15px; width: 100%; align-items: center;">
-        <div style="font-size: 50px;">📦</div>
-        <h3 style="color: #ffd700; margin: 0;">Секретный кейс</h3>
-        <p style="color: #aaa; font-size: 12px; text-align: center; margin: 0;">Внутри: от 50 000 фишек до Lamborghini!</p>
-        
-        <div id="case-reel-container" style="display: none; width: 100%; height: 80px; overflow: hidden; background: #111; border-radius: 10px; border: 2px solid #ffd700; position: relative; box-sizing: border-box;">
+        <div style="font-size: 60px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));">📦</div>
+        <h3 style="color: var(--gold); margin: 0; font-size: 22px;">Секретный кейс</h3>
+        <p style="color: var(--text-muted); font-size: 13px; text-align: center; margin: 0;">Внутри: от 50 000 фишек до Lamborghini!</p>
+        <div id="case-reel-container" style="display: none; width: 100%; height: 90px; overflow: hidden; background: #000; border-radius: 12px; border: 2px solid var(--gold); position: relative; box-sizing: border-box;">
             <div id="case-reel" style="display: flex; height: 100%; width: max-content; transition: transform 3s cubic-bezier(0.1, 0.7, 0.1, 1);"></div>
-            <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 4px; height: 100%; background: #ff0000; z-index: 10; box-shadow: 0 0 10px #ff0000;"></div>
+            <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 4px; height: 100%; background: #ff0000; z-index: 10; box-shadow: 0 0 15px #ff0000;"></div>
         </div>
-
-        <button class="main-btn" id="case-open-btn" onclick="openCase()" style="background: linear-gradient(to bottom, #8a2be2, #4b0082); color: #fff; width: 100%; padding: 15px; font-size: 18px;">ОТКРЫТЬ ЗА 50 000</button>
+        <button class="main-btn btn-blue" id="case-open-btn" onclick="openCase()" style="width: 100%; padding: 18px; font-size: 18px;">ОТКРЫТЬ ЗА 50 000</button>
     </div>
   </div>
 </div>
 
-<div class="modal" id="daily-wheel-modal" style="backdrop-filter: blur(5px);">
+<div class="modal" id="daily-wheel-modal">
   <div id="wheel-wrapper">
     <div style="position:absolute; top:-20px; left:50%; transform:translateX(-50%); width:0; height:0; border-left:20px solid transparent; border-right:20px solid transparent; border-top:30px solid #ff0000; z-index:10; filter:drop-shadow(0 4px 4px rgba(0,0,0,0.8));"></div>
     <canvas id="daily-wheel-canvas" width="300" height="300"></canvas>
   </div>
-  <div id="daily-wheel-result" style="font-size:40px; font-weight:900; color:#ffd700; margin:20px 0; text-shadow:0 0 20px #ffd700; opacity:0; transition:0.3s;">0</div>
+  <div id="daily-wheel-result" style="font-size:48px; font-weight:900; color:var(--gold); margin:20px 0; text-shadow:0 0 30px var(--gold); opacity:0; transition:0.3s;">0</div>
   <div style="text-align:center;">
-    <div id="daily-wheel-timer" style="color:#aaa; margin-bottom:10px;">Загрузка...</div>
-    <button class="main-btn" id="daily-wheel-spin-btn" style="background:linear-gradient(to bottom, #9b59b6, #5e2c76); width:200px; padding:15px;">КРУТИТЬ</button>
-    <button class="main-btn" id="daily-wheel-close" style="background:#ffd700; color:#000; width:200px; padding:15px; display:none; margin-top:10px;">ЗАБРАТЬ</button>
+    <div id="daily-wheel-timer" style="color:var(--text-muted); margin-bottom:15px; font-weight: bold;">Загрузка...</div>
+    <button class="main-btn btn-blue" id="daily-wheel-spin-btn" style="width:220px; padding:18px; border-radius: 20px;">КРУТИТЬ</button>
+    <button class="main-btn btn-gold" id="daily-wheel-close" style="width:220px; padding:18px; display:none; margin-top:15px; border-radius: 20px;">ЗАБРАТЬ</button>
   </div>
 </div>
 
-<div class="modal" id="quests-modal" style="background: rgba(0,0,0,0.95);">
-  <div class="modal-content" style="max-height: 90vh; width: 95%; max-width: 500px;">
+<div class="modal" id="quests-modal">
+  <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('quests-modal').style.display='none'">×</span>
-    <h2 style="color: #ffd700;">📜 Ежедневные задания</h2>
-    <div id="quests-list" style="display: flex; flex-direction: column; gap: 10px; width: 100%;"></div>
+    <h2 style="color: var(--gold);">📜 Задания</h2>
+    <div id="quests-list" style="display: flex; flex-direction: column; gap: 12px; width: 100%;"></div>
   </div>
 </div>
 
 <div class="modal" id="profile-modal">
-  <div class="modal-content" style="max-height: 90vh; width: 95%; max-width: 500px;">
+  <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('profile-modal').style.display='none'">×</span>
-    <h2 style="color: #ffd700;">👤 Твой профиль</h2>
-    <div style="text-align: center; margin-bottom: 20px;">
-        <div id="my-avatar" style="font-size: 60px; margin-bottom: 5px; width: 80px; height: 80px; display: flex; justify-content: center; align-items: center; margin: 0 auto; border: 2px solid #555; border-radius: 50%;">👤</div>
-        <div id="my-house" style="font-size: 40px; margin-bottom: 10px;">🏚️</div>
-        <div style="color: #fff; font-weight: bold;">ID: <span id="my-profile-id">...</span></div>
+    <h2 style="color: var(--gold);">👤 Профиль</h2>
+    <div style="text-align: center; margin-bottom: 25px;">
+        <div id="my-avatar" style="font-size: 70px; margin-bottom: 10px; width: 100px; height: 100px; display: flex; justify-content: center; align-items: center; margin: 0 auto; border: 3px solid var(--gold); border-radius: 50%; box-shadow: 0 0 20px rgba(255,215,0,0.3);">👤</div>
+        <div id="my-house" style="font-size: 40px; margin-bottom: 15px;">🏚️</div>
+        <div style="color: var(--text-muted); font-weight: 700; letter-spacing: 1px;">ID: <span id="my-profile-id" style="color: #fff;">...</span></div>
     </div>
-    <h3 style="color: #00ff88; font-size: 16px; margin-bottom: 10px;">Сменить аватар</h3>
-    <div id="avatars-list" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;"></div>
+    <h3 style="color: var(--neon-green); font-size: 14px; margin-bottom: 15px; text-transform: uppercase;">Сменить аватар</h3>
+    <div id="avatars-list" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;"></div>
   </div>
 </div>
 
-<div class="modal" id="clans-modal" style="background: rgba(0,0,0,0.95);">
-  <div class="modal-content" style="max-height: 90vh; width: 95%; max-width: 500px;">
+<div class="modal" id="clans-modal">
+  <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('clans-modal').style.display='none'">×</span>
-    <h2 style="color: #00ff88;">🛡️ Кланы</h2>
+    <h2 style="color: var(--neon-green);">🛡️ Кланы</h2>
     <div id="clan-content" style="width: 100%;"></div>
   </div>
 </div>
 
-<div class="modal" id="clan-war-modal" style="background: rgba(0,0,0,0.95);">
-  <div class="modal-content" style="max-height: 90vh; width: 95%; max-width: 500px;">
+<div class="modal" id="clan-war-modal">
+  <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('clan-war-modal').style.display='none'">×</span>
-    <h2 style="color: #ff3b30; text-shadow: 0 0 10px #ff3b30;">⚔️ Клановая Война</h2>
+    <h2 style="color: var(--neon-red);">⚔️ Война</h2>
     <div id="clan-war-content" style="display: flex; flex-direction: column; gap: 15px; width: 100%;"></div>
   </div>
 </div>
 
-<div class="modal" id="auction-modal" style="background: rgba(0,0,0,0.95);">
-  <div class="modal-content" style="max-height: 90vh; width: 95%; max-width: 500px;">
+<div class="modal" id="auction-modal">
+  <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('auction-modal').style.display='none'">×</span>
-    <h2 style="color: #00bfff;">🏛️ Аукцион</h2>
-    
-    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-        <button id="tab-auction-buy" class="main-btn" onclick="switchAuctionTab('buy')" style="flex: 1; padding: 10px; font-size: 12px; background: #00bfff; color: #000; box-shadow: none;">Купить</button>
-        <button id="tab-auction-sell" class="main-btn" onclick="switchAuctionTab('sell')" style="flex: 1; padding: 10px; font-size: 12px; background: #333; color: #fff; box-shadow: none;">Выставить</button>
-        <button id="tab-auction-my" class="main-btn" onclick="switchAuctionTab('my')" style="flex: 1; padding: 10px; font-size: 12px; background: #333; color: #fff; box-shadow: none;">Мои лоты</button>
+    <h2 style="color: var(--neon-blue);">🏛️ Аукцион</h2>
+    <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+        <button id="tab-auction-buy" class="main-btn btn-blue" onclick="switchAuctionTab('buy')" style="flex: 1; padding: 12px; font-size: 13px;">Купить</button>
+        <button id="tab-auction-sell" class="main-btn btn-dark" onclick="switchAuctionTab('sell')" style="flex: 1; padding: 12px; font-size: 13px;">Выставить</button>
+        <button id="tab-auction-my" class="main-btn btn-dark" onclick="switchAuctionTab('my')" style="flex: 1; padding: 12px; font-size: 13px;">Мои лоты</button>
     </div>
-
-    <div id="auction-buy-panel" style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
-        <div id="auction-lots-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
-    </div>
-
-    <div id="auction-sell-panel" style="display: none; flex-direction: column; gap: 10px; width: 100%;">
-        <div id="auction-my-assets" style="display: flex; flex-direction: column; gap: 10px;"></div>
-    </div>
-
-    <div id="auction-my-panel" style="display: none; flex-direction: column; gap: 10px; width: 100%;">
-        <div id="auction-my-lots-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
-    </div>
+    <div id="auction-buy-panel" style="display: flex; flex-direction: column; gap: 10px; width: 100%;"><div id="auction-lots-list" style="display: flex; flex-direction: column; gap: 10px;"></div></div>
+    <div id="auction-sell-panel" style="display: none; flex-direction: column; gap: 10px; width: 100%;"><div id="auction-my-assets" style="display: flex; flex-direction: column; gap: 10px;"></div></div>
+    <div id="auction-my-panel" style="display: none; flex-direction: column; gap: 10px; width: 100%;"><div id="auction-my-lots-list" style="display: flex; flex-direction: column; gap: 10px;"></div></div>
   </div>
 </div>
 
 <div class="modal" id="low-balance-modal">
-  <div class="modal-content" style="background: linear-gradient(145deg, #1a1a2e, #0a0a0c);">
+  <div class="modal-content">
     <span class="modal-close" onclick="closeLowBalanceModal()">×</span>
-    <h2 style="color: #ff3b30; text-shadow: 0 0 10px #ff3b30;">Мало фишек!</h2>
-    <p style="color: #aaa; font-size: 14px; margin-bottom: 20px;">Твой баланс ниже 5000. Посмотри короткую рекламу и получи бонус!</p>
-    <button class="main-btn" id="low-bal-ad-btn" style="background: linear-gradient(to bottom, #ffd700, #b8860b); color: #000; width: 100%; margin-bottom: 10px;">🎬 СМОТРЕТЬ РЕКЛАМУ</button>
-    <button class="main-btn" onclick="closeLowBalanceModal()" style="background: #333; color: #fff; width: 100%; box-shadow: none;">ЗАКРЫТЬ</button>
+    <h2 style="color: var(--neon-red);">Мало фишек!</h2>
+    <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">Твой баланс ниже 5000. Посмотри рекламу и получи бонус!</p>
+    <button class="main-btn btn-gold" id="low-bal-ad-btn" style="width: 100%; margin-bottom: 10px;">🎬 СМОТРЕТЬ РЕКЛАМУ</button>
+    <button class="main-btn btn-dark" onclick="closeLowBalanceModal()" style="width: 100%;">ЗАКРЫТЬ</button>
   </div>
 </div>
 
 <div class="modal" id="low-energy-modal">
-    <div class="modal-content" style="background: linear-gradient(145deg, #1a1a2e, #0a0a0c);">
+    <div class="modal-content">
         <span class="modal-close" onclick="closeLowEnergyModal()">×</span>
-        <h2 style="color: #ff3b30;">Мало энергии!</h2>
-        <p style="color: #aaa; font-size: 14px; margin-bottom: 20px;">Твоя энергия почти на нуле. Посмотри короткую рекламу и получи +300 энергии!</p>
-        <button class="main-btn" onclick="watchAdForEnergy()" style="background: linear-gradient(to bottom, #00c853, #007a33); color: #fff; width: 100%; margin-bottom: 10px;">🎬 СМОТРЕТЬ РЕКЛАМУ</button>
-        <button class="main-btn" onclick="closeLowEnergyModal()" style="background: #333; color: #fff; width: 100%; box-shadow: none;">ЗАКРЫТЬ</button>
+        <h2 style="color: var(--neon-red);">Мало энергии!</h2>
+        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">Посмотри короткую рекламу и получи +300 энергии!</p>
+        <button class="main-btn btn-green" onclick="watchAdForEnergy()" style="width: 100%; margin-bottom: 10px;">🎬 СМОТРЕТЬ РЕКЛАМУ</button>
+        <button class="main-btn btn-dark" onclick="closeLowEnergyModal()" style="width: 100%;">ЗАКРЫТЬ</button>
     </div>
 </div>
 
-<div class="modal" id="house-modal" style="background: rgba(0,0,0,0.95);">
-  <div class="modal-content" style="max-height: 90vh; width: 95%; max-width: 500px;">
+<div class="modal" id="house-modal">
+  <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('house-modal').style.display='none'">×</span>
-    <h2 style="color: #ffd700; text-shadow: 0 0 10px #ffd700;">🏠 Мой особняк</h2>
+    <h2 style="color: var(--gold);">🏠 Особняк</h2>
     <div id="house-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
   </div>
 </div>
 
 <div class="modal" id="jackpot-modal">
-  <div class="modal-content" style="background: linear-gradient(145deg, #1a1a2e, #0a0a0c);">
+  <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('jackpot-modal').style.display='none'">×</span>
-    <h2 style="color: #ffd700; text-shadow: 0 0 20px #ffd700;">💰 Джекпот</h2>
-    <p style="color: #aaa; font-size: 14px; text-align: center;">Собери 3 семерки в «Классике» или 5 скаттеров в «Рыбалке», чтобы забрать весь банк!</p>
-    <div style="text-align: center; font-size: 42px; font-weight: 900; color: #00ff88; text-shadow: 0 0 20px #00ff88; margin: 20px 0;" id="jackpot-amount">0</div>
-    <button class="main-btn" onclick="document.getElementById('jackpot-modal').style.display='none'" style="background: #333; color: #fff; width: 100%; box-shadow: none;">ЗАКРЫТЬ</button>
+    <h2 style="color: var(--gold);">💰 Джекпот</h2>
+    <p style="color: var(--text-muted); font-size: 14px; text-align: center;">Собери 3 семерки в «Классике» или 5 скаттеров в «Рыбалке», чтобы забрать весь банк!</p>
+    <div style="text-align: center; font-size: 42px; font-weight: 900; color: var(--neon-green); text-shadow: 0 0 20px var(--neon-green); margin: 20px 0;" id="jackpot-amount">0</div>
+    <button class="main-btn btn-dark" onclick="document.getElementById('jackpot-modal').style.display='none'" style="width: 100%;">ЗАКРЫТЬ</button>
   </div>
 </div>
 
 <div class="modal" id="promo-modal">
   <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('promo-modal').style.display='none'">×</span>
-    <h2 style="color: #00ff88;">🎟️ Промокод</h2>
-    <input type="text" id="promo-input" placeholder="ВВЕДИ КОД" style="width: 100%; padding: 15px; background: #111; color: #fff; border: 2px solid #444; border-radius: 10px; text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; outline: none;">
-    <button class="main-btn" id="promo-btn" onclick="redeemPromo()" style="background: linear-gradient(to bottom, #00c853, #007a33); color: #fff; width: 100%; padding: 15px;">АКТИВИРОВАТЬ</button>
+    <h2 style="color: var(--neon-green);">🎟️ Промокод</h2>
+    <input type="text" id="promo-input" placeholder="ВВЕДИ КОД" style="width: 100%; padding: 15px; background: #111; color: #fff; border: 2px solid #444; border-radius: 12px; text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; outline: none;">
+    <button class="main-btn btn-green" id="promo-btn" onclick="redeemPromo()" style="width: 100%; padding: 15px;">АКТИВИРОВАТЬ</button>
   </div>
 </div>
 
-<div class="modal" id="crypto-modal" style="background: rgba(0,0,0,0.95);">
-  <div class="modal-content" style="max-height: 90vh; width: 95%; max-width: 500px;">
+<div class="modal" id="crypto-modal">
+  <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('crypto-modal').style.display='none'">×</span>
-    <h2 style="color: #00ff88;">📈 TimCoin (TIM)</h2>
+    <h2 style="color: var(--neon-green);">📈 TimCoin</h2>
     <div style="text-align: center; margin-bottom: 15px;">
-        <div style="font-size: 36px; font-weight: 900; color: #ffd700;" id="crypto-price">0.00</div>
-        <div style="color: #aaa; font-size: 12px;">Текущий курс за 1 TIM</div>
+        <div style="font-size: 36px; font-weight: 900; color: var(--gold);" id="crypto-price">0.00</div>
+        <div style="color: var(--text-muted); font-size: 12px;">Текущий курс</div>
     </div>
-    <div style="background: #222; padding: 10px; border-radius: 10px; margin-bottom: 15px; text-align: center;">
-        В кошельке: <strong id="crypto-balance" style="color: #00ff88;">0.0000</strong> TIM
+    <div style="background: #222; padding: 15px; border-radius: 12px; margin-bottom: 15px; text-align: center; font-weight: bold;">
+        В кошельке: <strong id="crypto-balance" style="color: var(--neon-green);">0.0000</strong> TIM
     </div>
     <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-        <input type="number" id="crypto-amount" placeholder="Кол-во" style="flex: 1; padding: 10px; background: #111; color: #fff; border: 1px solid #444; border-radius: 8px;">
-        <button class="main-btn" onclick="cryptoTrade('buy')" style="background: #00c853; box-shadow: none; flex: 1;">Купить</button>
-        <button class="main-btn" onclick="cryptoTrade('sell')" style="background: #ff3b30; box-shadow: none; flex: 1;">Продать</button>
+        <input type="number" id="crypto-amount" placeholder="Кол-во" style="flex: 1; padding: 12px; background: #111; color: #fff; border: 1px solid #444; border-radius: 12px; outline: none;">
+        <button class="main-btn btn-green" onclick="cryptoTrade('buy')" style="flex: 1;">Купить</button>
+        <button class="main-btn btn-red" onclick="cryptoTrade('sell')" style="flex: 1;">Продать</button>
     </div>
   </div>
 </div>
 
-<div class="modal" id="black-modal" style="background: rgba(0,0,0,0.95);">
-  <div class="modal-content" style="max-height: 90vh; width: 95%; max-width: 500px;">
+<div class="modal" id="black-modal">
+  <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('black-modal').style.display='none'">×</span>
-    <h2 style="color: #cc0000; text-shadow: 0 0 10px #cc0000;">🕶️ Черный рынок</h2>
+    <h2 style="color: var(--neon-red);">🕶️ Черный рынок</h2>
     <div id="black-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
   </div>
 </div>
 
 <div class="modal" id="vip-modal">
-  <div class="modal-content" style="background: linear-gradient(145deg, #1a1a2e, #0a0a0c); border-color: #ffd700;">
+  <div class="modal-content" style="border-color: var(--gold);">
     <span class="modal-close" onclick="document.getElementById('vip-modal').style.display='none'">×</span>
-    <h2 style="color: #ffd700; text-shadow: 0 0 20px #ffd700;">👑 VIP-Клуб</h2>
+    <h2 style="color: var(--gold);">👑 VIP-Клуб</h2>
     <ul style="text-align: left; color: #fff; font-size: 14px; margin-bottom: 20px; line-height: 1.6;">
         <li>✅ +10% к выигрышу во всех играх</li>
         <li>✅ Золотая рамка в рейтингах</li>
     </ul>
-    <div style="background: #222; padding: 10px; border-radius: 10px; margin-bottom: 15px;">
+    <div style="background: #222; padding: 15px; border-radius: 12px; margin-bottom: 15px; font-weight: bold;">
         <div>Цена: <strong>100 USD</strong></div>
-        <div>У тебя: <strong id="vip-usd-balance" style="color: #00ff88;">0</strong> USD</div>
+        <div>У тебя: <strong id="vip-usd-balance" style="color: var(--neon-green);">0</strong> USD</div>
     </div>
-    <button class="main-btn" id="vip-buy-btn" onclick="buyVip()" style="background: linear-gradient(to bottom, #ffd700, #b8860b); color: #000; width: 100%; padding: 15px;">КУПИТЬ VIP</button>
+    <button class="main-btn btn-gold" id="vip-buy-btn" onclick="buyVip()" style="width: 100%; padding: 15px;">КУПИТЬ VIP</button>
   </div>
 </div>
 
-<div class="modal" id="chat-modal" style="background: rgba(0,0,0,0.95);">
-  <div class="modal-content" style="max-height: 90vh; width: 95%; max-width: 500px; display: flex; flex-direction: column; height: 80vh;">
+<div class="modal" id="chat-modal">
+  <div class="modal-content" style="display: flex; flex-direction: column; height: 80vh;">
     <span class="modal-close" onclick="closeChat()">×</span>
-    <h2 style="color: #00ff88;">💬 Чат</h2>
+    <h2 style="color: var(--neon-green);">💬 Чат</h2>
     <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-        <button id="chat-tab-global" class="main-btn" onclick="switchChatTab(false)" style="flex: 1; padding: 8px; font-size: 14px; background: #00c853; box-shadow: none;">Глобальный</button>
-        <button id="chat-tab-clan" class="main-btn" onclick="switchChatTab(true)" style="flex: 1; padding: 8px; font-size: 14px; background: #333; box-shadow: none;">Клан</button>
+        <button id="chat-tab-global" class="main-btn btn-green" onclick="switchChatTab(false)" style="flex: 1; padding: 10px; font-size: 14px;">Глобальный</button>
+        <button id="chat-tab-clan" class="main-btn btn-dark" onclick="switchChatTab(true)" style="flex: 1; padding: 10px; font-size: 14px;">Клан</button>
     </div>
-    <div id="chat-messages" style="flex: 1; overflow-y: auto; background: #111; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; border: 1px solid #333;"></div>
-    <div style="display: flex; gap: 5px;">
-        <input type="text" id="chat-input" placeholder="Сообщение..." maxlength="100" style="flex: 1; padding: 10px; background: #222; color: #fff; border: 1px solid #444; border-radius: 8px; outline: none;">
-        <button class="main-btn" onclick="sendChatMessage()" style="padding: 10px 20px; background: #00c853; box-shadow: none;">➤</button>
+    <div id="chat-messages" style="flex: 1; overflow-y: auto; background: #111; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; border: 1px solid #333;"></div>
+    <div style="display: flex; gap: 8px;">
+        <input type="text" id="chat-input" placeholder="Сообщение..." maxlength="100" style="flex: 1; padding: 12px; background: #222; color: #fff; border: 1px solid #444; border-radius: 12px; outline: none;">
+        <button class="main-btn btn-green" onclick="sendChatMessage()" style="padding: 10px 20px;">➤</button>
     </div>
   </div>
 </div>
 
-<div class="modal" id="mine-modal" style="background: radial-gradient(circle at 50% 30%, #2a1a0a 0%, #000 90%); padding: 0;">
+<div class="modal" id="mine-modal" style="padding: 0;">
   <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 20px;">
     <span class="modal-close" onclick="closeMine()" style="top: 15px; right: 15px; z-index: 10;">×</span>
 
-    <!-- Верх: энергия и сила -->
-    <div style="width: 100%; max-width: 500px; display: flex; justify-content: space-around; background: rgba(0,0,0,0.5); padding: 12px; border-radius: 15px; border: 1px solid #ffd700;">
+    <div style="width: 100%; max-width: 500px; display: flex; justify-content: space-around; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
       <div style="text-align: center;">
-        <div style="font-size: 11px; color: #aaa;">⚡ Энергия</div>
-        <div style="font-size: 22px; color: #00ff88; font-weight: 900;" id="mine-energy">0</div>
+        <div style="font-size: 11px; color: var(--text-muted); font-weight: bold; letter-spacing: 1px;">⚡ ЭНЕРГИЯ</div>
+        <div style="font-size: 22px; color: var(--neon-green); font-weight: 900;" id="mine-energy">0</div>
       </div>
       <div style="text-align: center;">
-        <div style="font-size: 11px; color: #aaa;">⛏️ Сила тапа</div>
-        <div style="font-size: 22px; color: #ffd700; font-weight: 900;" id="mine-power">0</div>
+        <div style="font-size: 11px; color: var(--text-muted); font-weight: bold; letter-spacing: 1px;">⛏️ СИЛА</div>
+        <div style="font-size: 22px; color: var(--gold); font-weight: 900;" id="mine-power">0</div>
       </div>
       <div style="text-align: center;">
-        <div style="font-size: 11px; color: #aaa;">💰 Натапано</div>
+        <div style="font-size: 11px; color: var(--text-muted); font-weight: bold; letter-spacing: 1px;">💰 НАТАПАНО</div>
         <div style="font-size: 22px; color: #ff8c00; font-weight: 900;" id="mine-total-tapped">0</div>
       </div>
     </div>
 
-    <!-- Центр: большая кирка -->
     <div style="flex: 1; display: flex; align-items: center; justify-content: center; position: relative; width: 100%;">
-      <div id="mine-tap-area" style="font-size: 160px; cursor: pointer; user-select: none; transition: transform 0.08s; filter: drop-shadow(0 0 30px #ffd700); position: relative;" onclick="tapMine()">
+      <div id="mine-tap-area" onclick="tapMine()">
         ⛏️
-        <div id="mine-float-reward" style="position: absolute; top: -20px; left: 50%; transform: translateX(-50%); color: #00ff88; font-weight: 900; font-size: 24px; opacity: 0; pointer-events: none;"></div>
+        <div id="mine-float-reward" style="position: absolute; top: -20px; left: 50%; transform: translateX(-50%); color: var(--neon-green); font-weight: 900; font-size: 28px; opacity: 0; pointer-events: none; text-shadow: 0 0 10px var(--neon-green);"></div>
       </div>
-      <div style="position: absolute; bottom: 10px; color: #ffd700; font-size: 14px; font-weight: bold; text-transform: uppercase; animation: pulse 1.5s infinite;">👆 ТАПАЙ ПО КИРКЕ</div>
+      <div style="position: absolute; bottom: 10px; color: var(--gold); font-size: 16px; font-weight: 900; text-transform: uppercase; animation: pulseGold 1.5s infinite; text-shadow: 0 0 10px var(--gold);">👆 ТАПАЙ ПО КИРКЕ</div>
     </div>
 
-    <!-- Низ: кнопки -->
     <div style="width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 20px;">
-      <button class="main-btn" id="mine-ad-btn" onclick="watchAdForEnergy()" style="background: linear-gradient(to bottom, #00c853, #007a33); color: #fff; width: 100%; padding: 15px;">🎬 +300 ЭНЕРГИИ (РЕКЛАМА)</button>
-      <button class="main-btn" id="mine-upgrade-btn" onclick="upgradePickaxe()" style="background: linear-gradient(to bottom, #ffd700, #b8860b); color: #000; width: 100%; padding: 15px;">УЛУЧШИТЬ КИРКУ</button>
+      <button class="main-btn btn-green" id="mine-ad-btn" onclick="watchAdForEnergy()" style="width: 100%; padding: 15px;">🎬 +300 ЭНЕРГИИ (РЕКЛАМА)</button>
+      <button class="main-btn btn-gold" id="mine-upgrade-btn" onclick="upgradePickaxe()" style="width: 100%; padding: 15px;">УЛУЧШИТЬ КИРКУ</button>
     </div>
   </div>
 </div>
 
-<div class="modal" id="skins-modal" style="background: rgba(0,0,0,0.95);">
-  <div class="modal-content" style="max-height: 90vh; width: 95%; max-width: 500px;">
+<div class="modal" id="skins-modal">
+  <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('skins-modal').style.display='none'">×</span>
-    <h2 style="color: #ffd700;">🎨 Скины на барабаны</h2>
+    <h2 style="color: var(--gold);">🎨 Скины</h2>
     <div id="skins-list" style="display: flex; flex-direction: column; gap: 10px; width: 100%;"></div>
   </div>
 </div>
 
-<div class="modal" id="frames-modal" style="background: rgba(0,0,0,0.95);">
-  <div class="modal-content" style="max-height: 90vh; width: 95%; max-width: 500px;">
+<div class="modal" id="frames-modal">
+  <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('frames-modal').style.display='none'">×</span>
-    <h2 style="color: #00ffff;">🖼️ Рамки профиля</h2>
+    <h2 style="color: var(--neon-blue);">🖼️ Рамки</h2>
     <div id="frames-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
   </div>
 </div>
 
-<div class="modal" id="tech-modal" style="background: rgba(0,0,0,0.95);">
-  <div class="modal-content" style="max-height: 90vh; width: 95%; max-width: 500px;">
+<div class="modal" id="tech-modal">
+  <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('tech-modal').style.display='none'">×</span>
-    <h2 style="color: #00ffff; text-shadow: 0 0 10px #00ffff;">🧬 Древо Технологий</h2>
+    <h2 style="color: var(--neon-blue);">🧬 Технологии</h2>
     <div id="tech-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
   </div>
 </div>
 
-<div class="modal" id="donate-modal" style="background: rgba(0,0,0,0.95);">
-  <div class="modal-content" style="max-height: 90vh; width: 95%; max-width: 500px;">
+<div class="modal" id="donate-modal">
+  <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('donate-modal').style.display='none'">×</span>
-    <h2 style="color: #00bfff;">💎 Донат за Stars</h2>
+    <h2 style="color: var(--neon-blue);">💎 Донат</h2>
     <div id="donate-list" style="display: flex; flex-direction: column; gap: 10px; width: 100%;"></div>
   </div>
 </div>
 
-<div class="modal" id="story-modal" style="background: rgba(0,0,0,0.95);">
-  <div class="modal-content" style="max-height: 90vh; width: 95%; max-width: 500px;">
+<div class="modal" id="story-modal">
+  <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('story-modal').style.display='none'">×</span>
-    <h2 style="color: #8a2be2; text-shadow: 0 0 10px #8a2be2;">🕶️ Криминальная Империя</h2>
+    <h2 style="color: #8a2be2;">🕶️ Империя</h2>
     <div id="story-list" style="display: flex; flex-direction: column; gap: 10px; width: 100%;"></div>
   </div>
 </div>
 
-<div class="modal" id="predictions-modal" style="background: rgba(0,0,0,0.95);">
-  <div class="modal-content" style="max-height: 90vh; width: 95%; max-width: 500px;">
+<div class="modal" id="predictions-modal">
+  <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('predictions-modal').style.display='none'">×</span>
-    <h2 style="color: #ff3b30;">📊 Биржа Прогнозов</h2>
+    <h2 style="color: var(--neon-red);">📊 Прогнозы</h2>
     <div id="predictions-list" style="display: flex; flex-direction: column; gap: 15px; width: 100%;"></div>
   </div>
 </div>
 
-<div class="modal" id="clan-chest-modal" style="background: rgba(0,0,0,0.95);">
-  <div class="modal-content" style="max-height: 90vh; width: 95%; max-width: 500px;">
+<div class="modal" id="clan-chest-modal">
+  <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('clan-chest-modal').style.display='none'">×</span>
-    <h2 style="color: #ffd700;">🎁 Сундук Клана</h2>
-    <div id="clan-chest-progress" style="background: #222; height: 20px; border-radius: 10px; overflow: hidden; margin-bottom: 10px;">
-        <div id="clan-chest-bar" style="background: #ffd700; height: 100%; width: 0%; transition: width 0.3s;"></div>
+    <h2 style="color: var(--gold);">🎁 Сундук</h2>
+    <div id="clan-chest-progress" style="background: #222; height: 24px; border-radius: 12px; overflow: hidden; margin-bottom: 10px; border: 1px solid #444;">
+        <div id="clan-chest-bar" style="background: var(--gold); height: 100%; width: 0%; transition: width 0.3s; box-shadow: 0 0 15px var(--gold);"></div>
     </div>
     <div style="text-align: center; color: #fff; font-weight: bold; margin-bottom: 20px;" id="clan-chest-text">0 / 100 000 000</div>
     <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-        <input type="number" id="clan-donate-input" placeholder="Сумма" style="flex: 1; padding: 10px; background: #111; color: #fff; border: 1px solid #444; border-radius: 8px;">
-        <button class="main-btn" onclick="donateClan()" style="background: #00c853; box-shadow: none; flex: 1;">ВНЕСТИ</button>
+        <input type="number" id="clan-donate-input" placeholder="Сумма" style="flex: 1; padding: 12px; background: #111; color: #fff; border: 1px solid #444; border-radius: 12px; outline: none;">
+        <button class="main-btn btn-green" onclick="donateClan()" style="flex: 1;">ВНЕСТИ</button>
     </div>
-    <h3 style="color: #fff; font-size: 14px; margin-bottom: 10px;">Топ вкладчиков:</h3>
-    <div id="clan-chest-donors" style="display: flex; flex-direction: column; gap: 5px;"></div>
+    <h3 style="color: #fff; font-size: 14px; margin-bottom: 10px; text-transform: uppercase;">Топ вкладчиков:</h3>
+    <div id="clan-chest-donors" style="display: flex; flex-direction: column; gap: 8px;"></div>
   </div>
 </div>
 
-<div class="modal" id="wheel-modal" style="backdrop-filter: blur(5px);">
-  <div id="wheel-wrapper">
-    <div style="position:absolute; top:-20px; left:50%; transform:translateX(-50%); width:0; height:0; border-left:20px solid transparent; border-right:20px solid transparent; border-top:30px solid #ff0000; z-index:10;"></div>
-    <canvas id="wheel-canvas" width="300" height="300"></canvas>
-  </div>
-  <div id="wheel-result" style="font-size:40px; font-weight:900; color:#ffd700; margin:20px 0; opacity:0; transition:0.3s;">0</div>
-  <div style="text-align:center;">
-    <div id="wheel-timer" style="color:#aaa; margin-bottom:10px;">Загрузка...</div>
-    <button class="main-btn" id="wheel-spin-btn" style="background:linear-gradient(to bottom, #9b59b6, #5e2c76); width:200px; padding:15px;">КРУТИТЬ</button>
-    <button class="main-btn" id="wheel-close" style="background:#ffd700; color:#000; width:200px; padding:15px; display:none; margin-top:10px;">ЗАБРАТЬ</button>
-  </div>
-</div>
-
-<!-- Модалка автоспина -->
 <div class="modal" id="autospin-modal" style="z-index: 400;">
-  <div class="modal-content" style="background: #1a1a2e; border-color: #3498db;">
+  <div class="modal-content" style="border-color: var(--neon-blue);">
     <span class="modal-close" onclick="document.getElementById('autospin-modal').style.display='none'">×</span>
-    <h2 style="color: #3498db;">🔄 Автоспин</h2>
-    <p style="color: #aaa; font-size: 14px;">Выберите количество спинов:</p>
+    <h2 style="color: var(--neon-blue);">🔄 Автоспин</h2>
+    <p style="color: var(--text-muted); font-size: 14px;">Выберите количество спинов:</p>
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
-        <button class="main-btn" onclick="startAutoSpin(10)" style="background: #333; padding: 15px;">10</button>
-        <button class="main-btn" onclick="startAutoSpin(25)" style="background: #333; padding: 15px;">25</button>
-        <button class="main-btn" onclick="startAutoSpin(50)" style="background: #333; padding: 15px;">50</button>
-        <button class="main-btn" onclick="startAutoSpin(100)" style="background: #333; padding: 15px;">100</button>
+        <button class="main-btn btn-dark" onclick="startAutoSpin(10)">10</button>
+        <button class="main-btn btn-dark" onclick="startAutoSpin(25)">25</button>
+        <button class="main-btn btn-dark" onclick="startAutoSpin(50)">50</button>
+        <button class="main-btn btn-dark" onclick="startAutoSpin(100)">100</button>
     </div>
-    <button class="main-btn" onclick="stopAutoSpin()" style="background: #ff3b30; width: 100%; margin-top: 15px; padding: 15px;">ОСТАНОВИТЬ</button>
+    <button class="main-btn btn-red" onclick="stopAutoSpin()" style="width: 100%; margin-top: 15px; padding: 15px;">ОСТАНОВИТЬ</button>
   </div>
 </div>
 <script>
@@ -1114,14 +1065,14 @@ function addBet(type, value) {
     }
 }
 
-$('r-reset-btn').onclick = () => {
+function resetRouletteBets() {
     if (currentRouletteBets.length === 0) return;
     const refund = currentRouletteBets.reduce((a,b)=>a+b.amount,0);
     state.balance = (parseInt(state.balance) || 0) + refund;
     $('r-bal').textContent = state.balance; $('bal').textContent = state.balance;
     currentRouletteBets = []; $('r-total-bet').textContent = '0'; [...$('r-board').children].forEach(c => c.classList.remove('active'));
     SFX.click(); toast("Ставки сброшены");
-};
+}
 
 $('r-spin-btn').onclick = async () => {
     const now = Date.now();
@@ -1285,10 +1236,29 @@ function drawDailyWheel() {
 }
 
 $('menu-daily').onclick = () => {
-    $('dropdown-menu').style.display = 'none'; SFX.click(); $('daily-wheel-modal').style.display = 'flex';
-    $('daily-wheel-result').style.opacity = '0'; $('daily-wheel-close').style.display = 'none'; $('daily-wheel-spin-btn').style.display = 'block';
-    if (state.wheel_ready) { $('daily-wheel-spin-btn').disabled = false; $('daily-wheel-timer').textContent = "Колесо доступно!"; } 
-    else { $('daily-wheel-spin-btn').disabled = true; let m = Math.floor(state.wheel_time_left / 60); let h = Math.floor(m / 60); m = m % 60; $('daily-wheel-timer').textContent = `Ждать: ${h}ч ${m}м`; }
+    $('dropdown-menu').style.display = 'none'; 
+    SFX.click(); 
+    $('daily-wheel-modal').style.display = 'flex';
+    $('daily-wheel-result').style.opacity = '0'; 
+    $('daily-wheel-close').style.display = 'none'; 
+    $('daily-wheel-spin-btn').style.display = 'block';
+    
+    let timeLeft = state && typeof state.wheel_time_left === 'number' ? state.wheel_time_left : 0;
+    let isReady = state && state.wheel_ready;
+
+    if (isReady) { 
+        $('daily-wheel-spin-btn').disabled = false; 
+        $('daily-wheel-timer').textContent = "Колесо доступно!"; 
+    } else if (timeLeft > 0) { 
+        $('daily-wheel-spin-btn').disabled = true; 
+        let m = Math.floor(timeLeft / 60); 
+        let h = Math.floor(m / 60); 
+        m = m % 60; 
+        $('daily-wheel-timer').textContent = `Ждать: ${h}ч ${m}м`; 
+    } else {
+        $('daily-wheel-spin-btn').disabled = true; 
+        $('daily-wheel-timer').textContent = "Загрузка данных..."; 
+    }
     drawDailyWheel();
 };
 
@@ -1542,69 +1512,6 @@ async function buyAuctionLot(lotId, name) {
     if (!confirm(`Купить ${name}?`)) return; SFX.click();
     try { const d = await api('/auction/buy', { item_id: lotId }); SFX.bigWin(); triggerWinFlash(); toast(d.message); state.balance = d.balance; $('bal').textContent = state.balance; loadAuctionLots(); refresh(); } catch(e) { SFX.lose(); toast(e.message); }
 }
-
-// --- КЛАНЫ ---
-$('menu-clans').onclick = async () => { $('dropdown-menu').style.display = 'none'; SFX.click(); $('clans-modal').style.display = 'flex'; loadClans(); };
-async function loadClans() {
-    const container = $('clan-content'); container.innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
-    try {
-        const d = await api('/get_clans'); container.innerHTML = '';
-        if (d.my_clan) {
-            container.innerHTML = `<div style="text-align: center; margin-bottom: 20px; background: rgba(0,255,136,0.1); border: 2px solid #00ff88; padding: 15px; border-radius: 15px;"><h3 style="color: #00ff88; margin: 0;">${d.my_clan.name}</h3><p style="color: #aaa; margin: 5px 0;">Участников: ${d.my_clan.members} | Очки: ${d.my_clan.score.toLocaleString()}</p>${d.my_clan.role === 'owner' ? '<div style="color: #ffd700; font-size: 12px; margin-bottom: 10px;">👑 Вы владелец</div>' : ''}<button class="main-btn" onclick="openClanChest()" style="background: linear-gradient(to bottom, #ffd700, #b8860b); color: #000; width: 100%; padding: 10px; margin-bottom: 5px; box-shadow: none;">🎁 Сундук Клана</button><button class="main-btn" onclick="leaveClan()" style="background: #cc0000; padding: 10px; width: 100%; box-shadow: none;">Покинуть клан</button></div><h3 style="color: #ffd700; font-size: 16px;">Топ кланов</h3>`;
-        } else {
-            container.innerHTML = `<div style="margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px;"><h3 style="color: #fff; margin-top: 0; font-size: 16px;">Создать клан</h3><p style="color: #aaa; font-size: 12px;">Стоимость: 1 000 000</p><input type="text" id="clan-name-input" placeholder="Название" style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: #fff; border: 1px solid #444; border-radius: 8px;"><button class="main-btn" onclick="createClan()" style="background: #00c853; width: 100%; box-shadow: none;">СОЗДАТЬ</button></div><h3 style="color: #ffd700; font-size: 16px;">Топ кланов</h3>`;
-        }
-        d.top_clans.forEach(clan => {
-            const div = document.createElement('div'); div.style.cssText = "display: flex; justify-content: space-between; align-items: center; background: #222; padding: 10px; border-radius: 10px; margin-bottom: 5px;";
-            div.innerHTML = `<div><strong style="color: #fff;">${clan.name}</strong><div style="color: #aaa; font-size: 11px;">Очки: ${clan.score.toLocaleString()}</div></div>${!d.my_clan ? `<button class="main-btn" onclick="joinClan(${clan.id})" style="padding: 5px 10px; font-size: 10px; background: #ffd700; color: #000; box-shadow: none;">ВСТУПИТЬ</button>` : ''}`;
-            container.appendChild(div);
-        });
-    } catch(e) { toast(e.message); }
-}
-async function createClan() { const name = $('clan-name-input').value.trim(); if (name.length < 3) { toast("Короткое"); return; } SFX.click(); try { const d = await api('/create_clan', { name: name }); SFX.bigWin(); toast(d.message); state.balance = d.balance; $('bal').textContent = state.balance; loadClans(); refresh(); } catch(e) { SFX.lose(); toast(e.message); } }
-async function joinClan(id) { SFX.click(); try { await api('/join_clan', { clan_id: id }); SFX.win(); toast("Вступили!"); loadClans(); } catch(e) { SFX.lose(); toast(e.message); } }
-async function leaveClan() { if (!confirm("Покинуть?")) return; SFX.click(); try { await api('/leave_clan'); SFX.win(); toast("Покинули"); loadClans(); } catch(e) { SFX.lose(); toast(e.message); } }
-function openClanChest() { $('clans-modal').style.display = 'none'; $('clan-chest-modal').style.display = 'flex'; loadClanChest(); }
-async function loadClanChest() {
-    try {
-        const d = await api('/get_clan_chest'); const percent = Math.min(100, (d.current / d.goal) * 100);
-        $('clan-chest-bar').style.width = `${percent}%`; $('clan-chest-text').textContent = `${d.current.toLocaleString()} / ${d.goal.toLocaleString()}`;
-        const donorsList = $('clan-chest-donors'); donorsList.innerHTML = '';
-        if (d.donors.length === 0) { donorsList.innerHTML = '<div style="color: #666;">Пока никого</div>'; } 
-        else { d.donors.forEach(donor => { const div = document.createElement('div'); div.style.cssText = "display: flex; justify-content: space-between; background: rgba(255,255,255,0.05); padding: 5px 10px; border-radius: 5px; font-size: 12px;"; div.innerHTML = `<span>${donor.avatar} ${donor.name}</span><span style="color: #ffd700;">${donor.amount.toLocaleString()}</span>`; donorsList.appendChild(div); }); }
-    } catch(e) { toast(e.message); }
-}
-async function donateClan() {
-    const amount = parseInt($('clan-donate-input').value); if (isNaN(amount) || amount < 1000) { toast("Мин. 1000"); return; }
-    SFX.click(); try { const d = await api('/donate_clan', { amount: amount }); if (d.message.includes("ЦЕЛЬ")) { SFX.bigWin(); triggerWinFlash(); } else { SFX.win(); } toast(d.message); state.balance = d.balance; $('bal').textContent = state.balance; $('clan-donate-input').value = ''; loadClanChest(); refresh(); } catch(e) { SFX.lose(); toast(e.message); }
-}
-
-// --- КЛАНОВЫЕ ВОЙНЫ ---
-$('menu-clan-war').onclick = async () => {
-    $('dropdown-menu').style.display = 'none'; SFX.click(); $('clan-war-modal').style.display = 'flex'; const container = $('clan-war-content'); container.innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
-    try {
-        const d = await api('/clan_war_state');
-        if (!d.active) { container.innerHTML = '<div style="color: #aaa; text-align: center;">Нет активных войн</div>'; return; }
-        const total = d.clan1_score + d.clan2_score || 1; const percent1 = (d.clan1_score / total) * 100;
-        const timeLeft = d.end_time - Math.floor(Date.now() / 1000); const days = Math.floor(timeLeft / 86400); const hours = Math.floor((timeLeft % 86400) / 3600);
-        container.innerHTML = `<div style="text-align: center; color: #aaa; margin-bottom: 10px;">До конца: ${days}д ${hours}ч</div><div style="display: flex; justify-content: space-between; color: #fff; font-weight: bold; margin-bottom: 5px;"><span>${d.clan1_name}</span><span>${d.clan2_name}</span></div><div style="background: #222; height: 30px; border-radius: 15px; overflow: hidden; display: flex;"><div style="background: #00c853; width: ${percent1}%; height: 100%; display: flex; align-items: center; padding-left: 10px; font-size: 12px; color: #fff; font-weight: bold;">${d.clan1_score.toLocaleString()}</div><div style="background: #ff3b30; flex: 1; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; font-size: 12px; color: #fff; font-weight: bold;">${d.clan2_score.toLocaleString()}</div></div><div style="text-align: center; margin-top: 20px; font-size: 12px; color: #ffd700;">🏆 Победитель получает Сундук</div>`;
-    } catch(e) { toast(e.message); }
-};
-
-// --- ТУРНИР ---
-$('menu-tournament').onclick = async () => {
-    $('dropdown-menu').style.display = 'none'; SFX.click(); $('tournament-modal').style.display = 'flex'; const container = $('tournament-list'); container.innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
-    try {
-        const d = await api('/tournament'); $('tourney-score').textContent = d.my_score.toLocaleString(); container.innerHTML = '';
-        if (d.top.length === 0) { container.innerHTML = '<div style="color: #666;">Пусто</div>'; return; }
-        d.top.forEach((player, index) => {
-            const div = document.createElement('div'); div.style.cssText = "display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 1px solid #333;";
-            if (index === 0) div.style.borderColor = '#ffd700'; else if (index === 1) div.style.borderColor = '#c0c0c0'; else if (index === 2) div.style.borderColor = '#cd7f32';
-            div.innerHTML = `<div style="display: flex; align-items: center; gap: 10px;"><strong style="font-size: 18px; width: 30px; text-align: center;">${player.avatar || '👤'}</strong><strong style="color: #fff; font-size: 14px;">${player.name}</strong></div><strong style="color: #00ff88; font-size: 14px;">${player.score.toLocaleString()}</strong>`;
-            container.appendChild(div);
-        });
-    } catch(e) { toast(e.message); }
-};
 
 // --- ЧАТ ---
 let chatIsClan = false; let chatLastId = 0; let chatInterval = null; let lastSystemMessageId = 0;
