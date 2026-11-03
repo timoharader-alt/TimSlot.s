@@ -700,6 +700,15 @@ let lastSpinTime = 0;
 let lastRouletteTime = 0;
 let lastLowBalanceShow = 0;
 
+// П.23: Adsgram один раз
+let AdController = null;
+function getAdsgram() {
+    if (!AdController && window.Adsgram) {
+        AdController = window.Adsgram.init({ blockId: "57029" });
+    }
+    return AdController;
+}
+
 async function api(path, body={}) {
   try {
     const r = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ init_data: init, ...body }) });
@@ -712,29 +721,6 @@ async function api(path, body={}) {
     if (!r.ok) throw new Error(j.detail || 'ошибка'); 
     return j;
   } catch (e) { throw e; }
-}
-
-async function exitToLobby() {
-    SFX.click();
-    spinning = false;
-    if (window.wheelTimerInterval) clearInterval(window.wheelTimerInterval);
-    if (freeSpins > 0) {
-        try {
-            await api('/reset_fs');
-            freeSpins = 0;
-            currentFishCaught = 0;
-            $('fisher-scale').style.display = 'none';
-        } catch(e) { console.error(e); }
-    }
-    document.getElementById('game-screen').style.display = 'none';
-    document.getElementById('lobby-screen').style.display = 'flex';
-    refresh();
-}
-
-function exitRouletteToLobby() {
-    $('roulette-screen').style.display = 'none';
-    $('lobby-screen').style.display = 'flex';
-    SFX.click();
 }
 
 let myId = 0;
@@ -817,24 +803,130 @@ const LINES = {
   fishing: [[1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2], [0,0,1,2,2], [2,2,1,0,0], [0,1,2,2,2], [2,1,0,0,0], [0,0,1,0,0]]
 };
 
+const SKINS_CATALOG = {
+    "default": { "name": "Стандарт", "price": 0, "syms": null },
+    "space": { "name": "Космос", "price": 10000000, "syms": ['🌍','🌕','🌟','☄️','🚀','👽','🛸','🌠'] },
+    "cyber": { "name": "Киберпанк", "price": 25000000, "syms": ['💻','🔋','🔌','📡','🤖','👾','⚡','🧬'] }
+};
+
+const FRAMES_CATALOG = {
+    "default": { "name": "Стандарт", "price": 0, "css": "border: 2px solid #555; border-radius: 50%;" },
+    "neon": { "name": "Неон", "price": 10000000, "css": "border: 3px solid #00ffff; border-radius: 50%; box-shadow: 0 0 15px #00ffff;" },
+    "gold": { "name": "Золото", "price": 50000000, "css": "border: 3px solid #ffd700; border-radius: 50%; box-shadow: 0 0 15px #ffd700;" },
+    "fire": { "name": "Огонь", "price": 150000000, "css": "border: 3px solid #ff3b30; border-radius: 50%; box-shadow: 0 0 15px #ff3b30;" }
+};
+
+const AVATARS = { "dog": { "emoji": "🐶", "price": 100000 }, "wolf": { "emoji": "🐺", "price": 500000 }, "lion": { "emoji": "🦁", "price": 1000000 }, "diamond": { "emoji": "💎", "price": 5000000 }, "crown": { "emoji": "👑", "price": 10000000 }, "rocket": { "emoji": "🚀", "price": 20000000 }, "alien": { "emoji": "👽", "price": 50000000 } };
+
 let currentGame = 'fruits';
 let columns = [];
 let freeSpins = 0;
 let currentBet = 10;
-let wheelTimerInterval = null;
 let spinning = false;
 let currentFishCaught = 0;
+let state = {};
 
-window.addEventListener('load', () => {
-    api('/state').then(s => {
-        if (s.free_spins > 0) {
-            api('/reset_fs').then(() => refresh());
+// ================== ЯДРО ==================
+async function refresh() {
+  try {
+    state = await api('/state'); 
+    state.balance = parseInt(state.balance) || 0; 
+    state.xp = parseInt(state.xp) || 0;
+    state.usd = parseInt(state.usd) || 0;
+    state.eur = parseInt(state.eur) || 0;
+    state.aed = parseInt(state.aed) || 0;
+    state.level = parseInt(state.level) || 1;
+    state.free_spins = parseInt(state.free_spins) || 0;
+    state.fish_caught = parseInt(state.fish_caught) || 0;
+    state.house_level = parseInt(state.house_level) || 0;
+    
+    $('bal').textContent = state.balance; 
+    $('r-bal').textContent = state.balance;
+    updateUIState(state.level, state.xp, state.next_level_xp);
+    
+    if (state.free_spins !== undefined) freeSpins = state.free_spins;
+    if (state.fish_caught !== undefined) currentFishCaught = state.fish_caught;
+    
+    // П.24: обращаемся к menu-daily, не menu-bonus
+    const dailyBtn = $('menu-daily');
+    if (dailyBtn) {
+        if (freeSpins === 0) {
+            if (state.wheel_daily >= 5) {
+                dailyBtn.textContent = `🎡 Колесо (0/5)`;
+                dailyBtn.disabled = true;
+            } else if (state.wheel_ready) {
+                dailyBtn.textContent = `🎡 Колесо (${5 - state.wheel_daily}/5)`;
+                dailyBtn.disabled = false;
+            } else {
+                let m = Math.floor(state.wheel_time_left / 60);
+                let s = state.wheel_time_left % 60;
+                dailyBtn.textContent = `🎡 Ждать ${m}:${s < 10 ? '0':''}${s}`;
+                dailyBtn.disabled = true;
+            }
         } else {
-            refresh();
+            dailyBtn.textContent = `🎡 Колесо (БОНУС)`;
+            dailyBtn.disabled = true;
         }
-    }).catch(() => refresh());
-});
+    }
+    
+    try {
+        const assetsData = await api('/get_assets');
+        state.assets_value = assetsData.total_value || 0;
+        const networth = state.balance + state.assets_value;
+        if ($('networth')) $('networth').textContent = networth.toLocaleString();
+    } catch(e) { console.log(e); }
 
+    if (state.balance < 5000) {
+        const now = Date.now();
+        if (now - lastLowBalanceShow > 300000 && $('welcome-screen').style.display === 'none' && $('low-balance-modal').style.display !== 'flex') {
+            if ($('ref-modal').style.display !== 'flex' && 
+                $('rating-modal').style.display !== 'flex' && 
+                $('wheel-modal').style.display !== 'flex' && 
+                $('daily-wheel-modal').style.display !== 'flex' && 
+                $('shop-modal').style.display !== 'flex') {
+                $('low-balance-modal').style.display = 'flex';
+                lastLowBalanceShow = now;
+            }
+        }
+    }
+    if (state.active_event !== undefined) updateEventBanner(state.active_event);
+  } catch(e) { console.error("refresh:", e); }
+}
+
+function updateUIState(level, xp, nextXp = null) {
+    $('lvl-text').textContent = level;
+    if (nextXp === null) nextXp = level * 15000;
+    let percent = (xp / nextXp) * 100;
+    if (percent > 100) percent = 100;
+    $('lvl-fill').style.width = `${percent}%`;
+}
+
+function showMsg(t, win) { const m = $('msg'); m.textContent = t; m.className = 'show ' + (win ? 'win':'lose'); setTimeout(()=> m.className='', 2000); }
+function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); setTimeout(()=> el.classList.remove('show'), 1500); }
+function triggerWinFlash() { const flash = $('win-flash'); flash.classList.add('active'); setTimeout(() => flash.classList.remove('active'), 150); }
+
+function updateEventBanner(eventData) {
+    const banner = $('event-banner');
+    if (!eventData) { banner.style.display = 'none'; return; }
+    banner.style.display = 'block';
+    // П.27: заменяем подчёркивания на пробелы
+    let text = `🔥 ${eventData.type.replace(/_/g, ' ').toUpperCase()} x${eventData.multiplier}`;
+    $('event-text').textContent = text;
+    let timeLeft = eventData.time_left;
+    if (window.eventInterval) clearInterval(window.eventInterval);
+    function tick() {
+        if (timeLeft <= 0) { banner.style.display = 'none'; clearInterval(window.eventInterval); return; }
+        let m = Math.floor(timeLeft / 60), s = timeLeft % 60;
+        $('event-timer').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+        timeLeft--;
+    }
+    tick(); window.eventInterval = setInterval(tick, 1000);
+}
+
+function closeLowBalanceModal() { $('low-balance-modal').style.display = 'none'; }
+function closeLowEnergyModal() { $('low-energy-modal').style.display = 'none'; }
+
+// ================== СТАРТ ==================
 $('start-btn').onclick = () => {
     audioCtx();
     playBackgroundMusic();
@@ -847,6 +939,17 @@ $('start-btn').onclick = () => {
     }, 500);
 };
 
+window.addEventListener('load', () => {
+    api('/state').then(s => {
+        if (s.free_spins > 0) {
+            api('/reset_fs').then(() => refresh());
+        } else {
+            refresh();
+        }
+    }).catch(() => refresh());
+});
+
+// ================== СЛОТЫ ==================
 function startGame(gameKey) {
   currentGame = gameKey;
   const conf = GAME_CONFIG[gameKey];
@@ -880,6 +983,23 @@ function startGame(gameKey) {
   refresh();
 }
 
+// П.18/19: не сбрасываем фриспины, чистим интервалы колонок
+async function exitToLobby() {
+    SFX.click();
+    spinning = false;
+    columns.forEach(c => { if (c.interval) clearInterval(c.interval); });
+    if (window.wheelTimerInterval) clearInterval(window.wheelTimerInterval);
+    document.getElementById('game-screen').style.display = 'none';
+    document.getElementById('lobby-screen').style.display = 'flex';
+    refresh();
+}
+
+function exitRouletteToLobby() {
+    $('roulette-screen').style.display = 'none';
+    $('lobby-screen').style.display = 'flex';
+    SFX.click();
+}
+
 function initFisherTrack() {
     const track = $('fisher-track');
     if (!track) return;
@@ -898,12 +1018,6 @@ function initFisherTrack() {
         track.appendChild(cell);
     }
 }
-
-const SKINS_CATALOG = {
-    "default": { "name": "Стандарт", "price": 0, "syms": null },
-    "space": { "name": "Космос", "price": 10000000, "syms": ['🌍','🌕','🌟','☄️','🚀','👽','🛸','🌠'] },
-    "cyber": { "name": "Киберпанк", "price": 25000000, "syms": ['💻','🔋','🔌','📡','🤖','👾','⚡','🧬'] }
-};
 
 function initSlotGrid() {
     const conf = GAME_CONFIG[currentGame];
@@ -932,7 +1046,7 @@ function initSlotGrid() {
         
         col.appendChild(strip);
         grid.appendChild(col);
-        columns.push({ el: col, strip: strip, offset: 0, speed: 0, syms: activeSyms });
+        columns.push({ el: col, strip: strip, offset: 0, speed: 0, syms: activeSyms, interval: null });
     }
 }
 
@@ -950,6 +1064,7 @@ function startSpin(finalGrid) {
     });
 
     columns.forEach((col, i) => {
+        if (col.interval) clearInterval(col.interval);
         col.interval = setInterval(() => {
             if (!spinning) return;
             const cells = col.strip.children;
@@ -973,69 +1088,6 @@ function startSpin(finalGrid) {
         }, 800 + i * 200);
     }
 }
-  let state = {};
-async function refresh() {
-  try {
-    state = await api('/state'); 
-    state.balance = parseInt(state.balance) || 0; 
-    state.xp = parseInt(state.xp) || 0;
-    state.usd = parseInt(state.usd) || 0;
-    state.eur = parseInt(state.eur) || 0;
-    state.aed = parseInt(state.aed) || 0;
-    
-    $('bal').textContent = state.balance; 
-    $('r-bal').textContent = state.balance;
-    updateUIState(state.level, state.xp, state.next_level_xp);
-    
-    if (state.free_spins !== undefined) freeSpins = state.free_spins;
-    if (state.fish_caught !== undefined) currentFishCaught = state.fish_caught;
-    
-    if (freeSpins === 0) {
-        if (state.wheel_daily >= 5) {
-            $('menu-bonus').textContent = `🎰 Рулетка (0/5)`;
-            $('menu-bonus').disabled = true;
-        } else if (state.wheel_ready) {
-            $('menu-bonus').textContent = `🎰 Рулетка (${5 - state.wheel_daily}/5)`;
-            $('menu-bonus').disabled = false;
-        } else {
-            let m = Math.floor(state.wheel_time_left / 60);
-            let s = state.wheel_time_left % 60;
-            $('menu-bonus').textContent = `🎰 Ждать ${m}:${s < 10 ? '0':''}${s}`;
-            $('menu-bonus').disabled = true;
-        }
-    }
-    $('ref-count').textContent = state.ref_count || 0;
-
-    try {
-        const assetsData = await api('/get_assets');
-        state.assets_value = assetsData.total_value || 0;
-        const networth = state.balance + state.assets_value;
-        if ($('networth')) $('networth').textContent = networth.toLocaleString();
-    } catch(e) { console.log(e); }
-
-    if (state.balance < 5000) {
-        const now = Date.now();
-        if (now - lastLowBalanceShow > 300000 && $('welcome-screen').style.display === 'none' && $('low-balance-modal').style.display !== 'flex') {
-            if ($('ref-modal').style.display !== 'flex' && $('rating-modal').style.display !== 'flex' && $('wheel-modal').style.display !== 'flex') {
-                $('low-balance-modal').style.display = 'flex';
-                lastLowBalanceShow = now;
-            }
-        }
-    }
-    if (state.active_event !== undefined) updateEventBanner(state.active_event);
-  } catch(e) { console.error(e); }
-}
-
-function updateUIState(level, xp, nextXp = null) {
-    $('lvl-text').textContent = level;
-    if (nextXp === null) nextXp = level * 15000;
-    let percent = (xp / nextXp) * 100;
-    if (percent > 100) percent = 100;
-    $('lvl-fill').style.width = `${percent}%`;
-}
-
-function showMsg(t, win) { const m = $('msg'); m.textContent = t; m.className = 'show ' + (win ? 'win':'lose'); setTimeout(()=> m.className='', 2000); }
-function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); setTimeout(()=> el.classList.remove('show'), 1500); }
 
 function resetBet() {
     SFX.click();
@@ -1147,7 +1199,7 @@ function handleSpinResult(d) {
             if (d.fish_data && d.fish_data.length > 0) {
                 const fish = d.fish_data.find(f => f.col === col && f.row === row);
                 if (fish && typeof fish.val === 'number' && fish.val > 0) {
-                    cell.textContent = `${fish.val}₽`; cell.style.fontSize = '14px'; cell.style.color = '#ffd700'; cell.style.fontWeight = '900'; cell.style.boxShadow = '0 0 10px #ffd700';
+                    cell.textContent = `${fish.val}`; cell.style.fontSize = '14px'; cell.style.color = '#ffd700'; cell.style.fontWeight = '900'; cell.style.boxShadow = '0 0 10px #ffd700';
                 }
             }
         }
@@ -1201,33 +1253,7 @@ function handleSpinResult(d) {
     refresh();
 }
 
-function triggerWinFlash() {
-    const flash = $('win-flash');
-    flash.classList.add('active');
-    setTimeout(() => flash.classList.remove('active'), 150);
-}
-
-function updateEventBanner(eventData) {
-    const banner = $('event-banner');
-    if (!eventData) { banner.style.display = 'none'; return; }
-    banner.style.display = 'block';
-    let text = `🔥 ${eventData.type.toUpperCase()} x${eventData.multiplier}`;
-    $('event-text').textContent = text;
-    let timeLeft = eventData.time_left;
-    if (window.eventInterval) clearInterval(window.eventInterval);
-    function tick() {
-        if (timeLeft <= 0) { banner.style.display = 'none'; clearInterval(window.eventInterval); return; }
-        let m = Math.floor(timeLeft / 60), s = timeLeft % 60;
-        $('event-timer').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
-        timeLeft--;
-    }
-    tick(); window.eventInterval = setInterval(tick, 1000);
-}
-
-function closeLowBalanceModal() { $('low-balance-modal').style.display = 'none'; }
-function closeLowEnergyModal() { $('low-energy-modal').style.display = 'none'; }
-</script>
-// --- РУЛЕТКА ---
+// ================== РУЛЕТКА ==================
 let currentRouletteBets = [], currentRouletteAmount = 10;
 
 function startRoulette() {
@@ -1324,22 +1350,57 @@ $('r-spin-btn').onclick = async () => {
     } catch(e) { toast(e.message); btn.disabled = false; refresh(); }
 };
 
-// --- МЕНЮ ---
+// ================== МЕНЮ ==================
 $('menu-toggle').onclick = () => { const m = $('dropdown-menu'); m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; };
 $('menu-music').onclick = () => { if (isMusicPlaying) { stopBackgroundMusic(); $('menu-music').textContent = '🎵 Музыка: ВЫКЛ'; } else { isMusicPlaying = true; playBackgroundMusic(); $('menu-music').textContent = '🎵 Музыка: ВКЛ'; } };
 $('menu-back').onclick = () => { location.reload(); };
-$('menu-promo').onclick = () => { $('dropdown-menu').style.display = 'none'; $('promo-modal').style.display = 'flex'; $('promo-input').value = ''; };
+
+// ================== РЕФЕРАЛКА ==================
 $('menu-ref').onclick = async () => {
-    $('dropdown-menu').style.display = 'none'; $('ref-modal').style.display = 'flex';
+    $('dropdown-menu').style.display = 'none'; SFX.click(); $('ref-modal').style.display = 'flex';
     $('ref-link').textContent = `https://t.me/Tim_slot_bot/slot?startapp=ref_${myId}`;
+    $('ref-friends-list').innerHTML = '<div style="color: #aaa;">Загрузка...</div>';
+    $('ref-stat-count').textContent = '0';
+    $('ref-stat-earn').textContent = '0';
     try {
         const d = await api('/ref_stats');
-        $('ref-stat-count').textContent = d.ref_count; $('ref-stat-earn').textContent = d.ref_earnings.toLocaleString();
-        const list = $('ref-friends-list'); list.innerHTML = '';
-        d.friends.forEach(f => { const div = document.createElement('div'); div.style.cssText = "background: #222; padding: 5px; border-radius: 5px; display: flex; align-items: center; gap: 5px; font-size: 10px;"; div.innerHTML = `<span>${f.avatar}</span> <span style="color: #aaa;">${f.id}</span>`; list.appendChild(div); });
+        $('ref-stat-count').textContent = d.ref_count || 0;
+        $('ref-stat-earn').textContent = (d.ref_earnings || 0).toLocaleString();
+        const list = $('ref-friends-list');
+        list.innerHTML = '';
+        if (!d.friends || d.friends.length === 0) {
+            list.innerHTML = '<div style="color: #666; font-size: 12px; width: 100%; text-align: center;">Пока никого нет. Приглашай!</div>';
+        } else {
+            d.friends.forEach(f => {
+                const div = document.createElement('div');
+                div.style.cssText = "background: #222; padding: 5px; border-radius: 5px; display: flex; align-items: center; gap: 5px; font-size: 10px;";
+                div.innerHTML = `<span style="font-size: 16px;">${f.avatar || '👤'}</span> <span style="color: #aaa;">${f.id}</span>`;
+                list.appendChild(div);
+            });
+        }
     } catch(e) { toast(e.message); }
 };
-$('copy-ref-btn').onclick = () => { const link = $('ref-link').textContent; navigator.clipboard.writeText(link).then(() => { $('copy-ref-btn').textContent = 'СКОПИРОВАНО!'; setTimeout(() => $('copy-ref-btn').textContent = 'КОПИРОВАТЬ', 2000); }); };
+
+$('copy-ref-btn').onclick = () => { 
+    const link = $('ref-link').textContent; 
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).then(() => { 
+            $('copy-ref-btn').textContent = 'СКОПИРОВАНО!'; 
+            setTimeout(() => $('copy-ref-btn').textContent = 'КОПИРОВАТЬ', 2000); 
+        }).catch(() => {
+            const textArea = document.createElement("textarea");
+            textArea.value = link;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textArea);
+            $('copy-ref-btn').textContent = 'СКОПИРОВАНО!'; 
+            setTimeout(() => $('copy-ref-btn').textContent = 'КОПИРОВАТЬ', 2000); 
+        });
+    }
+};
+
+// ================== РЕЙТИНГ ==================
 $('menu-rating').onclick = async () => { 
     $('dropdown-menu').style.display = 'none'; $('rating-modal').style.display = 'flex';
     $('rating-list').innerHTML = 'Загрузка...';
@@ -1350,33 +1411,43 @@ $('menu-rating').onclick = async () => {
             const div = document.createElement('div');
             div.style.cssText = "display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 1px solid #333;";
             if (index === 0) div.style.borderColor = '#ffd700'; else if (index === 1) div.style.borderColor = '#c0c0c0'; else if (index === 2) div.style.borderColor = '#cd7f32';
-            const rankEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index+1}.`;
             div.innerHTML = `<div style="display: flex; align-items: center; gap: 10px;"><strong style="font-size: 24px; width: 30px; text-align: center;">${player.avatar || '👤'}</strong><div><strong style="color: #fff; font-size: 14px;">${player.name}</strong></div></div><div style="text-align: right;"><strong style="color: #00ff88; font-size: 14px;">${player.capital.toLocaleString()}</strong><span style="color: #666; font-size: 10px; display: block;">капитал</span></div>`;
             $('rating-list').appendChild(div);
         });
     } catch(e) { toast(e.message); }
 };
 
-// --- ADSGRAM ---
+// ================== РЕКЛАМА ==================
 $('low-bal-ad-btn').onclick = async () => {
     closeLowBalanceModal();
-    const AdController = window.Adsgram.init({ blockId: "57029" });
+    const ad = getAdsgram();
+    if (!ad) { toast("Реклама недоступна"); return; }
     try {
-        await AdController.show();
-        const d = await api('/ad'); SFX.win(); toast(`+${d.amount}`); refresh();
+        await ad.show();
+        const d = await api('/ad_energy'); SFX.win(); toast(`+${d.boost} энергии`); refresh();
     } catch (error) { showMsg('Досмотрите рекламу до конца!', false); }
 };
-// --- МАГАЗИН ---
-$('menu-shop').onclick = async () => { $('dropdown-menu').style.display = 'none'; $('shop-modal').style.display = 'flex'; switchShopTab('shop'); };
+
+// ================== МАГАЗИН ==================
+$('menu-shop').onclick = async () => { 
+    $('dropdown-menu').style.display = 'none'; SFX.click(); $('shop-modal').style.display = 'flex'; switchShopTab('shop'); 
+};
+
 function switchShopTab(tab) {
     SFX.click(); $('shop-items').style.display = 'none'; $('exchange-panel').style.display = 'none'; $('cases-panel').style.display = 'none';
     ['tab-shop', 'tab-exchange', 'tab-cases'].forEach(id => { $(id).style.background = '#333'; $(id).style.color = '#fff'; });
     if (tab === 'shop') {
         $('shop-items').style.display = 'flex'; $('tab-shop').style.background = '#ffd700'; $('tab-shop').style.color = '#000';
         api('/get_assets').then(data => { $('shop-bal').textContent = state.balance; $('shop-assets').textContent = data.total_value; renderShop(data.assets); });
-    } else if (tab === 'exchange') { $('exchange-panel').style.display = 'flex'; $('tab-exchange').style.background = '#ffd700'; $('tab-exchange').style.color = '#000'; $('wallet-usd').textContent = state.usd || 0; $('wallet-eur').textContent = state.eur || 0; $('wallet-aed').textContent = state.aed || 0; }
-    else if (tab === 'cases') { $('cases-panel').style.display = 'flex'; $('tab-cases').style.background = '#ffd700'; $('tab-cases').style.color = '#000'; }
+    } else if (tab === 'exchange') { 
+        $('exchange-panel').style.display = 'flex'; $('tab-exchange').style.background = '#ffd700'; $('tab-exchange').style.color = '#000'; 
+        $('wallet-usd').textContent = state.usd || 0; $('wallet-eur').textContent = state.eur || 0; $('wallet-aed').textContent = state.aed || 0; 
+    }
+    else if (tab === 'cases') { 
+        $('cases-panel').style.display = 'flex'; $('tab-cases').style.background = '#ffd700'; $('tab-cases').style.color = '#000'; 
+    }
 }
+
 function renderShop(playerAssets) {
     const container = $('shop-items'); container.innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
     api('/get_shop_rotation').then(marketData => {
@@ -1388,7 +1459,11 @@ function renderShop(playerAssets) {
         });
     });
 }
-async function buyItem(id) { SFX.click(); try { const d = await api('/buy_asset', { item_id: id }); SFX.win(); toast(d.message); state.balance = d.balance; switchShopTab('shop'); refresh(); } catch(e) { SFX.lose(); toast(e.message); } }
+
+async function buyItem(id) { 
+    SFX.click(); 
+    try { const d = await api('/buy_asset', { item_id: id }); SFX.win(); toast(d.message); state.balance = d.balance; switchShopTab('shop'); refresh(); } catch(e) { SFX.lose(); toast(e.message); } 
+}
 
 async function exchangeCurrency(action) {
     SFX.click();
@@ -1405,10 +1480,11 @@ async function exchangeCurrency(action) {
     } catch(e) { SFX.lose(); toast(e.message); }
 }
 
-// --- КЕЙСЫ ---
+// ================== КЕЙСЫ ==================
 async function claimCasePrize(type, val) {
     try { const d = await api('/claim_case_prize', { prize_type: type, prize_value: val }); state.balance = d.balance; refresh(); } catch(e) {}
 }
+
 async function openCase() {
     SFX.click();
     const btn = $('case-open-btn'); btn.disabled = true;
@@ -1425,16 +1501,28 @@ async function openCase() {
             setTimeout(async () => {
                 await claimCasePrize(d.prize_type, d.prize_value);
                 if (d.prize_type === 'empty') SFX.lose(); else SFX.win();
-                toast(d.prize_text); $('case-reel-container').style.display = 'none'; btn.disabled = false;
+                // П.22: защита от пустого текста
+                toast(d.prize_text || 'Пусто'); $('case-reel-container').style.display = 'none'; btn.disabled = false;
             }, 3000);
         }, 50);
     } catch(e) { SFX.lose(); toast(e.message); btn.disabled = false; }
 }
 
-// --- КОЛЕСО УДАЧИ ---
+// ================== КОЛЕСО УДАЧИ (wheel-modal) ==================
+// П.21: сектора приведены к реальным выплатам /bonus
 const wheelCanvas = $('wheel-canvas'); const ctx = wheelCanvas.getContext('2d');
-const slices = [{ label: '1000', color: '#ff0000' }, { label: '0', color: '#333333' }, { label: '500', color: '#ffd700' }, { label: '20', color: '#111111' }, { label: '250', color: '#8a2be2' }, { label: '50', color: '#111111' }, { label: '100', color: '#00c853' }, { label: '0', color: '#333333' }];
-const sliceAngle = Math.PI * 2 / slices.length; let currentRotation = 0, isSpinningWheel = false; const offsetAngle = -Math.PI / 2 - sliceAngle / 2; let wheelStartTime = 0;
+const slices = [
+  { label: '1000', color: '#00c853' },
+  { label: '0', color: '#333333' },
+  { label: '5000', color: '#ffd700' },
+  { label: '0', color: '#333333' },
+  { label: '25000', color: '#8a2be2' },
+  { label: '0', color: '#333333' },
+  { label: '100000', color: '#ff0000' },
+  { label: '0', color: '#333333' }
+];
+const sliceAngle = Math.PI * 2 / slices.length; let currentRotation = 0, isSpinningWheel = false; const offsetAngle = -Math.PI / 2 - sliceAngle / 2;
+
 function drawWheel() {
     ctx.clearRect(0, 0, 300, 300);
     for (let i = 0; i < slices.length; i++) {
@@ -1444,53 +1532,31 @@ function drawWheel() {
     }
     ctx.beginPath(); ctx.fillStyle = '#d4af37'; ctx.arc(150, 150, 30, 0, Math.PI*2); ctx.fill();
 }
-$('menu-bonus').onclick = async () => {
-  $('dropdown-menu').style.display = 'none'; if (isSpinningWheel || freeSpins > 0) return;
-  $('wheel-modal').style.display = 'flex'; $('wheel-result').style.opacity = '0'; $('wheel-close').style.display = 'none'; $('wheel-spin-btn').style.display = 'block';
-  if (state.wheel_ready) { $('wheel-spin-btn').disabled = false; $('wheel-timer').textContent = `Доступно: ${5 - state.wheel_daily}/5`; }
-  else { $('wheel-spin-btn').disabled = true; let m = Math.floor(state.wheel_time_left / 60); let s = state.wheel_time_left % 60; $('wheel-timer').textContent = `Ждать: ${m}:${s < 10 ? '0':''}${s}`; }
-  drawWheel();
-};
-$('wheel-spin-btn').onclick = async () => {
-  if (isSpinningWheel) return; isSpinningWheel = true; $('wheel-spin-btn').style.display = 'none';
-  try {
-    const d = await api('/bonus'); let targetIdx = slices.findIndex(s => s.label == d.amount.toString()); if (targetIdx === -1) targetIdx = 1;
-    let spins = 5 * Math.PI * 2, stopAngle = spins + (Math.PI*2 - targetIdx * sliceAngle), startTime = performance.now(), duration = 4000;
-    function animateWheel(time) {
-        let progress = (time - startTime) / duration; if (progress > 1) progress = 1;
-        let ease = 1 - Math.pow(1 - progress, 3); currentRotation = stopAngle * ease; drawWheel();
-        if (progress < 1) { requestAnimationFrame(animateWheel); if (Math.random() < 0.1) SFX.reelTick(); }
-        else { $('wheel-result').textContent = `+${d.amount}`; $('wheel-result').style.opacity = '1'; $('wheel-close').style.display = 'block'; if(d.amount > 0) SFX.bigWin(); else SFX.lose(); isSpinningWheel = false; refresh(); }
+
+$('menu-bonus-daily') // (заглушка, если элемент отсутствует)
+
+// (кнопки menu-bonus нет — используем menu-daily для обоих колёс)
+$('menu-daily').addEventListener('click', () => {
+    // Открываем daily-wheel-modal (главное колесо)
+    $('dropdown-menu').style.display = 'none'; SFX.click();
+    $('daily-wheel-modal').style.display = 'flex';
+    $('daily-wheel-result').style.opacity = '0';
+    $('daily-wheel-close').style.display = 'none';
+    $('daily-wheel-spin-btn').style.display = 'block';
+    if (state.wheel_ready) {
+        $('daily-wheel-spin-btn').disabled = false;
+        $('daily-wheel-timer').textContent = "Колесо доступно!";
+    } else {
+        $('daily-wheel-spin-btn').disabled = true;
+        let m = Math.floor(state.wheel_time_left / 60);
+        let h = Math.floor(m / 60);
+        m = m % 60;
+        $('daily-wheel-timer').textContent = `Ждать: ${h}ч ${m}м`;
     }
-    requestAnimationFrame(animateWheel);
-  } catch(e) { showMsg(e.message, false); $('wheel-modal').style.display = 'none'; isSpinningWheel = false; }
-};
-$('wheel-close').onclick = () => { $('wheel-modal').style.display = 'none'; };
+    drawDailyWheel();
+});
 
-// --- ШАХТА ---
-let mineEnergy = 0, minePower = 0, mineMaxEnergy = 1000, minePickLvl = 1;
-
-async function openMine() { $('lobby-screen').style.display = 'none'; $('mine-modal').style.display = 'flex'; SFX.click(); await loadMineData(); }
-function closeMine() { $('mine-modal').style.display = 'none'; $('lobby-screen').style.display = 'flex'; refresh(); }
-async function loadMineData() { try { const d = await api('/get_mine'); mineEnergy = d.energy; minePower = d.tap_power; mineMaxEnergy = d.max_energy; minePickLvl = d.pickaxe_lvl; updateMineUI(); } catch(e) { toast(e.message); } }
-function updateMineUI() { $('mine-energy').textContent = `${mineEnergy}/${mineMaxEnergy}`; $('mine-power').textContent = `${minePower} 🪙`; const c = minePickLvl * 50000; $('mine-upgrade-btn').textContent = `УЛУЧШИТЬ (${c.toLocaleString()})`; }
-
-async function tapMine() {
-    if (mineEnergy <= 0) { toast("Энергия!"); return; }
-    const tapArea = $('mine-tap-area'); tapArea.style.transform = 'scale(0.9)'; setTimeout(() => tapArea.style.transform = 'scale(1)', 100);
-    const tapsToSend = Math.min(10, mineEnergy); mineEnergy -= tapsToSend; updateMineUI(); SFX.click();
-    try { const d = await api('/tap', { taps: tapsToSend }); mineEnergy = d.energy; state.balance = d.balance; updateMineUI(); if (mineEnergy < 100) $('low-energy-modal').style.display = 'flex'; } catch(e) { toast(e.message); }
-}
-
-async function upgradePickaxe() { SFX.click(); try { const d = await api('/upgrade_pickaxe'); minePickLvl = d.pickaxe_lvl; state.balance = d.balance; minePower = minePickLvl * 10; SFX.bigWin(); toast(d.message); updateMineUI(); refresh(); } catch(e) { SFX.lose(); toast(e.message); } }
-
-async function watchAdForEnergy() {
-    closeLowEnergyModal();
-    const AdController = window.Adsgram.init({ blockId: "57029" });
-    try { await AdController.show(); const d = await api('/ad_energy'); SFX.bigWin(); toast(`+${d.boost} ЭНЕРГИИ!`); mineEnergy = d.energy; updateMineUI(); refresh(); } catch (error) { showMsg('Досмотрите!', false); }
-}
-
-// --- ЕЖЕДНЕВНОЕ КОЛЕСО (ФОРТУНЫ) ---
+// ================== ЕЖЕДНЕВНОЕ КОЛЕСО (daily-wheel-modal) ==================
 const dailyWheelCanvas = $('daily-wheel-canvas'); const dailyCtx = dailyWheelCanvas.getContext('2d');
 const dailySlices = [
     { label: '1000', color: '#333333' }, { label: '5000', color: '#111111' },
@@ -1525,26 +1591,6 @@ function drawDailyWheel() {
     }
     dailyCtx.beginPath(); dailyCtx.fillStyle = '#d4af37'; dailyCtx.arc(150, 150, 30, 0, Math.PI*2); dailyCtx.fill();
 }
-
-$('menu-daily').onclick = () => {
-    $('dropdown-menu').style.display = 'none'; SFX.click();
-    $('daily-wheel-modal').style.display = 'flex';
-    $('daily-wheel-result').style.opacity = '0';
-    $('daily-wheel-close').style.display = 'none';
-    $('daily-wheel-spin-btn').style.display = 'block';
-    
-    if (state.wheel_ready) {
-        $('daily-wheel-spin-btn').disabled = false;
-        $('daily-wheel-timer').textContent = "Колесо доступно!";
-    } else {
-        $('daily-wheel-spin-btn').disabled = true;
-        let m = Math.floor(state.wheel_time_left / 60);
-        let h = Math.floor(m / 60);
-        m = m % 60;
-        $('daily-wheel-timer').textContent = `Ждать: ${h}ч ${m}м`;
-    }
-    drawDailyWheel();
-};
 
 $('daily-wheel-spin-btn').onclick = async () => {
     if (isSpinningDaily) return;
@@ -1589,8 +1635,34 @@ $('daily-wheel-spin-btn').onclick = async () => {
     }
 };
 $('daily-wheel-close').onclick = () => { $('daily-wheel-modal').style.display = 'none'; };
-// --- ПРОФИЛЬ ---
-const AVATARS = { "dog": { "emoji": "🐶", "price": 100000 }, "wolf": { "emoji": "🐺", "price": 500000 }, "lion": { "emoji": "🦁", "price": 1000000 }, "diamond": { "emoji": "💎", "price": 5000000 }, "crown": { "emoji": "👑", "price": 10000000 }, "rocket": { "emoji": "🚀", "price": 20000000 }, "alien": { "emoji": "👽", "price": 50000000 } };
+
+// ================== ШАХТА ==================
+let mineEnergy = 0, minePower = 0, mineMaxEnergy = 1000, minePickLvl = 1;
+
+async function openMine() { 
+    $('lobby-screen').style.display = 'none'; $('mine-modal').style.display = 'flex'; SFX.click(); await loadMineData(); 
+}
+function closeMine() { $('mine-modal').style.display = 'none'; $('lobby-screen').style.display = 'flex'; refresh(); }
+async function loadMineData() { try { const d = await api('/get_mine'); mineEnergy = d.energy; minePower = d.tap_power; mineMaxEnergy = d.max_energy; minePickLvl = d.pickaxe_lvl; updateMineUI(); } catch(e) { toast(e.message); } }
+function updateMineUI() { $('mine-energy').textContent = `${mineEnergy}/${mineMaxEnergy}`; $('mine-power').textContent = `${minePower} 🪙`; const c = minePickLvl * 50000; $('mine-upgrade-btn').textContent = `УЛУЧШИТЬ (${c.toLocaleString()})`; }
+
+async function tapMine() {
+    if (mineEnergy <= 0) { toast("Энергия!"); return; }
+    const tapArea = $('mine-tap-area'); tapArea.style.transform = 'scale(0.9)'; setTimeout(() => tapArea.style.transform = 'scale(1)', 100);
+    const tapsToSend = Math.min(10, mineEnergy); mineEnergy -= tapsToSend; updateMineUI(); SFX.click();
+    try { const d = await api('/tap', { taps: tapsToSend }); mineEnergy = d.energy; state.balance = d.balance; updateMineUI(); if (mineEnergy < 100) $('low-energy-modal').style.display = 'flex'; } catch(e) { toast(e.message); }
+}
+
+async function upgradePickaxe() { SFX.click(); try { const d = await api('/upgrade_pickaxe'); minePickLvl = d.pickaxe_lvl; state.balance = d.balance; minePower = minePickLvl * 10; SFX.bigWin(); toast(d.message); updateMineUI(); refresh(); } catch(e) { SFX.lose(); toast(e.message); } }
+
+async function watchAdForEnergy() {
+    closeLowEnergyModal();
+    const ad = getAdsgram();
+    if (!ad) { toast("Реклама недоступна"); return; }
+    try { await ad.show(); const d = await api('/ad_energy'); SFX.bigWin(); toast(`+${d.boost} ЭНЕРГИИ!`); mineEnergy = d.energy; updateMineUI(); refresh(); } catch (error) { showMsg('Досмотрите!', false); }
+}
+
+// ================== ПРОФИЛЬ ==================
 $('menu-profile').onclick = () => {
     $('dropdown-menu').style.display = 'none'; SFX.click(); $('profile-modal').style.display = 'flex';
     $('my-profile-id').textContent = myId || 'Гость'; $('my-avatar').textContent = state.avatar || '👤';
@@ -1608,24 +1680,26 @@ $('menu-profile').onclick = () => {
         list.appendChild(btn);
     });
 };
+
 async function buyAvatar(id) {
     SFX.click();
     try { const d = await api('/buy_avatar', { avatar_id: id }); SFX.win(); toast(`Аватар ${d.avatar} куплен!`); state.balance = d.balance; state.avatar = d.avatar; $('bal').textContent = state.balance; $('menu-profile').click(); refresh(); } catch(e) { SFX.lose(); toast(e.message); }
 }
 
-// --- VIP ---
+// ================== VIP ==================
 $('menu-vip').onclick = () => {
     $('dropdown-menu').style.display = 'none'; SFX.click(); $('vip-modal').style.display = 'flex';
     $('vip-usd-balance').textContent = state.usd || 0;
     const isVip = state.vip_expires > Math.floor(Date.now() / 1000);
     $('vip-buy-btn').textContent = isVip ? "ПРОДЛИТЬ VIP (100 USD)" : "КУПИТЬ VIP (100 USD)";
 };
+
 async function buyVip() {
     SFX.click();
     try { const d = await api('/buy_vip'); SFX.bigWin(); toast(d.message); state.usd = d.usd; state.vip_expires = d.vip_expires; $('vip-modal').style.display = 'none'; refresh(); } catch(e) { SFX.lose(); toast(e.message); }
 }
 
-// --- ДОМ ---
+// ================== ДОМ ==================
 $('menu-house').onclick = async () => {
     $('dropdown-menu').style.display = 'none'; SFX.click(); $('house-modal').style.display = 'flex';
     $('house-list').innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
@@ -1644,20 +1718,16 @@ $('menu-house').onclick = async () => {
         });
     } catch(e) { toast(e.message); }
 };
+
 async function buyHouseUpgrade() {
     if (!confirm("Ты уверен, что хочешь потратить фишки на улучшение?")) return;
     SFX.click();
     try { const d = await api('/buy_house_upgrade'); SFX.bigWin(); triggerWinFlash(); toast(d.message); state.balance = d.balance; $('bal').textContent = state.balance; $('menu-house').click(); refresh(); } catch(e) { SFX.lose(); toast(e.message); }
 }
 
-// --- РАМКИ ---
-const FRAMES_CATALOG = {
-    "default": { "name": "Стандарт", "price": 0, "css": "border: 2px solid #555; border-radius: 50%;" },
-    "neon": { "name": "Неон", "price": 10000000, "css": "border: 3px solid #00ffff; border-radius: 50%; box-shadow: 0 0 15px #00ffff;" },
-    "gold": { "name": "Золото", "price": 50000000, "css": "border: 3px solid #ffd700; border-radius: 50%; box-shadow: 0 0 15px #ffd700;" },
-    "fire": { "name": "Огонь", "price": 150000000, "css": "border: 3px solid #ff3b30; border-radius: 50%; box-shadow: 0 0 15px #ff3b30;" }
-};
+// ================== РАМКИ ==================
 $('menu-frames').onclick = () => { $('dropdown-menu').style.display = 'none'; SFX.click(); $('frames-modal').style.display = 'flex'; renderFrames(); };
+
 function renderFrames() {
     const list = $('frames-list'); list.innerHTML = '';
     Object.entries(FRAMES_CATALOG).forEach(([id, item]) => {
@@ -1668,10 +1738,12 @@ function renderFrames() {
         list.appendChild(div);
     });
 }
+
 async function buyFrame(id) { SFX.click(); try { const d = await api('/buy_frame', { avatar_id: id }); SFX.win(); toast(d.message); state.balance = d.balance; state.active_frame = d.active_frame; renderFrames(); refresh(); } catch(e) { SFX.lose(); toast(e.message); } }
 
-// --- СКИНЫ ---
+// ================== СКИНЫ ==================
 $('menu-skins').onclick = () => { $('dropdown-menu').style.display = 'none'; SFX.click(); $('skins-modal').style.display = 'flex'; renderSkins(); };
+
 function renderSkins() {
     const list = $('skins-list'); list.innerHTML = '';
     Object.entries(SKINS_CATALOG).forEach(([id, item]) => {
@@ -1682,10 +1754,12 @@ function renderSkins() {
         list.appendChild(div);
     });
 }
+
 async function buySkin(id) { SFX.click(); try { const d = await api('/buy_skin', { avatar_id: id }); SFX.win(); toast(d.message); state.balance = d.balance; state.active_skin = d.active_skin; renderSkins(); initSlotGrid(); refresh(); } catch(e) { SFX.lose(); toast(e.message); } }
 
-// --- ТЕХНОЛОГИИ ---
+// ================== ТЕХНОЛОГИИ ==================
 $('menu-tech').onclick = () => { $('dropdown-menu').style.display = 'none'; SFX.click(); $('tech-modal').style.display = 'flex'; loadTechTree(); };
+
 async function loadTechTree() {
     const container = $('tech-list'); container.innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
     try {
@@ -1701,10 +1775,12 @@ async function loadTechTree() {
         });
     } catch(e) { toast(e.message); }
 }
+
 async function buyTech(nodeId) { SFX.click(); try { const d = await api('/buy_tech', { node_id: nodeId }); SFX.bigWin(); triggerWinFlash(); toast(d.message); state.balance = d.balance; $('bal').textContent = state.balance; loadTechTree(); refresh(); } catch(e) { SFX.lose(); toast(e.message); } }
 
-// --- ДОНАТ ---
+// ================== ДОНАТ ==================
 $('menu-donate').onclick = () => { $('dropdown-menu').style.display = 'none'; SFX.click(); $('donate-modal').style.display = 'flex'; loadDonate(); };
+
 async function loadDonate() {
     const list = $('donate-list'); list.innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
     try {
@@ -1717,20 +1793,21 @@ async function loadDonate() {
         });
     } catch(e) { toast(e.message); }
 }
+
 async function buyDonate(itemId) {
     SFX.click();
     try {
         const d = await api('/create_invoice', { item_id: itemId });
         if (confirm(`Оплатить "${d.title}" за ${d.price} Stars?`)) {
-            const check = await api('/check_payment', { item_id: itemId });
-            SFX.bigWin(); triggerWinFlash(); toast(check.message);
-            $('donate-modal').style.display = 'none'; refresh();
+            // П.1: /check_payment заблокирован на бэке — показываем заглушку
+            toast("Оплата временно недоступна (требуется верификация Stars)");
         }
     } catch(e) { SFX.lose(); toast(e.message); }
 }
 
-// --- ИМПЕРИЯ (СЮЖЕТ) ---
+// ================== ИМПЕРИЯ ==================
 $('menu-story').onclick = () => { $('dropdown-menu').style.display = 'none'; SFX.click(); $('story-modal').style.display = 'flex'; loadStory(); };
+
 async function loadStory() {
     const container = $('story-list'); container.innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
     try {
@@ -1747,13 +1824,15 @@ async function loadStory() {
         });
     } catch(e) { toast(e.message); }
 }
+
 async function claimStory(chapterId) {
     SFX.click();
     try { const d = await api('/claim_story', { chapter_id: chapterId }); SFX.bigWin(); triggerWinFlash(); toast(d.message); state.balance = d.balance; $('bal').textContent = state.balance; loadStory(); refresh(); } catch(e) { SFX.lose(); toast(e.message); }
 }
 
-// --- ПРОГНОЗЫ ---
+// ================== ПРОГНОЗЫ ==================
 $('menu-predictions').onclick = () => { $('dropdown-menu').style.display = 'none'; SFX.click(); $('predictions-modal').style.display = 'flex'; loadPredictions(); };
+
 async function loadPredictions() {
     const container = $('predictions-list'); container.innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
     try {
@@ -1772,6 +1851,7 @@ async function loadPredictions() {
         });
     } catch(e) { toast(e.message); }
 }
+
 async function betPrediction(id, choice) {
     const amountStr = prompt("Введи сумму ставки:", "10000");
     if (!amountStr) return;
@@ -1780,7 +1860,8 @@ async function betPrediction(id, choice) {
     SFX.click();
     try { const d = await api('/bet_prediction', { prediction_id: id, choice: choice, amount: amount }); SFX.win(); toast(d.message); state.balance = d.balance; $('bal').textContent = state.balance; loadPredictions(); refresh(); } catch(e) { SFX.lose(); toast(e.message); }
 }
-// --- КВЕСТЫ ---
+
+// ================== КВЕСТЫ ==================
 $('menu-quests').onclick = async () => {
     $('dropdown-menu').style.display = 'none'; SFX.click();
     $('quests-modal').style.display = 'flex';
@@ -1799,13 +1880,15 @@ $('menu-quests').onclick = async () => {
         });
     } catch(e) { toast(e.message); }
 };
+
 async function claimQuest(id) {
     SFX.click();
     try { const d = await api('/claim_quest', { quest_id: id }); SFX.bigWin(); toast(`Награда получена!`); state.balance = d.balance; $('bal').textContent = state.balance; $('menu-quests').click(); refresh(); } catch(e) { SFX.lose(); toast(e.message); }
 }
 
-// --- КЛАНЫ ---
+// ================== КЛАНЫ ==================
 $('menu-clans').onclick = async () => { $('dropdown-menu').style.display = 'none'; SFX.click(); $('clans-modal').style.display = 'flex'; loadClans(); };
+
 async function loadClans() {
     const container = $('clan-content'); container.innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
     try {
@@ -1823,17 +1906,20 @@ async function loadClans() {
         });
     } catch(e) { toast(e.message); }
 }
+
 async function createClan() {
     const name = $('clan-name-input').value.trim();
     if (name.length < 3) { toast("Название слишком короткое"); return; }
     SFX.click();
     try { const d = await api('/create_clan', { name: name }); SFX.bigWin(); toast(d.message); state.balance = d.balance; $('bal').textContent = state.balance; loadClans(); refresh(); } catch(e) { SFX.lose(); toast(e.message); }
 }
+
 async function joinClan(id) { SFX.click(); try { await api('/join_clan', { clan_id: id }); SFX.win(); toast("Вы вступили в клан!"); loadClans(); } catch(e) { SFX.lose(); toast(e.message); } }
 async function leaveClan() { if (!confirm("Вы уверены, что хотите покинуть клан?")) return; SFX.click(); try { await api('/leave_clan'); SFX.win(); toast("Вы покинули клан"); loadClans(); } catch(e) { SFX.lose(); toast(e.message); } }
 
-// --- СУНДУК КЛАНА ---
+// ================== СУНДУК КЛАНА ==================
 function openClanChest() { $('clans-modal').style.display = 'none'; $('clan-chest-modal').style.display = 'flex'; loadClanChest(); }
+
 async function loadClanChest() {
     try {
         const d = await api('/get_clan_chest');
@@ -1845,6 +1931,7 @@ async function loadClanChest() {
         else { d.donors.forEach(donor => { const div = document.createElement('div'); div.style.cssText = "display: flex; justify-content: space-between; background: rgba(255,255,255,0.05); padding: 5px 10px; border-radius: 5px; font-size: 12px;"; div.innerHTML = `<span>${donor.avatar} ${donor.name}</span><span style="color: #ffd700;">${donor.amount.toLocaleString()}</span>`; donorsList.appendChild(div); }); }
     } catch(e) { toast(e.message); }
 }
+
 async function donateClan() {
     const amount = parseInt($('clan-donate-input').value);
     if (isNaN(amount) || amount < 1000) { toast("Минимум 1 000 фишек"); return; }
@@ -1852,7 +1939,7 @@ async function donateClan() {
     try { const d = await api('/donate_clan', { amount: amount }); if (d.message.includes("ЦЕЛЬ")) { SFX.bigWin(); triggerWinFlash(); } else { SFX.win(); } toast(d.message); state.balance = d.balance; $('bal').textContent = state.balance; $('clan-donate-input').value = ''; loadClanChest(); refresh(); } catch(e) { SFX.lose(); toast(e.message); }
 }
 
-// --- КЛАНОВЫЕ ВОЙНЫ ---
+// ================== КЛАНОВЫЕ ВОЙНЫ ==================
 $('menu-clan-war').onclick = async () => {
     $('dropdown-menu').style.display = 'none'; SFX.click(); $('clan-war-modal').style.display = 'flex';
     const container = $('clan-war-content'); container.innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
@@ -1865,7 +1952,7 @@ $('menu-clan-war').onclick = async () => {
     } catch(e) { toast(e.message); }
 };
 
-// --- ТУРНИР ---
+// ================== ТУРНИР ==================
 $('menu-tournament').onclick = async () => {
     $('dropdown-menu').style.display = 'none'; SFX.click(); $('tournament-modal').style.display = 'flex';
     const container = $('tournament-list'); container.innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
@@ -1877,23 +1964,36 @@ $('menu-tournament').onclick = async () => {
             const div = document.createElement('div');
             div.style.cssText = "display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 1px solid #333;";
             if (index === 0) div.style.borderColor = '#ffd700'; else if (index === 1) div.style.borderColor = '#c0c0c0'; else if (index === 2) div.style.borderColor = '#cd7f32';
-            const rankEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index+1}.`;
             div.innerHTML = `<div style="display: flex; align-items: center; gap: 10px;"><strong style="font-size: 18px; width: 30px; text-align: center;">${player.avatar || '👤'}</strong><strong style="color: #fff; font-size: 14px;">${player.name}</strong></div><strong style="color: #00ff88; font-size: 14px;">${player.score.toLocaleString()}</strong>`;
             container.appendChild(div);
         });
     } catch(e) { toast(e.message); }
 };
 
-// --- ЧАТ ---
+// ================== ЧАТ ==================
 let chatIsClan = false; let chatLastId = 0; let chatInterval = null;
-$('menu-chat').onclick = () => { $('dropdown-menu').style.display = 'none'; SFX.click(); $('chat-modal').style.display = 'flex'; chatIsClan = false; chatLastId = 0; $('chat-messages').innerHTML = ''; switchChatTab(false); };
+
+$('menu-chat').onclick = () => { 
+    $('dropdown-menu').style.display = 'none'; SFX.click(); $('chat-modal').style.display = 'flex'; 
+    chatIsClan = false; chatLastId = 0; $('chat-messages').innerHTML = ''; 
+    switchChatTab(false); 
+};
+
 function closeChat() { $('chat-modal').style.display = 'none'; if (chatInterval) clearInterval(chatInterval); }
+
 function switchChatTab(isClan) {
     if (isClan && (!state.clan_id || state.clan_id === 0)) { toast("Вы не в клане. Вступите в клан, чтобы общаться."); return; }
-    chatIsClan = isClan; chatLastId = 0; $('chat-messages').innerHTML = '<div style="color: #666; text-align: center;">Загрузка...</div>';
-    $('chat-tab-global').style.background = isClan ? '#333' : '#00c853'; $('chat-tab-clan').style.background = isClan ? '#00c853' : '#333';
-    if (chatInterval) clearInterval(chatInterval); loadChatMessages(); chatInterval = setInterval(loadChatMessages, 3000);
+    chatIsClan = isClan; 
+    chatLastId = 0; 
+    lastSystemMessageId = 0; // П.26
+    $('chat-messages').innerHTML = '<div style="color: #666; text-align: center;">Загрузка...</div>';
+    $('chat-tab-global').style.background = isClan ? '#333' : '#00c853'; 
+    $('chat-tab-clan').style.background = isClan ? '#00c853' : '#333';
+    if (chatInterval) clearInterval(chatInterval); 
+    loadChatMessages(); 
+    chatInterval = setInterval(loadChatMessages, 3000);
 }
+
 async function loadChatMessages() {
     try {
         const d = await api('/chat_get', { is_clan: chatIsClan, last_id: chatLastId });
@@ -1911,13 +2011,18 @@ async function loadChatMessages() {
         container.scrollTop = container.scrollHeight;
     } catch(e) { console.log(e); }
 }
+
 async function sendChatMessage() {
     const text = $('chat-input').value.trim(); if (!text) return;
     $('chat-input').value = ''; SFX.click();
     try { await api('/chat_send', { text: text, is_clan: chatIsClan }); loadChatMessages(); } catch(e) { SFX.lose(); toast(e.message); }
 }
+
 $('chat-input').addEventListener('keypress', function (e) { if (e.key === 'Enter') sendChatMessage(); });
-// --- ПРОМОКОД ---
+
+// ================== ПРОМОКОД ==================
+$('menu-promo').onclick = () => { $('dropdown-menu').style.display = 'none'; SFX.click(); $('promo-modal').style.display = 'flex'; $('promo-input').value = ''; };
+
 async function redeemPromo() {
     const code = $('promo-input').value.trim();
     if (!code) { toast("Введи код!"); return; }
@@ -1929,7 +2034,7 @@ async function redeemPromo() {
     } catch(e) { SFX.lose(); toast(e.message); } finally { $('promo-btn').disabled = false; }
 }
 
-// --- ДЖЕКПОТ ---
+// ================== ДЖЕКПОТ ==================
 $('menu-jackpot').onclick = async () => {
     $('dropdown-menu').style.display = 'none'; SFX.click();
     $('jackpot-modal').style.display = 'flex';
@@ -1940,947 +2045,39 @@ $('menu-jackpot').onclick = async () => {
     } catch(e) { toast(e.message); }
 };
 
-// --- АВТООБНОВЛЕНИЕ ---
-// Проверяем состояние игры каждые 5 секунд, если мы не в процессе спина
+// ================== СИСТЕМНЫЕ УВЕДОМЛЕНИЯ ==================
+let lastSystemMessageId = 0;
+async function checkSystemMessages() {
+    if (chatIsClan) return;
+    try {
+        const d = await api('/chat_get', { is_clan: false, last_id: lastSystemMessageId });
+        if (d.messages && d.messages.length > 0) {
+            d.messages.forEach(msg => {
+                lastSystemMessageId = Math.max(lastSystemMessageId, msg.id);
+                if (msg.uid === 0) toast(`🤖 ${msg.text}`);
+            });
+        }
+    } catch(e) { /* тихо */ }
+}
+
+// ================== АВТООБНОВЛЕНИЕ ==================
 setInterval(() => {
-    if (!spinning && !isSpinningWheel && $('welcome-screen').style.display === 'none') {
+    if (!spinning && !isSpinningWheel && !isSpinningDaily && $('welcome-screen').style.display === 'none') {
         refresh();
     }
 }, 5000);
+setInterval(checkSystemMessages, 10000);
 
-// --- ЗАПУСК ПРИ ЗАГРУЗКЕ ---
-// Ждем полной загрузки страницы, чтобы все элементы были доступны
+// ================== СТАРТ ПРИ ЗАГРУЗКЕ ==================
 window.addEventListener('load', () => {
-    // Первая загрузка состояния
     api('/state').then(s => {
-        // Если у пользователя остались незавершенные фриспины, сбрасываем их
         if (s.free_spins > 0) {
             api('/reset_fs').then(() => refresh());
         } else {
             refresh();
         }
-    }).catch((err) => {
-        console.error("Ошибка при старте:", err);
-        refresh();
-    });
+    }).catch((err) => { console.error("Ошибка при старте:", err); refresh(); });
 });
-
-// --- ПЕРЕОПРЕДЕЛЕНИЕ ЛОГИКИ РЕФЕРАЛКИ (полная версия) ---
-$('menu-ref').onclick = async () => {
-    $('dropdown-menu').style.display = 'none'; SFX.click(); $('ref-modal').style.display = 'flex';
-    $('ref-link').textContent = `https://t.me/Tim_slot_bot/slot?startapp=ref_${myId}`;
-    $('ref-friends-list').innerHTML = '<div style="color: #aaa;">Загрузка...</div>';
-    $('ref-stat-count').textContent = '0';
-    $('ref-stat-earn').textContent = '0';
-    
-    try {
-        const d = await api('/ref_stats');
-        $('ref-stat-count').textContent = d.ref_count || 0;
-        $('ref-stat-earn').textContent = (d.ref_earnings || 0).toLocaleString();
-        
-        const list = $('ref-friends-list');
-        list.innerHTML = '';
-        if (!d.friends || d.friends.length === 0) {
-            list.innerHTML = '<div style="color: #666; font-size: 12px; width: 100%; text-align: center;">Пока никого нет. Приглашай!</div>';
-        } else {
-            d.friends.forEach(f => {
-                const div = document.createElement('div');
-                div.style.cssText = "background: #222; padding: 5px; border-radius: 5px; display: flex; align-items: center; gap: 5px; font-size: 10px;";
-                div.innerHTML = `<span style="font-size: 16px;">${f.avatar || '👤'}</span> <span style="color: #aaa;">${f.id}</span>`;
-                list.appendChild(div);
-            });
-        }
-    } catch(e) { toast(e.message); }
-};
-
-$('copy-ref-btn').onclick = () => { 
-    const link = $('ref-link').textContent; 
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(link).then(() => { 
-            $('copy-ref-btn').textContent = 'СКОПИРОВАНО!'; 
-            setTimeout(() => $('copy-ref-btn').textContent = 'КОПИРОВАТЬ', 2000); 
-        }).catch(() => {
-            // Фоллбэк для старых браузеров
-            const textArea = document.createElement("textarea");
-            textArea.value = link;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand("copy");
-            document.body.removeChild(textArea);
-            $('copy-ref-btn').textContent = 'СКОПИРОВАНО!'; 
-            setTimeout(() => $('copy-ref-btn').textContent = 'КОПИРОВАТЬ', 2000); 
-        });
-    }
-};
-
-// --- СИСТЕМНЫЕ УВЕДОМЛЕНИЯ В ЧАТЕ ---
-// Мы не можем получать push-уведомления из чата, но можем проверять, есть ли новые системные сообщения
-let lastSystemMessageId = 0;
-async function checkSystemMessages() {
-    if (chatIsClan) return; // Системные сообщения только в глобальном чате
-    try {
-        const d = await api('/chat_get', { is_clan: false, last_id: lastSystemMessageId });
-        if (d.messages && d.messages.length > 0) {
-            d.messages.forEach(msg => {
-                lastSystemMessageId = Math.max(lastSystemMessageId, msg.id);
-                // Если это системное сообщение (uid=0), показываем тост
-                if (msg.uid === 0) {
-                    toast(`🤖 ${msg.text}`);
-                }
-            });
-        }
-    } catch(e) { /* Игнорируем ошибки фоновой проверки */ }
-}
-
-// Запускаем проверку системных сообщений каждые 10 секунд, только если мы не в чате
-setInterval(checkSystemMessages, 10000);
-
-// --- ПЕРЕОПРЕДЕЛЕНИЕ ЛОГИКИ REFRESH (полная версия) ---
-async function refresh() {
-  try {
-    state = await api('/state'); 
-    
-    // Приведение типов (защита от NaN)
-    state.balance = parseInt(state.balance) || 0; 
-    state.xp = parseInt(state.xp) || 0;
-    state.usd = parseInt(state.usd) || 0;
-    state.eur = parseInt(state.eur) || 0;
-    state.aed = parseInt(state.aed) || 0;
-    state.level = parseInt(state.level) || 1;
-    state.free_spins = parseInt(state.free_spins) || 0;
-    state.fish_caught = parseInt(state.fish_caught) || 0;
-    state.house_level = parseInt(state.house_level) || 0;
-    
-    // Обновление баланса
-    $('bal').textContent = state.balance; 
-    $('r-bal').textContent = state.balance;
-    
-    // Обновление уровня и опыта
-    updateUIState(state.level, state.xp, state.next_level_xp);
-    
-    // Синхронизация фриспинов
-    if (state.free_spins !== undefined) freeSpins = state.free_spins;
-    if (state.fish_caught !== undefined) currentFishCaught = state.fish_caught;
-    
-    // Обновление статуса рулетки (в меню)
-    if (freeSpins === 0) {
-        if (state.wheel_daily >= 5) {
-            $('menu-bonus').textContent = `🎰 Рулетка (0/5)`;
-            $('menu-bonus').disabled = true;
-        } else if (state.wheel_ready) {
-            $('menu-bonus').textContent = `🎰 Рулетка (${5 - state.wheel_daily}/5)`;
-            $('menu-bonus').disabled = false;
-        } else {
-            let m = Math.floor(state.wheel_time_left / 60);
-            let s = state.wheel_time_left % 60;
-            $('menu-bonus').textContent = `🎰 Ждать ${m}:${s < 10 ? '0':''}${s}`;
-            $('menu-bonus').disabled = true;
-        }
-    } else {
-        $('menu-bonus').textContent = `🎰 Рулетка (БОНУС)`;
-        $('menu-bonus').disabled = true;
-    }
-    
-    // Обновление рефералов
-    $('ref-count').textContent = state.ref_count || 0;
-    
-    // Расчет капитала (Баланс + Имущество)
-    try {
-        const assetsData = await api('/get_assets');
-        state.assets_value = assetsData.total_value || 0;
-        const networth = state.balance + state.assets_value;
-        if ($('networth')) $('networth').textContent = networth.toLocaleString();
-    } catch(e) { console.log("Ошибка капитала:", e); }
-
-    // Проверка на низкий баланс (всплывашка)
-    if (state.balance < 5000) {
-        const now = Date.now();
-        if (now - lastLowBalanceShow > 300000 && $('welcome-screen').style.display === 'none' && $('low-balance-modal').style.display !== 'flex') {
-            // Не показываем, если открыты другие модалки
-            if ($('ref-modal').style.display !== 'flex' && 
-                $('rating-modal').style.display !== 'flex' && 
-                $('wheel-modal').style.display !== 'flex' && 
-                $('daily-wheel-modal').style.display !== 'flex' && 
-                $('shop-modal').style.display !== 'flex') {
-                $('low-balance-modal').style.display = 'flex';
-                lastLowBalanceShow = now;
-            }
-        }
-    }
-    
-    // Обновление баннера событий (если есть)
-    if (state.active_event !== undefined) {
-        updateEventBanner(state.active_event);
-    }
-    
-    // Обновление клана в стейте (для чата)
-    if (state.clan_id !== undefined) {
-        // Можно использовать для отображения статуса в меню, если нужно
-    }
-    
-  } catch(e) { 
-      console.error("Ошибка стейта (refresh):", e); 
-  }
-}
-
-// ================== ВОССТАНОВЛЕНИЕ ПОЛНОЙ ЛОГИКИ ==================
-
-// --- ПОЛНАЯ ЛОГИКА ЧАТА ---
-let chatIsClan = false; 
-let chatLastId = 0; 
-let chatInterval = null;
-
-$('menu-chat').onclick = () => { 
-    $('dropdown-menu').style.display = 'none'; 
-    SFX.click(); 
-    $('chat-modal').style.display = 'flex'; 
-    chatIsClan = false; 
-    chatLastId = 0; 
-    $('chat-messages').innerHTML = ''; 
-    switchChatTab(false); 
-};
-
-function closeChat() { 
-    $('chat-modal').style.display = 'none'; 
-    if (chatInterval) clearInterval(chatInterval); 
-}
-
-function switchChatTab(isClan) {
-    if (isClan && (!state.clan_id || state.clan_id === 0)) { 
-        toast("Вы не в клане. Вступите в клан, чтобы общаться."); 
-        return; 
-    }
-    chatIsClan = isClan; 
-    chatLastId = 0; 
-    $('chat-messages').innerHTML = '<div style="color: #666; text-align: center;">Загрузка...</div>';
-    $('chat-tab-global').style.background = isClan ? '#333' : '#00c853'; 
-    $('chat-tab-clan').style.background = isClan ? '#00c853' : '#333';
-    if (chatInterval) clearInterval(chatInterval); 
-    loadChatMessages(); 
-    chatInterval = setInterval(loadChatMessages, 3000);
-}
-
-async function loadChatMessages() {
-    try {
-        const d = await api('/chat_get', { is_clan: chatIsClan, last_id: chatLastId });
-        const container = $('chat-messages');
-        if (chatLastId === 0) container.innerHTML = '';
-        if (d.messages.length === 0 && chatLastId === 0) { 
-            container.innerHTML = '<div style="color: #666; text-align: center;">Пока тихо...</div>'; 
-            return; 
-        }
-        d.messages.forEach(msg => {
-            chatLastId = Math.max(chatLastId, msg.id);
-            const div = document.createElement('div');
-            const isSystem = msg.uid === 0 || msg.avatar === '🤖';
-            div.style.cssText = `display: flex; gap: 8px; padding: 8px; border-radius: 8px; ${isSystem ? 'background: rgba(255, 215, 0, 0.1); border: 1px solid #ffd700;' : 'background: rgba(255,255,255,0.05);'}`;
-            div.innerHTML = `<div style="font-size: 20px;">${msg.avatar || '👤'}</div><div style="display: flex; flex-direction: column; flex: 1;"><div style="font-size: 10px; font-weight: bold; color: #ffd700;">${isSystem ? 'СИСТЕМА' : msg.name}</div><div style="font-size: 13px; color: ${isSystem ? '#ffd700' : '#fff'}; word-break: break-word; ${isSystem ? 'font-weight: bold;' : ''}">${msg.text}</div></div>`;
-            container.appendChild(div);
-        });
-        container.scrollTop = container.scrollHeight;
-    } catch(e) { console.log(e); }
-}
-
-async function sendChatMessage() {
-    const text = $('chat-input').value.trim(); 
-    if (!text) return;
-    $('chat-input').value = ''; 
-    SFX.click();
-    try { 
-        await api('/chat_send', { text: text, is_clan: chatIsClan }); 
-        loadChatMessages(); 
-    } catch(e) { 
-        SFX.lose(); 
-        toast(e.message); 
-    }
-}
-
-$('chat-input').addEventListener('keypress', function (e) { 
-    if (e.key === 'Enter') sendChatMessage(); 
-});
-
-// --- ПОЛНАЯ ЛОГИКА РЕФЕРАЛКИ ---
-$('menu-ref').onclick = async () => {
-    $('dropdown-menu').style.display = 'none'; 
-    SFX.click(); 
-    $('ref-modal').style.display = 'flex';
-    $('ref-link').textContent = `https://t.me/Tim_slot_bot/slot?startapp=ref_${myId}`;
-    $('ref-friends-list').innerHTML = '<div style="color: #aaa;">Загрузка...</div>';
-    $('ref-stat-count').textContent = '0';
-    $('ref-stat-earn').textContent = '0';
-    
-    try {
-        const d = await api('/ref_stats');
-        $('ref-stat-count').textContent = d.ref_count || 0;
-        $('ref-stat-earn').textContent = (d.ref_earnings || 0).toLocaleString();
-        
-        const list = $('ref-friends-list');
-        list.innerHTML = '';
-        if (!d.friends || d.friends.length === 0) {
-            list.innerHTML = '<div style="color: #666; font-size: 12px; width: 100%; text-align: center;">Пока никого нет. Приглашай!</div>';
-        } else {
-            d.friends.forEach(f => {
-                const div = document.createElement('div');
-                div.style.cssText = "background: #222; padding: 5px; border-radius: 5px; display: flex; align-items: center; gap: 5px; font-size: 10px;";
-                div.innerHTML = `<span style="font-size: 16px;">${f.avatar || '👤'}</span> <span style="color: #aaa;">${f.id}</span>`;
-                list.appendChild(div);
-            });
-        }
-    } catch(e) { toast(e.message); }
-};
-
-$('copy-ref-btn').onclick = () => { 
-    const link = $('ref-link').textContent; 
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(link).then(() => { 
-            $('copy-ref-btn').textContent = 'СКОПИРОВАНО!'; 
-            setTimeout(() => $('copy-ref-btn').textContent = 'КОПИРОВАТЬ', 2000); 
-        }).catch(() => {
-            const textArea = document.createElement("textarea");
-            textArea.value = link;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand("copy");
-            document.body.removeChild(textArea);
-            $('copy-ref-btn').textContent = 'СКОПИРОВАНО!'; 
-            setTimeout(() => $('copy-ref-btn').textContent = 'КОПИРОВАТЬ', 2000); 
-        });
-    }
-};
-
-// --- ПОЛНАЯ ЛОГИКА ПРОМОКОДОВ ---
-$('menu-promo').onclick = () => { 
-    $('dropdown-menu').style.display = 'none'; 
-    SFX.click(); 
-    $('promo-modal').style.display = 'flex'; 
-    $('promo-input').value = ''; 
-};
-
-async function redeemPromo() {
-    const code = $('promo-input').value.trim();
-    if (!code) { toast("Введи код!"); return; }
-    $('promo-btn').disabled = true;
-    try {
-        const d = await api('/redeem_promo', { code: code });
-        SFX.bigWin(); 
-        triggerWinFlash(); 
-        toast(`Промокод активирован! +${d.reward}`);
-        state.balance = d.balance; 
-        $('bal').textContent = state.balance; 
-        $('promo-modal').style.display = 'none'; 
-        refresh();
-    } catch(e) { 
-        SFX.lose(); 
-        toast(e.message); 
-    } finally { 
-        $('promo-btn').disabled = false; 
-    }
-}
-
-// --- ПОЛНАЯ ЛОГИКА ДЖЕКПОТА ---
-$('menu-jackpot').onclick = async () => {
-    $('dropdown-menu').style.display = 'none'; 
-    SFX.click();
-    $('jackpot-modal').style.display = 'flex';
-    $('jackpot-amount').textContent = 'Загрузка...';
-    try { 
-        const d = await api('/jackpot'); 
-        $('jackpot-amount').textContent = d.amount.toLocaleString() + ' фишек'; 
-    } catch(e) { toast(e.message); }
-};
-
-// --- ПОЛНАЯ ЛОГИКА ЕЖЕДНЕВНОГО КОЛЕСА (ФОРТУНЫ) ---
-$('menu-daily').onclick = () => {
-    $('dropdown-menu').style.display = 'none'; 
-    SFX.click();
-    $('daily-wheel-modal').style.display = 'flex';
-    $('daily-wheel-result').style.opacity = '0';
-    $('daily-wheel-close').style.display = 'none';
-    $('daily-wheel-spin-btn').style.display = 'block';
-    
-    if (state.wheel_ready) {
-        $('daily-wheel-spin-btn').disabled = false;
-        $('daily-wheel-timer').textContent = "Колесо доступно!";
-    } else {
-        $('daily-wheel-spin-btn').disabled = true;
-        let m = Math.floor(state.wheel_time_left / 60);
-        let h = Math.floor(m / 60);
-        m = m % 60;
-        $('daily-wheel-timer').textContent = `Ждать: ${h}ч ${m}м`;
-    }
-    drawDailyWheel();
-};
-
-// --- ПОЛНАЯ ЛОГИКА ШАХТЫ ---
-let mineEnergy = 0, minePower = 0, mineMaxEnergy = 1000, minePickLvl = 1;
-
-async function openMine() { 
-    $('lobby-screen').style.display = 'none'; 
-    $('mine-modal').style.display = 'flex'; 
-    SFX.click(); 
-    await loadMineData(); 
-}
-
-function closeMine() { 
-    $('mine-modal').style.display = 'none'; 
-    $('lobby-screen').style.display = 'flex'; 
-    refresh(); 
-}
-
-async function loadMineData() { 
-    try { 
-        const d = await api('/get_mine'); 
-        mineEnergy = d.energy; 
-        minePower = d.tap_power; 
-        mineMaxEnergy = d.max_energy; 
-        minePickLvl = d.pickaxe_lvl; 
-        updateMineUI(); 
-    } catch(e) { toast(e.message); } 
-}
-
-function updateMineUI() { 
-    $('mine-energy').textContent = `${mineEnergy}/${mineMaxEnergy}`; 
-    $('mine-power').textContent = `${minePower} 🪙`; 
-    const c = minePickLvl * 50000; 
-    $('mine-upgrade-btn').textContent = `УЛУЧШИТЬ (${c.toLocaleString()})`; 
-}
-
-async function tapMine() {
-    if (mineEnergy <= 0) { toast("Энергия!"); return; }
-    const tapArea = $('mine-tap-area'); 
-    tapArea.style.transform = 'scale(0.9)'; 
-    setTimeout(() => tapArea.style.transform = 'scale(1)', 100);
-    const tapsToSend = Math.min(10, mineEnergy); 
-    mineEnergy -= tapsToSend; 
-    updateMineUI(); 
-    SFX.click();
-    try { 
-        const d = await api('/tap', { taps: tapsToSend }); 
-        mineEnergy = d.energy; 
-        state.balance = d.balance; 
-        updateMineUI(); 
-        if (mineEnergy < 100) $('low-energy-modal').style.display = 'flex'; 
-    } catch(e) { toast(e.message); }
-}
-
-async function upgradePickaxe() { 
-    SFX.click(); 
-    try { 
-        const d = await api('/upgrade_pickaxe'); 
-        minePickLvl = d.pickaxe_lvl; 
-        state.balance = d.balance; 
-        minePower = minePickLvl * 10; 
-        SFX.bigWin(); 
-        toast(d.message); 
-        updateMineUI(); 
-        refresh(); 
-    } catch(e) { 
-        SFX.lose(); 
-        toast(e.message); 
-    } 
-}
-
-async function watchAdForEnergy() {
-    closeLowEnergyModal();
-    const AdController = window.Adsgram.init({ blockId: "57029" });
-    try { 
-        await AdController.show(); 
-        const d = await api('/ad_energy'); 
-        SFX.bigWin(); 
-        toast(`+${d.boost} ЭНЕРГИИ!`); 
-        mineEnergy = d.energy; 
-        updateMineUI(); 
-        refresh(); 
-    } catch (error) { 
-        showMsg('Досмотрите!', false); 
-    }
-}
-
-// --- СИСТЕМНЫЕ УВЕДОМЛЕНИЯ В ЧАТЕ (фоновая проверка) ---
-let lastSystemMessageId = 0;
-async function checkSystemMessages() {
-    if (chatIsClan) return; 
-    try {
-        const d = await api('/chat_get', { is_clan: false, last_id: lastSystemMessageId });
-        if (d.messages && d.messages.length > 0) {
-            d.messages.forEach(msg => {
-                lastSystemMessageId = Math.max(lastSystemMessageId, msg.id);
-                if (msg.uid === 0) {
-                    toast(`🤖 ${msg.text}`);
-                }
-            });
-        }
-    } catch(e) { /* Игнорируем */ }
-}
-setInterval(checkSystemMessages, 10000);
-
-// ================== ПОЛНАЯ ЛОГИКА ВСЕХ МОДАЛОК ==================
-
-// --- МАГАЗИН ---
-$('menu-shop').onclick = async () => { 
-    $('dropdown-menu').style.display = 'none'; 
-    SFX.click(); 
-    $('shop-modal').style.display = 'flex'; 
-    switchShopTab('shop'); 
-};
-
-function switchShopTab(tab) {
-    SFX.click(); 
-    $('shop-items').style.display = 'none'; 
-    $('exchange-panel').style.display = 'none'; 
-    $('cases-panel').style.display = 'none';
-    ['tab-shop', 'tab-exchange', 'tab-cases'].forEach(id => { $(id).style.background = '#333'; $(id).style.color = '#fff'; });
-    if (tab === 'shop') {
-        $('shop-items').style.display = 'flex'; 
-        $('tab-shop').style.background = '#ffd700'; 
-        $('tab-shop').style.color = '#000';
-        api('/get_assets').then(data => { 
-            $('shop-bal').textContent = state.balance; 
-            $('shop-assets').textContent = data.total_value; 
-            renderShop(data.assets); 
-        });
-    } else if (tab === 'exchange') { 
-        $('exchange-panel').style.display = 'flex'; 
-        $('tab-exchange').style.background = '#ffd700'; 
-        $('tab-exchange').style.color = '#000'; 
-        $('wallet-usd').textContent = state.usd || 0; 
-        $('wallet-eur').textContent = state.eur || 0; 
-        $('wallet-aed').textContent = state.aed || 0; 
-    }
-    else if (tab === 'cases') { 
-        $('cases-panel').style.display = 'flex'; 
-        $('tab-cases').style.background = '#ffd700'; 
-        $('tab-cases').style.color = '#000'; 
-    }
-}
-
-function renderShop(playerAssets) {
-    const container = $('shop-items'); 
-    container.innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
-    api('/get_shop_rotation').then(marketData => {
-        container.innerHTML = '';
-        marketData.items.forEach(item => {
-            const div = document.createElement('div'); 
-            div.style.cssText = "display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 1px solid #333;";
-            div.innerHTML = `<div style="display: flex; align-items: center; gap: 10px;"><span style="font-size: 24px;">${item.emoji}</span><div><strong style="color: #fff;">${item.name}</strong><span style="color: #ffd700; font-size: 12px; display: block;">${item.price.toLocaleString()} фишек</span></div></div><button class="main-btn" style="padding: 8px 15px; font-size: 12px; background: ${state.balance >= item.price ? '#00c853' : '#444'};" onclick="buyItem('${item.id}')" ${state.balance < item.price ? 'disabled' : ''}>Купить</button>`;
-            container.appendChild(div);
-        });
-    });
-}
-
-async function buyItem(id) { 
-    SFX.click(); 
-    try { const d = await api('/buy_asset', { item_id: id }); SFX.win(); toast(d.message); state.balance = d.balance; switchShopTab('shop'); refresh(); } catch(e) { SFX.lose(); toast(e.message); } 
-}
-
-async function exchangeCurrency(action) {
-    SFX.click();
-    const currency = $('ex-currency').value;
-    const amount = parseInt($('ex-amount').value);
-    if (isNaN(amount) || amount <= 0) { toast("Введи количество"); return; }
-    try {
-        const d = await api('/exchange', { currency, amount, action });
-        SFX.win(); toast(action === 'buy' ? `Куплено ${amount} ${currency.toUpperCase()}` : `Продано ${amount}`);
-        state.balance = d.balance; state[currency] = d.wallet;
-        $('shop-bal').textContent = state.balance; $('bal').textContent = state.balance;
-        $('wallet-usd').textContent = state.usd || 0; $('wallet-eur').textContent = state.eur || 0; $('wallet-aed').textContent = state.aed || 0;
-        $('ex-amount').value = ''; refresh();
-    } catch(e) { SFX.lose(); toast(e.message); }
-}
-
-// --- КЕЙСЫ ---
-async function claimCasePrize(type, val) {
-    try { const d = await api('/claim_case_prize', { prize_type: type, prize_value: val }); state.balance = d.balance; refresh(); } catch(e) {}
-}
-
-async function openCase() {
-    SFX.click();
-    const btn = $('case-open-btn'); btn.disabled = true;
-    try {
-        const d = await api('/open_case');
-        $('case-reel-container').style.display = 'block';
-        const reel = $('case-reel'); reel.innerHTML = '';
-        const icons = ['🚗', '💎', '💰', '🚀', '😢', '🐎', '👑'];
-        for (let i = 0; i < 50; i++) { const s = document.createElement('span'); s.textContent = icons[Math.floor(Math.random() * icons.length)]; s.style.cssText = "width: 10%; display: flex; justify-content: center; align-items: center; font-size: 30px;"; reel.appendChild(s); }
-        const winIcon = document.createElement('span'); winIcon.textContent = d.prize_type === 'car_lambo' ? '🚀' : (d.prize_type === 'chips' ? '💰' : (d.prize_type === 'usd' ? '💵' : '😢')); winIcon.style.cssText = "width: 10%; display: flex; justify-content: center; align-items: center; font-size: 30px;"; reel.appendChild(winIcon);
-        reel.style.transition = 'none'; reel.style.transform = 'translateX(0%)';
-        setTimeout(() => {
-            reel.style.transition = 'transform 3s cubic-bezier(0.1, 0.7, 0.1, 1)'; reel.style.transform = `translateX(-${49 * 10}%)`;
-            setTimeout(async () => {
-                await claimCasePrize(d.prize_type, d.prize_value);
-                if (d.prize_type === 'empty') SFX.lose(); else SFX.win();
-                toast(d.prize_text); $('case-reel-container').style.display = 'none'; btn.disabled = false;
-            }, 3000);
-        }, 50);
-    } catch(e) { SFX.lose(); toast(e.message); btn.disabled = false; }
-}
-
-// --- VIP ---
-$('menu-vip').onclick = () => {
-    $('dropdown-menu').style.display = 'none'; SFX.click(); $('vip-modal').style.display = 'flex';
-    $('vip-usd-balance').textContent = state.usd || 0;
-    const isVip = state.vip_expires > Math.floor(Date.now() / 1000);
-    $('vip-buy-btn').textContent = isVip ? "ПРОДЛИТЬ VIP (100 USD)" : "КУПИТЬ VIP (100 USD)";
-};
-
-async function buyVip() {
-    SFX.click();
-    try { const d = await api('/buy_vip'); SFX.bigWin(); toast(d.message); state.usd = d.usd; state.vip_expires = d.vip_expires; $('vip-modal').style.display = 'none'; refresh(); } catch(e) { SFX.lose(); toast(e.message); }
-}
-
-// --- ДОМ ---
-$('menu-house').onclick = async () => {
-    $('dropdown-menu').style.display = 'none'; SFX.click(); $('house-modal').style.display = 'flex';
-    $('house-list').innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
-    try {
-        const d = await api('/get_house');
-        const list = $('house-list'); list.innerHTML = '';
-        d.upgrades.forEach(upg => {
-            const div = document.createElement('div');
-            let bg = '#222'; let border = '#444'; let status = '';
-            if (upg.is_bought) { bg = 'rgba(0, 255, 136, 0.1)'; border = '#00ff88'; status = '✅ Построено'; }
-            else if (upg.can_buy) { bg = 'rgba(255, 215, 0, 0.1)'; border = '#ffd700'; status = `Купить за ${upg.price.toLocaleString()}`; }
-            else { bg = '#111'; border = '#222'; status = '🔒 Заблокировано'; }
-            div.style.cssText = `background: ${bg}; border: 1px solid ${border}; padding: 12px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;`;
-            div.innerHTML = `<div style="display: flex; flex-direction: column;"><strong style="color: #fff; font-size: 14px;">Ур. ${upg.level}: ${upg.name}</strong><span style="color: #aaa; font-size: 11px;">${upg.desc}</span></div>${upg.can_buy ? `<button class="main-btn" onclick="buyHouseUpgrade()" style="padding: 8px 12px; font-size: 11px; background: #ffd700; color: #000; box-shadow: none;">КУПИТЬ</button>` : `<span style="font-size: 11px; color: #666; font-weight: bold;">${status}</span>`}`;
-            list.appendChild(div);
-        });
-    } catch(e) { toast(e.message); }
-};
-
-async function buyHouseUpgrade() {
-    if (!confirm("Ты уверен, что хочешь потратить фишки на улучшение?")) return;
-    SFX.click();
-    try { const d = await api('/buy_house_upgrade'); SFX.bigWin(); triggerWinFlash(); toast(d.message); state.balance = d.balance; $('bal').textContent = state.balance; $('menu-house').click(); refresh(); } catch(e) { SFX.lose(); toast(e.message); }
-}
-
-// --- РАМКИ ---
-$('menu-frames').onclick = () => { $('dropdown-menu').style.display = 'none'; SFX.click(); $('frames-modal').style.display = 'flex'; renderFrames(); };
-
-function renderFrames() {
-    const list = $('frames-list'); list.innerHTML = '';
-    Object.entries(FRAMES_CATALOG).forEach(([id, item]) => {
-        const isOwned = state.active_frame === id; const canBuy = state.balance >= item.price;
-        const div = document.createElement('div');
-        div.style.cssText = `background: ${isOwned ? 'rgba(0, 255, 136, 0.1)' : '#222'}; border: 1px solid ${isOwned ? '#00ff88' : '#444'}; padding: 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;`;
-        div.innerHTML = `<div style="display: flex; align-items: center; gap: 10px;"><div style="width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; font-size: 20px; ${item.css}">👤</div><strong style="color: #fff; font-size: 14px;">${item.name}</strong></div>${isOwned ? '<span style="color: #00ff88; font-weight: bold; font-size: 12px;">АКТИВНА</span>' : `<button class="main-btn" style="padding: 8px 12px; font-size: 11px; background: ${canBuy ? '#00c853' : '#444'}; box-shadow: none;" onclick="buyFrame('${id}')" ${!canBuy ? 'disabled' : ''}>${item.price === 0 ? 'ВЫБРАТЬ' : item.price.toLocaleString()}</button>`}`;
-        list.appendChild(div);
-    });
-}
-
-async function buyFrame(id) { SFX.click(); try { const d = await api('/buy_frame', { avatar_id: id }); SFX.win(); toast(d.message); state.balance = d.balance; state.active_frame = d.active_frame; renderFrames(); refresh(); } catch(e) { SFX.lose(); toast(e.message); } }
-
-// --- СКИНЫ ---
-$('menu-skins').onclick = () => { $('dropdown-menu').style.display = 'none'; SFX.click(); $('skins-modal').style.display = 'flex'; renderSkins(); };
-
-function renderSkins() {
-    const list = $('skins-list'); list.innerHTML = '';
-    Object.entries(SKINS_CATALOG).forEach(([id, item]) => {
-        const isOwned = state.active_skin === id; const canBuy = state.balance >= item.price;
-        const div = document.createElement('div');
-        div.style.cssText = `background: ${isOwned ? 'rgba(0, 255, 136, 0.1)' : '#222'}; border: 1px solid ${isOwned ? '#00ff88' : '#444'}; padding: 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;`;
-        div.innerHTML = `<div style="display: flex; flex-direction: column; gap: 5px;"><strong style="color: #fff; font-size: 16px;">${item.name}</strong><div style="font-size: 20px;">${item.syms ? item.syms.join(' ') : '🍒 🍋 🍊'}</div></div>${isOwned ? '<span style="color: #00ff88; font-weight: bold; font-size: 12px;">АКТИВЕН</span>' : `<button class="main-btn" style="padding: 8px 12px; font-size: 11px; background: ${canBuy ? '#00c853' : '#444'}; box-shadow: none;" onclick="buySkin('${id}')" ${!canBuy ? 'disabled' : ''}>${item.price === 0 ? 'ВЫБРАТЬ' : item.price.toLocaleString()}</button>`}`;
-        list.appendChild(div);
-    });
-}
-
-async function buySkin(id) { SFX.click(); try { const d = await api('/buy_skin', { avatar_id: id }); SFX.win(); toast(d.message); state.balance = d.balance; state.active_skin = d.active_skin; renderSkins(); initSlotGrid(); refresh(); } catch(e) { SFX.lose(); toast(e.message); } }
-
-// --- ТЕХНОЛОГИИ ---
-$('menu-tech').onclick = () => { $('dropdown-menu').style.display = 'none'; SFX.click(); $('tech-modal').style.display = 'flex'; loadTechTree(); };
-
-async function loadTechTree() {
-    const container = $('tech-list'); container.innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
-    try {
-        const d = await api('/get_tech'); container.innerHTML = '';
-        d.techs.forEach(t => {
-            const div = document.createElement('div');
-            let bg = '#222'; let border = '#444';
-            if (t.current_lvl >= t.max_lvl) { bg = 'rgba(0, 255, 136, 0.1)'; border = '#00ff88'; }
-            else if (state.balance >= t.price) { bg = 'rgba(255, 215, 0, 0.1)'; border = '#ffd700'; }
-            div.style.cssText = `background: ${bg}; border: 1px solid ${border}; padding: 12px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;`;
-            div.innerHTML = `<div style="display: flex; flex-direction: column; flex: 1;"><strong style="color: #fff; font-size: 14px;">${t.name} (Ур. ${t.current_lvl}/${t.max_lvl})</strong><span style="color: #aaa; font-size: 11px;">${t.desc}</span>${t.current_lvl < t.max_lvl ? `<span style="color: #ffd700; font-size: 11px; margin-top: 5px;">Цена: ${t.price.toLocaleString()}</span>` : ''}</div>${t.current_lvl >= t.max_lvl ? `<span style="color: #00ff88; font-weight: bold; font-size: 12px;">MAX</span>` : `<button class="main-btn" style="padding: 8px 12px; font-size: 11px; background: ${state.balance >= t.price ? '#00c853' : '#444'}; box-shadow: none;" onclick="buyTech('${t.id}')" ${state.balance < t.price ? 'disabled' : ''}>КУПИТЬ</button>`}`;
-            container.appendChild(div);
-        });
-    } catch(e) { toast(e.message); }
-}
-
-async function buyTech(nodeId) { SFX.click(); try { const d = await api('/buy_tech', { node_id: nodeId }); SFX.bigWin(); triggerWinFlash(); toast(d.message); state.balance = d.balance; $('bal').textContent = state.balance; loadTechTree(); refresh(); } catch(e) { SFX.lose(); toast(e.message); } }
-
-// --- ДОНАТ ---
-$('menu-donate').onclick = () => { $('dropdown-menu').style.display = 'none'; SFX.click(); $('donate-modal').style.display = 'flex'; loadDonate(); };
-
-async function loadDonate() {
-    const list = $('donate-list'); list.innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
-    try {
-        const d = await api('/get_donate'); list.innerHTML = '';
-        d.items.forEach(item => {
-            const div = document.createElement('div');
-            div.style.cssText = "background: #222; padding: 12px; border-radius: 10px; border: 1px solid #00bfff; display: flex; justify-content: space-between; align-items: center;";
-            div.innerHTML = `<div><strong style="color: #fff; font-size: 14px;">${item.name}</strong></div><button class="main-btn" onclick="buyDonate('${item.id}')" style="padding: 8px 12px; font-size: 12px; background: #00bfff; color: #fff; box-shadow: none;">⭐ ${item.price}</button>`;
-            list.appendChild(div);
-        });
-    } catch(e) { toast(e.message); }
-}
-
-async function buyDonate(itemId) {
-    SFX.click();
-    try {
-        const d = await api('/create_invoice', { item_id: itemId });
-        if (confirm(`Оплатить "${d.title}" за ${d.price} Stars?`)) {
-            const check = await api('/check_payment', { item_id: itemId });
-            SFX.bigWin(); triggerWinFlash(); toast(check.message);
-            $('donate-modal').style.display = 'none'; refresh();
-        }
-    } catch(e) { SFX.lose(); toast(e.message); }
-}
-
-// --- ИМПЕРИЯ (СЮЖЕТ) ---
-$('menu-story').onclick = () => { $('dropdown-menu').style.display = 'none'; SFX.click(); $('story-modal').style.display = 'flex'; loadStory(); };
-
-async function loadStory() {
-    const container = $('story-list'); container.innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
-    try {
-        const d = await api('/get_story'); container.innerHTML = '';
-        d.chapters.forEach(ch => {
-            const div = document.createElement('div');
-            let bg = '#222'; let border = '#444'; let status = '🔒 Заблокировано'; let buttonHtml = '';
-            if (ch.is_claimed) { bg = 'rgba(0, 255, 136, 0.1)'; border = '#00ff88'; status = '✅ Пройдено'; }
-            else if (ch.is_completed) { bg = 'rgba(255, 215, 0, 0.1)'; border = '#ffd700'; status = '🎁 Готово к получению'; buttonHtml = `<button class="main-btn" onclick="claimStory(${ch.id})" style="padding: 8px 15px; font-size: 12px; background: #00c853; box-shadow: none; margin-top: 10px;">ЗАБРАТЬ</button>`; }
-            else { bg = 'rgba(138, 43, 226, 0.1)'; border = '#8a2be2'; status = '⏳ В процессе'; }
-            div.style.cssText = `background: ${bg}; border: 1px solid ${border}; padding: 12px; border-radius: 10px;`;
-            div.innerHTML = `<div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><strong style="color: #fff; font-size: 14px;">Глава ${ch.id}: ${ch.title}</strong><span style="font-size: 10px; color: #aaa;">${status}</span></div><div style="color: #aaa; font-size: 12px; margin-bottom: 8px;">${ch.desc}</div><div style="color: #ffd700; font-size: 12px; font-weight: bold;">Награда: ${ch.reward_chips.toLocaleString()} фишек ${ch.reward_usd > 0 ? `+ ${ch.reward_usd}$` : ''}</div>${buttonHtml}`;
-            container.appendChild(div);
-        });
-    } catch(e) { toast(e.message); }
-}
-
-async function claimStory(chapterId) {
-    SFX.click();
-    try { const d = await api('/claim_story', { chapter_id: chapterId }); SFX.bigWin(); triggerWinFlash(); toast(d.message); state.balance = d.balance; $('bal').textContent = state.balance; loadStory(); refresh(); } catch(e) { SFX.lose(); toast(e.message); }
-}
-
-// --- ПРОГНОЗЫ ---
-$('menu-predictions').onclick = () => { $('dropdown-menu').style.display = 'none'; SFX.click(); $('predictions-modal').style.display = 'flex'; loadPredictions(); };
-
-async function loadPredictions() {
-    const container = $('predictions-list'); container.innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
-    try {
-        const d = await api('/get_predictions'); container.innerHTML = '';
-        if (d.predictions.length === 0) { container.innerHTML = '<div style="color: #aaa; text-align: center;">Сейчас нет активных прогнозов.</div>'; return; }
-        d.predictions.forEach(p => {
-            const div = document.createElement('div');
-            div.style.cssText = "background: #222; padding: 15px; border-radius: 10px; border: 1px solid #ff3b30;";
-            let buttonsHtml = '';
-            if (p.result) { buttonsHtml = `<div style="text-align: center; color: #00ff88; font-weight: bold; margin-top: 10px;">Результат: ${p.result === 'yes' ? p.yes_text : p.no_text}</div>`; }
-            else if (p.my_bet) { buttonsHtml = `<div style="text-align: center; color: #ffd700; font-size: 12px; margin-top: 10px;">Твоя ставка: ${p.my_bet.amount.toLocaleString()} на "${p.my_bet.choice === 'yes' ? p.yes_text : p.no_text}"</div>`; }
-            else { buttonsHtml = `<div style="display: flex; gap: 10px; margin-top: 10px;"><button class="main-btn" style="flex: 1; padding: 10px; font-size: 12px; background: #00c853; box-shadow: none;" onclick="betPrediction(${p.id}, 'yes')">${p.yes_text} (x2)</button><button class="main-btn" style="flex: 1; padding: 10px; font-size: 12px; background: #ff3b30; box-shadow: none;" onclick="betPrediction(${p.id}, 'no')">${p.no_text} (x2)</button></div>`; }
-            const totalPool = p.pool_yes + p.pool_no; const yesPercent = totalPool > 0 ? Math.round((p.pool_yes / totalPool) * 100) : 50;
-            div.innerHTML = `<div style="color: #fff; font-weight: bold; font-size: 14px; margin-bottom: 10px;">${p.question}</div><div style="background: #111; height: 10px; border-radius: 5px; overflow: hidden; display: flex; margin-bottom: 5px;"><div style="background: #00c853; width: ${yesPercent}%; height: 100%;"></div><div style="background: #ff3b30; flex: 1; height: 100%;"></div></div><div style="display: flex; justify-content: space-between; font-size: 10px; color: #aaa; margin-bottom: 10px;"><span>Да: ${p.pool_yes.toLocaleString()} (${yesPercent}%)</span><span>Нет: ${p.pool_no.toLocaleString()} (${100 - yesPercent}%)</span></div>${buttonsHtml}`;
-            container.appendChild(div);
-        });
-    } catch(e) { toast(e.message); }
-}
-
-async function betPrediction(id, choice) {
-    const amountStr = prompt("Введи сумму ставки:", "10000");
-    if (!amountStr) return;
-    const amount = parseInt(amountStr);
-    if (isNaN(amount) || amount <= 0) { toast("Неверная сумма"); return; }
-    SFX.click();
-    try { const d = await api('/bet_prediction', { prediction_id: id, choice: choice, amount: amount }); SFX.win(); toast(d.message); state.balance = d.balance; $('bal').textContent = state.balance; loadPredictions(); refresh(); } catch(e) { SFX.lose(); toast(e.message); }
-}
-
-// --- КВЕСТЫ ---
-$('menu-quests').onclick = async () => {
-    $('dropdown-menu').style.display = 'none'; SFX.click();
-    $('quests-modal').style.display = 'flex';
-    const container = $('quests-list');
-    container.innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
-    try {
-        const d = await api('/get_quests');
-        container.innerHTML = '';
-        d.quests.forEach(q => {
-            const isDone = q.progress >= q.target;
-            const percent = Math.min(100, (q.progress / q.target) * 100);
-            const div = document.createElement('div');
-            div.style.cssText = "background: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; border: 1px solid #333;";
-            div.innerHTML = `<div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><strong style="color: #fff; font-size: 14px;">${q.text}</strong><span style="color: #ffd700; font-weight: bold; font-size: 12px;">+${q.reward.toLocaleString()}</span></div><div style="background: #222; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 10px;"><div style="background: ${isDone ? '#00ff88' : '#ffd700'}; height: 100%; width: ${percent}%;"></div></div><div style="display: flex; justify-content: space-between; align-items: center;"><span style="color: #aaa; font-size: 11px;">${q.progress.toLocaleString()} / ${q.target.toLocaleString()}</span>${isDone ? `<button class="main-btn" onclick="claimQuest('${q.id}')" style="padding: 5px 10px; font-size: 10px; background: #00c853; box-shadow: none;">ЗАБРАТЬ</button>` : ''}</div>`;
-            container.appendChild(div);
-        });
-    } catch(e) { toast(e.message); }
-};
-
-async function claimQuest(id) {
-    SFX.click();
-    try { const d = await api('/claim_quest', { quest_id: id }); SFX.bigWin(); toast(`Награда получена!`); state.balance = d.balance; $('bal').textContent = state.balance; $('menu-quests').click(); refresh(); } catch(e) { SFX.lose(); toast(e.message); }
-}
-
-// --- КЛАНЫ ---
-$('menu-clans').onclick = async () => { $('dropdown-menu').style.display = 'none'; SFX.click(); $('clans-modal').style.display = 'flex'; loadClans(); };
-
-async function loadClans() {
-    const container = $('clan-content'); container.innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
-    try {
-        const d = await api('/get_clans'); container.innerHTML = '';
-        if (d.my_clan) {
-            container.innerHTML = `<div style="text-align: center; margin-bottom: 20px; background: rgba(0,255,136,0.1); border: 2px solid #00ff88; padding: 15px; border-radius: 15px;"><h3 style="color: #00ff88; margin: 0;">${d.my_clan.name}</h3><p style="color: #aaa; margin: 5px 0;">Участников: ${d.my_clan.members} | Очки: ${d.my_clan.score.toLocaleString()}</p>${d.my_clan.role === 'owner' ? '<div style="color: #ffd700; font-size: 12px; margin-bottom: 10px;">👑 Вы владелец</div>' : ''}<button class="main-btn" onclick="openClanChest()" style="background: linear-gradient(to bottom, #ffd700, #b8860b); color: #000; width: 100%; padding: 10px; margin-bottom: 5px; box-shadow: none;">🎁 Сундук Клана</button><button class="main-btn" onclick="leaveClan()" style="background: #cc0000; padding: 10px; width: 100%; box-shadow: none;">Покинуть клан</button></div><h3 style="color: #ffd700; font-size: 16px;">Топ кланов</h3>`;
-        } else {
-            container.innerHTML = `<div style="margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px;"><h3 style="color: #fff; margin-top: 0; font-size: 16px;">Создать свой клан</h3><p style="color: #aaa; font-size: 12px;">Стоимость: 1 000 000 фишек</p><input type="text" id="clan-name-input" placeholder="Название клана" style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: #fff; border: 1px solid #444; border-radius: 8px;"><button class="main-btn" onclick="createClan()" style="background: #00c853; width: 100%; box-shadow: none;">СОЗДАТЬ</button></div><h3 style="color: #ffd700; font-size: 16px;">Топ кланов</h3>`;
-        }
-        d.top_clans.forEach(clan => {
-            const div = document.createElement('div');
-            div.style.cssText = "display: flex; justify-content: space-between; align-items: center; background: #222; padding: 10px; border-radius: 10px; margin-bottom: 5px;";
-            div.innerHTML = `<div><strong style="color: #fff;">${clan.name}</strong><div style="color: #aaa; font-size: 11px;">Очки: ${clan.score.toLocaleString()}</div></div>${!d.my_clan ? `<button class="main-btn" onclick="joinClan(${clan.id})" style="padding: 5px 10px; font-size: 10px; background: #ffd700; color: #000; box-shadow: none;">ВСТУПИТЬ</button>` : ''}`;
-            container.appendChild(div);
-        });
-    } catch(e) { toast(e.message); }
-}
-
-async function createClan() {
-    const name = $('clan-name-input').value.trim();
-    if (name.length < 3) { toast("Название слишком короткое"); return; }
-    SFX.click();
-    try { const d = await api('/create_clan', { name: name }); SFX.bigWin(); toast(d.message); state.balance = d.balance; $('bal').textContent = state.balance; loadClans(); refresh(); } catch(e) { SFX.lose(); toast(e.message); }
-}
-
-async function joinClan(id) { SFX.click(); try { await api('/join_clan', { clan_id: id }); SFX.win(); toast("Вы вступили в клан!"); loadClans(); } catch(e) { SFX.lose(); toast(e.message); } }
-async function leaveClan() { if (!confirm("Вы уверены, что хотите покинуть клан?")) return; SFX.click(); try { await api('/leave_clan'); SFX.win(); toast("Вы покинули клан"); loadClans(); } catch(e) { SFX.lose(); toast(e.message); } }
-
-// --- СУНДУК КЛАНА ---
-function openClanChest() { $('clans-modal').style.display = 'none'; $('clan-chest-modal').style.display = 'flex'; loadClanChest(); }
-
-async function loadClanChest() {
-    try {
-        const d = await api('/get_clan_chest');
-        const percent = Math.min(100, (d.current / d.goal) * 100);
-        $('clan-chest-bar').style.width = `${percent}%`;
-        $('clan-chest-text').textContent = `${d.current.toLocaleString()} / ${d.goal.toLocaleString()}`;
-        const donorsList = $('clan-chest-donors'); donorsList.innerHTML = '';
-        if (d.donors.length === 0) { donorsList.innerHTML = '<div style="color: #666;">Пока никто не внес вклад</div>'; }
-        else { d.donors.forEach(donor => { const div = document.createElement('div'); div.style.cssText = "display: flex; justify-content: space-between; background: rgba(255,255,255,0.05); padding: 5px 10px; border-radius: 5px; font-size: 12px;"; div.innerHTML = `<span>${donor.avatar} ${donor.name}</span><span style="color: #ffd700;">${donor.amount.toLocaleString()}</span>`; donorsList.appendChild(div); }); }
-    } catch(e) { toast(e.message); }
-}
-
-async function donateClan() {
-    const amount = parseInt($('clan-donate-input').value);
-    if (isNaN(amount) || amount < 1000) { toast("Минимум 1 000 фишек"); return; }
-    SFX.click();
-    try { const d = await api('/donate_clan', { amount: amount }); if (d.message.includes("ЦЕЛЬ")) { SFX.bigWin(); triggerWinFlash(); } else { SFX.win(); } toast(d.message); state.balance = d.balance; $('bal').textContent = state.balance; $('clan-donate-input').value = ''; loadClanChest(); refresh(); } catch(e) { SFX.lose(); toast(e.message); }
-}
-
-// --- КЛАНОВЫЕ ВОЙНЫ ---
-$('menu-clan-war').onclick = async () => {
-    $('dropdown-menu').style.display = 'none'; SFX.click(); $('clan-war-modal').style.display = 'flex';
-    const container = $('clan-war-content'); container.innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
-    try {
-        const d = await api('/clan_war_state');
-        if (!d.active) { container.innerHTML = '<div style="color: #aaa; text-align: center;">Сейчас нет активных войн. Жди обновления!</div>'; return; }
-        const total = d.clan1_score + d.clan2_score || 1; const percent1 = (d.clan1_score / total) * 100;
-        const timeLeft = d.end_time - Math.floor(Date.now() / 1000); const days = Math.floor(timeLeft / 86400); const hours = Math.floor((timeLeft % 86400) / 3600);
-        container.innerHTML = `<div style="text-align: center; color: #aaa; margin-bottom: 10px;">До конца: ${days}д ${hours}ч</div><div style="display: flex; justify-content: space-between; color: #fff; font-weight: bold; margin-bottom: 5px;"><span>${d.clan1_name}</span><span>${d.clan2_name}</span></div><div style="background: #222; height: 30px; border-radius: 15px; overflow: hidden; display: flex;"><div style="background: #00c853; width: ${percent1}%; height: 100%; display: flex; align-items: center; padding-left: 10px; font-size: 12px; color: #fff; font-weight: bold;">${d.clan1_score.toLocaleString()}</div><div style="background: #ff3b30; flex: 1; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; font-size: 12px; color: #fff; font-weight: bold;">${d.clan2_score.toLocaleString()}</div></div><div style="text-align: center; margin-top: 20px; font-size: 12px; color: #ffd700;">🏆 Победитель получает Клановый Сундук!</div>`;
-    } catch(e) { toast(e.message); }
-};
-
-// --- ТУРНИР ---
-$('menu-tournament').onclick = async () => {
-    $('dropdown-menu').style.display = 'none'; SFX.click(); $('tournament-modal').style.display = 'flex';
-    const container = $('tournament-list'); container.innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
-    try {
-        const d = await api('/tournament');
-        $('tourney-score').textContent = d.my_score.toLocaleString(); container.innerHTML = '';
-        if (d.top.length === 0) { container.innerHTML = '<div style="color: #666;">Пока нет игроков</div>'; return; }
-        d.top.forEach((player, index) => {
-            const div = document.createElement('div');
-            div.style.cssText = "display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 1px solid #333;";
-            if (index === 0) div.style.borderColor = '#ffd700'; else if (index === 1) div.style.borderColor = '#c0c0c0'; else if (index === 2) div.style.borderColor = '#cd7f32';
-            const rankEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index+1}.`;
-            div.innerHTML = `<div style="display: flex; align-items: center; gap: 10px;"><strong style="font-size: 18px; width: 30px; text-align: center;">${player.avatar || '👤'}</strong><strong style="color: #fff; font-size: 14px;">${player.name}</strong></div><strong style="color: #00ff88; font-size: 14px;">${player.score.toLocaleString()}</strong>`;
-            container.appendChild(div);
-        });
-    } catch(e) { toast(e.message); }
-};
-
-// --- РЕЙТИНГ ---
-$('menu-rating').onclick = async () => { 
-    $('dropdown-menu').style.display = 'none'; $('rating-modal').style.display = 'flex';
-    $('rating-list').innerHTML = 'Загрузка...';
-    try {
-        const d = await api('/rating');
-        $('rating-list').innerHTML = '';
-        d.top.forEach((player, index) => {
-            const div = document.createElement('div');
-            div.style.cssText = "display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 1px solid #333;";
-            if (index === 0) div.style.borderColor = '#ffd700'; else if (index === 1) div.style.borderColor = '#c0c0c0'; else if (index === 2) div.style.borderColor = '#cd7f32';
-            const rankEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index+1}.`;
-            div.innerHTML = `<div style="display: flex; align-items: center; gap: 10px;"><strong style="font-size: 24px; width: 30px; text-align: center;">${player.avatar || '👤'}</strong><div><strong style="color: #fff; font-size: 14px;">${player.name}</strong></div></div><div style="text-align: right;"><strong style="color: #00ff88; font-size: 14px;">${player.capital.toLocaleString()}</strong><span style="color: #666; font-size: 10px; display: block;">капитал</span></div>`;
-            $('rating-list').appendChild(div);
-        });
-    } catch(e) { toast(e.message); }
-};
-
-// --- РУЛЕТКА (вспомогательные функции) ---
-function startRoulette() {
-    $('lobby-screen').style.display = 'none'; $('roulette-screen').style.display = 'flex';
-    if ($('r-board').innerHTML === '') {
-        const zero = document.createElement('div'); zero.className = 'r-cell green'; zero.textContent = '0 (x10)'; zero.style.gridColumn = 'span 3'; zero.onclick = () => addBet('number', 0);
-        $('r-board').appendChild(zero);
-        for (let i=1; i<=36; i++) {
-            const cell = document.createElement('div');
-            const isRed = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].includes(i);
-            cell.className = `r-cell ${isRed ? 'red' : 'black'}`; cell.textContent = i; cell.onclick = () => addBet('number', i);
-            $('r-board').appendChild(cell);
-        }
-        drawRouletteWheel();
-        document.querySelectorAll('.r-amount-btn').forEach(btn => {
-            btn.onclick = (e) => {
-                SFX.click();
-                document.querySelectorAll('.r-amount-btn').forEach(b => { b.classList.remove('active'); b.style.background = '#222'; b.style.color = '#fff'; b.style.borderColor = '#444'; });
-                e.target.classList.add('active'); e.target.style.background = '#ffd700'; e.target.style.color = '#000'; e.target.style.borderColor = '#fff';
-                currentRouletteAmount = parseInt(e.target.dataset.amount); $('r-custom-bet').value = '';
-            };
-        });
-    }
-}
-
-// --- КОЛЕСО УДАЧИ ---
-const wheelCanvas = $('wheel-canvas'); const ctx = wheelCanvas.getContext('2d');
-const slices = [{ label: '1000', color: '#ff0000' }, { label: '0', color: '#333333' }, { label: '500', color: '#ffd700' }, { label: '20', color: '#111111' }, { label: '250', color: '#8a2be2' }, { label: '50', color: '#111111' }, { label: '100', color: '#00c853' }, { label: '0', color: '#333333' }];
-const sliceAngle = Math.PI * 2 / slices.length; let currentRotation = 0, isSpinningWheel = false; const offsetAngle = -Math.PI / 2 - sliceAngle / 2; let wheelStartTime = 0;
-
-function drawWheel() {
-    ctx.clearRect(0, 0, 300, 300);
-    for (let i = 0; i < slices.length; i++) {
-        const angle = i * sliceAngle + currentRotation + offsetAngle;
-        ctx.beginPath(); ctx.fillStyle = slices[i].color; ctx.moveTo(150, 150); ctx.arc(150, 150, 140, angle, angle + sliceAngle); ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
-        ctx.save(); ctx.translate(150, 150); ctx.rotate(angle + sliceAngle / 2); ctx.textAlign = "right"; ctx.fillStyle = "#fff"; ctx.font = "bold 20px Arial"; ctx.fillText(slices[i].label, 130, 10); ctx.restore();
-    }
-    ctx.beginPath(); ctx.fillStyle = '#d4af37'; ctx.arc(150, 150, 30, 0, Math.PI*2); ctx.fill();
-}
-
-$('menu-bonus').onclick = async () => {
-  $('dropdown-menu').style.display = 'none'; if (isSpinningWheel || freeSpins > 0) return;
-  $('wheel-modal').style.display = 'flex'; $('wheel-result').style.opacity = '0'; $('wheel-close').style.display = 'none'; $('wheel-spin-btn').style.display = 'block';
-  if (state.wheel_ready) { $('wheel-spin-btn').disabled = false; $('wheel-timer').textContent = `Доступно: ${5 - state.wheel_daily}/5`; }
-  else { $('wheel-spin-btn').disabled = true; let m = Math.floor(state.wheel_time_left / 60); let s = state.wheel_time_left % 60; $('wheel-timer').textContent = `Ждать: ${m}:${s < 10 ? '0':''}${s}`; }
-  drawWheel();
-};
-
-$('wheel-spin-btn').onclick = async () => {
-  if (isSpinningWheel) return; isSpinningWheel = true; $('wheel-spin-btn').style.display = 'none';
-  try {
-    const d = await api('/bonus'); let targetIdx = slices.findIndex(s => s.label == d.amount.toString()); if (targetIdx === -1) targetIdx = 1;
-    let spins = 5 * Math.PI * 2, stopAngle = spins + (Math.PI*2 - targetIdx * sliceAngle), startTime = performance.now(), duration = 4000;
-    function animateWheel(time) {
-        let progress = (time - startTime) / duration; if (progress > 1) progress = 1;
-        let ease = 1 - Math.pow(1 - progress, 3); currentRotation = stopAngle * ease; drawWheel();
-        if (progress < 1) { requestAnimationFrame(animateWheel); if (Math.random() < 0.1) SFX.reelTick(); }
-        else { $('wheel-result').textContent = `+${d.amount}`; $('wheel-result').style.opacity = '1'; $('wheel-close').style.display = 'block'; if(d.amount > 0) SFX.bigWin(); else SFX.lose(); isSpinningWheel = false; refresh(); }
-    }
-    requestAnimationFrame(animateWheel);
-  } catch(e) { showMsg(e.message, false); $('wheel-modal').style.display = 'none'; isSpinningWheel = false; }
-};
-$('wheel-close').onclick = () => { $('wheel-modal').style.display = 'none'; };
 </script>
 </body>
 </html>
