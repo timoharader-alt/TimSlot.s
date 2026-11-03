@@ -14,54 +14,58 @@
   #welcome-screen h1 { font-size: 42px; color: #ffd700; text-shadow: 0 0 20px #ff8c00; margin-bottom: 10px; text-transform: uppercase; text-align: center; }
   #welcome-screen p { color: #aaa; margin-bottom: 40px; font-size: 14px; }
   #start-btn { padding: 20px 60px; font-size: 24px; font-weight: 900; border-radius: 30px; border: none; background: linear-gradient(to right, #ffd700, #ff8c00); color: #000; box-shadow: 0 0 30px rgba(255, 215, 0, 0.5); cursor: pointer; }
-  
-  #lobby-screen { position: fixed; inset: 0; z-index: 150; background: #0a0a0c; display: none; flex-direction: column; }
+
+  #lobby-screen { position: fixed; inset: 0; z-index: 150; background: #0a0a0c; display: none; flex-direction: column; overflow-y: auto;}
   .lobby-header { padding: 20px; text-align: center; }
   .lobby-header h2 { color: #fff; font-size: 24px; margin: 0; }
-  #games-carousel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 20px; padding: 20px; height: 100%; align-items: center; }
-  #games-carousel::-webkit-scrollbar { display: none; }
+  .lobby-section { padding: 0 20px; margin-bottom: 30px; }
+  .lobby-section h3 { color: #ffd700; font-size: 18px; margin-bottom: 15px; text-shadow: 0 0 10px rgba(255,215,0,0.5); }
   
-  .game-card { flex: 0 0 80%; scroll-snap-align: center; height: 400px; border-radius: 20px; background-size: cover; background-position: center; position: relative; border: 2px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; cursor: pointer; background-color: #111; }
-  .game-card h3 { font-size: 28px; margin: 0 0 5px 0; text-shadow: 0 2px 4px #000; }
-  .game-card p { font-size: 14px; color: #ddd; margin: 0; text-shadow: 0 1px 2px #000; }
-  .game-card .min-bet { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.8); padding: 5px 10px; border-radius: 10px; font-weight: bold; border: 1px solid #ffd700; color: #ffd700;}
-
-  .bg-fruits { background-image: url('https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=600&auto=format&fit=crop'); background-size: cover; background-position: center; }
-  .bg-fishing { background-image: url('https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=600&auto=format&fit=crop'); background-size: cover; background-position: center; }
-  .bg-roulette { background-image: url('https://images.unsplash.com/photo-1605870445919-838d190e8e1b?q=80&w=600&auto=format&fit=crop'); background-size: cover; background-position: center; }
+  .game-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .game-card-new { background: #1a1a2e; border-radius: 12px; overflow: hidden; position: relative; aspect-ratio: 3/4; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; border: 2px solid #333; transition: 0.2s; }
+  .game-card-new:active { transform: scale(0.95); border-color: #ffd700; }
+  .game-card-new .icon { font-size: 40px; margin-bottom: 10px; }
+  .game-card-new .title { color: #fff; font-size: 12px; font-weight: bold; text-align: center; line-height: 1.2; padding: 0 5px; text-shadow: 0 2px 4px #000; }
+  .game-card-new .badge { position: absolute; top: 5px; right: 5px; background: #ff3b30; color: #fff; font-size: 8px; padding: 2px 5px; border-radius: 5px; font-weight: bold; }
+  
+  .bg-fruits { background-image: url('https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=300&auto=format&fit=crop'); background-size: cover; background-position: center; }
+  .bg-fishing { background-image: url('https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=300&auto=format&fit=crop'); background-size: cover; background-position: center; }
+  .bg-roulette { background-image: url('https://images.unsplash.com/photo-1605870445919-838d190e8e1b?q=80&w=300&auto=format&fit=crop'); background-size: cover; background-position: center; }
+  .overlay-dark { position: absolute; inset: 0; background: rgba(0,0,0,0.6); }
 
   #game-screen { position: fixed; inset: 0; z-index: 100; display: none; flex-direction: column; background-size: cover; background-position: center; }
-  #top-bar { display: flex; justify-content: space-between; align-items: flex-start; padding: 15px; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); z-index: 10; height: 100px; flex-shrink: 0;}
-  .profile-info { display: flex; flex-direction: column; gap: 5px; }
-  .balance-box { background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 10px; border: 1px solid #ffd700; }
-  .balance-box span { font-size: 12px; color: #aaa; display: block; }
-  .balance-box strong { font-size: 22px; color: #ffd700; text-shadow: 0 0 10px #ffd700; }
-  .menu-btn { background: rgba(0,0,0,0.6); border: 1px solid #555; color: #fff; width: 45px; height: 45px; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 24px; cursor: pointer; font-weight: bold; }
+  #top-bar { display: flex; justify-content: space-between; align-items: flex-start; padding: 15px; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); z-index: 10; height: 110px; flex-shrink: 0;}
+  .profile-info { display: flex; flex-direction: row; gap: 5px; align-items: center;}
+  .balance-box { background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 10px; border: 1px solid #ffd700; text-align: center;}
+  .balance-box span { font-size: 10px; color: #aaa; display: block; }
+  .balance-box strong { font-size: 16px; color: #ffd700; text-shadow: 0 0 10px #ffd700; }
+  .balance-box.capital { border-color: #00ff88; }
+  .balance-box.capital strong { color: #00ff88; text-shadow: 0 0 10px #00ff88; }
+  .menu-btn { background: rgba(0,0,0,0.6); border: 1px solid #555; color: #fff; width: 40px; height: 40px; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 20px; cursor: pointer; font-weight: bold; }
 
   #dropdown-menu { position: absolute; top: 70px; right: 15px; background: rgba(20,20,25,0.95); border: 1px solid #ffd700; border-radius: 12px; display: none; flex-direction: column; min-width: 200px; z-index: 50; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
   #dropdown-menu button { background: none; border: none; color: #fff; padding: 15px; text-align: left; font-size: 16px; font-weight: bold; border-bottom: 1px solid #333; cursor: pointer; font-family: inherit;}
   #dropdown-menu button:last-child { border-bottom: none; color: #ff3333; }
 
-  #pixi-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 10px; position: relative; overflow: hidden; min-height: 0; }
+  #pixi-container { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 10px; position: relative; overflow: hidden; min-height: 0; }
+  
+  #fisher-scale { display: none; width: 95%; max-width: 600px; background: #4a2e15; border: 2px solid #b8860b; border-radius: 15px; padding: 5px; z-index: 20; box-shadow: 0 4px 10px rgba(0,0,0,0.8); margin-bottom: 10px; flex-shrink: 0; }
+  .fisher-track { display: flex; gap: 2px; width: 100%; height: 30px; }
+  .fisher-cell { flex: 1; background: #2a1a0a; border: 1px solid #5a3a1a; border-radius: 4px; display: flex; justify-content: center; align-items: center; font-size: 16px; filter: grayscale(1) brightness(0.5); position: relative; }
+  .fisher-cell.active { filter: none; background: #5a3a1a; box-shadow: inset 0 0 10px #ffd700; }
+  .fisher-cell.bonus-cell { flex: 1.5; flex-direction: column; font-size: 8px; font-weight: 900; color: #fff; text-align: center; line-height: 1; background: #111; }
+  .fisher-cell.bonus-cell .plus { color: #00ff88; font-size: 9px; }
+  .fisher-cell.bonus-cell .mult { color: #ffd700; font-size: 11px; }
+
   #slot-grid { width: 100%; max-width: 90%; max-height: 100%; height: auto; aspect-ratio: 3 / 1; border-radius: 12px; box-shadow: 0 0 30px rgba(0,0,0,0.9); border: 3px solid rgba(255,215,0,0.3); position: relative; background: rgba(0,0,0,0.6); overflow: hidden; display: flex; margin: auto; }
   #slot-grid.fishing-mode { aspect-ratio: 5 / 3; }
-
   .reel-col { display: flex; flex-direction: column; flex: 1; height: 100%; overflow: hidden; position: relative; border-right: 1px solid rgba(255,255,255,0.1); min-width: 40px;}
   .reel-col:last-child { border-right: none; }
   .reel-strip { display: flex; flex-direction: column; width: 100%; height: 100%; transition: none; }
   .cell { display: flex; justify-content: center; align-items: center; width: 100%; height: calc(100% / var(--rows)); min-height: 0; flex-shrink: 0; text-align: center; font-size: 32px; line-height: 1; background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.05); transition: transform 0.15s; }
-
   .win-cell { background: rgba(255, 215, 0, 0.3) !important; box-shadow: inset 0 0 15px #ffd700; border-radius: 8px; }
   .win-flash { position: fixed; inset: 0; background: #fff; z-index: 90; pointer-events: none; opacity: 0; transition: opacity 0.1s; }
   .win-flash.active { opacity: 0.8; }
-
-  #fisher-scale { display: none; margin: 0 auto 10px auto; width: 95%; max-width: 600px; background: #4a2e15; border: 3px solid #b8860b; border-radius: 15px; padding: 5px; z-index: 20; box-shadow: 0 4px 10px rgba(0,0,0,0.8), inset 0 0 10px rgba(0,0,0,0.8); flex-shrink: 0; overflow: hidden; }
-  .fisher-track { display: flex; gap: 2px; width: 100%; height: 40px; }
-  .fisher-cell { flex: 1; background: #2a1a0a; border: 1px solid #5a3a1a; border-radius: 4px; display: flex; justify-content: center; align-items: center; font-size: 20px; filter: grayscale(1) brightness(0.5); position: relative; transition: 0.3s; }
-  .fisher-cell.active { filter: none; background: #5a3a1a; box-shadow: inset 0 0 10px #ffd700; }
-  .fisher-cell.bonus-cell { flex: 1.5; flex-direction: column; font-size: 10px; font-weight: 900; color: #fff; text-align: center; line-height: 1.1; background: #111; }
-  .fisher-cell.bonus-cell .plus { color: #00ff88; font-size: 12px; }
-  .fisher-cell.bonus-cell .mult { color: #ffd700; font-size: 14px; text-shadow: 0 0 5px #ffd700; }
 
   #controls-panel { background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); padding: 15px; padding-bottom: 25px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; z-index: 10;}
   #msg { min-height: 20px; text-align: center; font-weight: 900; font-size: 16px; color: #ffd700; opacity: 0; transition: 0.2s; text-transform: uppercase; text-shadow: 0 0 10px #000; }
@@ -71,7 +75,7 @@
   .bet-btn.active { background: #ffd700; color: #000; border-color: #fff; }
   #custom-bet { width: 70px; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid #444; color: #ffd700; border-radius: 10px; text-align: center; font-weight: bold; outline: none; }
   .action-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .main-btn { padding: 18px; font-size: 16px; font-weight: 900; border-radius: 16px; border: none; text-transform: uppercase; cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.5); transition: transform 0.1s; font-family: inherit;}
+  .main-btn { padding: 15px; font-size: 16px; font-weight: 900; border-radius: 16px; border: none; text-transform: uppercase; cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.5); transition: transform 0.1s; font-family: inherit;}
   .main-btn:active { transform: translateY(4px); box-shadow: none; }
   .main-btn:disabled { opacity: 0.5; filter: grayscale(1); }
   #spin-btn { grid-column: 1 / -1; background: linear-gradient(to bottom, #ff3b30, #a30000); color: #fff; font-size: 24px; padding: 20px; box-shadow: 0 6px 0 #600000; }
@@ -88,7 +92,6 @@
 
   #wheel-wrapper { position:relative; width:300px; height:300px; margin: 0 auto; }
   #wheel-canvas { border-radius:50%; border:4px solid #ffd700; box-shadow:0 0 40px #ffd700; width: 100%; height: 100%; display: block;}
-
   #roulette-screen { position: fixed; inset: 0; z-index: 150; background: #0a0a0c; display: none; flex-direction: column; padding: 15px; overflow-y: auto;}
   .roulette-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
   .roulette-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; max-width: 400px; margin: 0 auto; background: #111; padding: 10px; border-radius: 12px; border: 2px solid #333; }
@@ -118,45 +121,108 @@
 <div class="win-flash" id="win-flash"></div>
 <div id="toast"></div>
 
-<!-- БАННЕР ИВЕНТА -->
 <div id="event-banner" style="display: none; position: fixed; top: 0; left: 0; width: 100%; background: linear-gradient(90deg, #ff0000, #ff8c00); color: #fff; text-align: center; padding: 10px; font-weight: 900; z-index: 9999; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
     <span id="event-text">🔥 ЗОЛОТАЯ ЛИХОРАДКА!</span>
     <span id="event-timer" style="margin-left: 10px; background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 5px;">00:00</span>
 </div>
 
-<!-- ЭКРАН ПРИВЕТСТВИЯ -->
 <div id="welcome-screen">
   <h1>TIM SLOT</h1>
   <p>Добро пожаловать в клуб удачи</p>
   <button id="start-btn">ИГРАТЬ</button>
 </div>
 
-<!-- ЛОББИ -->
 <div id="lobby-screen">
   <div class="lobby-header"><h2>Выбери игру</h2></div>
-  <div id="games-carousel"></div>
+  
+  <div class="lobby-section">
+      <h3>🎰 Слоты</h3>
+      <div class="game-grid">
+          <div class="game-card-new" onclick="startGame('fruits')">
+              <div class="overlay-dark"></div>
+              <div class="icon" style="z-index:1;">🍒</div>
+              <div class="title" style="z-index:1;">Классика</div>
+          </div>
+          <div class="game-card-new" onclick="startGame('fishing')">
+              <div class="overlay-dark"></div>
+              <div class="icon" style="z-index:1;">🎣</div>
+              <div class="title" style="z-index:1;">Рыбалка</div>
+              <div class="badge">БОНУС</div>
+          </div>
+          <div class="game-card-new" onclick="startRoulette()">
+              <div class="overlay-dark"></div>
+              <div class="icon" style="z-index:1;">🎰</div>
+              <div class="title" style="z-index:1;">Рулетка</div>
+          </div>
+      </div>
+  </div>
+
+  <div class="lobby-section">
+      <h3>💼 Экономика и Магазин</h3>
+      <div class="game-grid">
+          <div class="game-card-new" onclick="document.getElementById('menu-shop').click()">
+              <div class="icon">🏢</div>
+              <div class="title">Магазин</div>
+          </div>
+          <div class="game-card-new" onclick="document.getElementById('menu-crypto').click()">
+              <div class="icon">📈</div>
+              <div class="title">Крипта</div>
+          </div>
+          <div class="game-card-new" onclick="document.getElementById('menu-black').click()">
+              <div class="icon">🕶️</div>
+              <div class="title">Черный рынок</div>
+          </div>
+          <div class="game-card-new" onclick="document.getElementById('menu-vip').click()">
+              <div class="icon">👑</div>
+              <div class="title">VIP-Клуб</div>
+          </div>
+          <div class="game-card-new" onclick="document.getElementById('menu-house').click()">
+              <div class="icon">🏠</div>
+              <div class="title">Особняк</div>
+          </div>
+      </div>
+  </div>
+
+  <div class="lobby-section">
+      <h3>🏆 Социальное</h3>
+      <div class="game-grid">
+          <div class="game-card-new" onclick="document.getElementById('menu-clans').click()">
+              <div class="icon">🛡️</div>
+              <div class="title">Кланы</div>
+          </div>
+          <div class="game-card-new" onclick="document.getElementById('menu-clan-war').click()">
+              <div class="icon">⚔️</div>
+              <div class="title">Войны</div>
+          </div>
+          <div class="game-card-new" onclick="document.getElementById('menu-chat').click()">
+              <div class="icon">💬</div>
+              <div class="title">Чат</div>
+          </div>
+          <div class="game-card-new" onclick="document.getElementById('menu-tournament').click()">
+              <div class="icon">🏆</div>
+              <div class="title">Турнир</div>
+          </div>
+      </div>
+  </div>
 </div>
 
-<!-- ИГРОВОЙ ЭКРАН (СЛОТЫ) -->
 <div id="game-screen">
   <div id="top-bar">
     <div style="display:flex; align-items:center; gap:10px;">
-      <button class="main-btn" onclick="exitToLobby()" style="width:auto; padding:10px 15px; background:rgba(0,0,0,0.7); color:#fff; border:1px solid #555; box-shadow:none; font-size:14px; border-radius:12px;">⬅ Назад</button>
+      <button class="main-btn" onclick="exitToLobby()" style="width:auto; padding:8px 12px; background:rgba(0,0,0,0.7); color:#fff; border:1px solid #555; box-shadow:none; font-size:12px; border-radius:10px;">⬅ Назад</button>
       <div class="profile-info">
         <div class="balance-box"><span>Баланс</span><strong id="bal">0</strong></div>
-        <div class="balance-box" style="border-color: #00ff88;"><span>Капитал</span><strong id="networth" style="color: #00ff88; text-shadow: 0 0 10px #00ff88;">0</strong></div>
+        <div class="balance-box capital"><span>Капитал</span><strong id="networth">0</strong></div>
       </div>
     </div>
     <div class="menu-btn" id="menu-toggle">⋮</div>
   </div>
 
-  <!-- ВЫПАДАЮЩЕЕ МЕНЮ -->
   <div id="dropdown-menu">
     <div style="padding: 12px 15px; border-bottom: 1px solid #333; background: rgba(255,215,0,0.1);">
         <div style="font-size: 14px; color: #fff; font-weight: bold; margin-bottom: 5px;">Уровень <span id="lvl-text">1</span></div>
         <div class="level-bar" style="width: 100%; height: 8px; background:#333; border-radius:4px; overflow:hidden;"><div class="level-fill" id="lvl-fill" style="width: 0%; height:100%; background:#00ff88;"></div></div>
     </div>
-    
     <button id="menu-music">🎵 Музыка: ВКЛ</button>
     <button id="menu-daily">🎁 Ежедневная награда</button>
     <button id="menu-quests">📜 Задания</button>
@@ -179,17 +245,13 @@
     <button id="menu-back">⬅ В меню</button>
   </div>
 
-  <!-- ШКАЛА РЫБАКА -->
-  <div id="fisher-scale">
-      <div class="fisher-track" id="fisher-track"></div>
-  </div>
-
-  <!-- БАРАБАНЫ -->
   <div id="pixi-container">
+    <div id="fisher-scale">
+        <div class="fisher-track" id="fisher-track"></div>
+    </div>
     <div id="slot-grid"></div>
   </div>
 
-  <!-- ПАНЕЛЬ УПРАВЛЕНИЯ -->
   <div id="controls-panel">
     <div id="msg"></div>
     <div class="bet-controls" id="betrow">
@@ -200,14 +262,6 @@
       <input type="number" id="custom-bet" placeholder="Своя">
     </div>
     
-    <!-- БЫСТРЫЕ КНОПКИ -->
-    <div style="display: flex; justify-content: space-between; gap: 5px; margin-bottom: 10px;">
-        <button class="main-btn" onclick="document.getElementById('menu-shop').click();" style="flex: 1; padding: 10px 5px; font-size: 20px; background: rgba(0,0,0,0.6); border: 1px solid #444; box-shadow: none;">🏢</button>
-        <button class="main-btn" onclick="document.getElementById('menu-daily').click();" style="flex: 1; padding: 10px 5px; font-size: 20px; background: rgba(0,0,0,0.6); border: 1px solid #444; box-shadow: none;">🎁</button>
-        <button class="main-btn" onclick="document.getElementById('menu-quests').click();" style="flex: 1; padding: 10px 5px; font-size: 20px; background: rgba(0,0,0,0.6); border: 1px solid #444; box-shadow: none;">📜</button>
-        <button class="main-btn" onclick="document.getElementById('menu-rating').click();" style="flex: 1; padding: 10px 5px; font-size: 20px; background: rgba(0,0,0,0.6); border: 1px solid #444; box-shadow: none;">🏆</button>
-    </div>
-
     <div class="action-buttons">
       <button class="main-btn" id="spin-btn">SPIN</button>
       <button class="main-btn" id="buy-bonus-btn">КУПИТЬ БОНУС</button>
@@ -215,7 +269,6 @@
   </div>
 </div>
 
-<!-- ЭКРАН РУЛЕТКИ -->
 <div id="roulette-screen">
   <div class="roulette-top">
     <div style="display:flex; align-items:center; gap:10px;">
@@ -265,7 +318,6 @@
     <button id="r-spin-btn">КРУТИТЬ (Списать ставки)</button>
   </div>
 </div>
-
 <!-- МОДАЛКИ -->
 <div class="modal" id="ref-modal">
   <div class="modal-content" style="background: linear-gradient(145deg, #1a1a2e, #0a0a0c); max-height: 90vh; overflow-y: auto;">
@@ -468,7 +520,10 @@
     <div style="text-align: center; margin-bottom: 15px;">
         <div style="font-size: 36px; font-weight: 900; color: #ffd700;" id="crypto-price">0.00</div>
         <div style="color: #aaa; font-size: 12px;">Текущий курс за 1 TIM</div>
-            </div>
+    </div>
+    <div style="background: #222; padding: 10px; border-radius: 10px; margin-bottom: 15px; text-align: center;">
+        В кошельке: <strong id="crypto-balance" style="color: #00ff88;">0.0000</strong> TIM
+    </div>
     <div style="display: flex; gap: 10px; margin-bottom: 10px;">
         <input type="number" id="crypto-amount" placeholder="Кол-во" style="flex: 1; padding: 10px; background: #111; color: #fff; border: 1px solid #444; border-radius: 8px;">
         <button class="main-btn" onclick="cryptoTrade('buy')" style="background: #00c853; box-shadow: none; flex: 1;">Купить</button>
@@ -513,7 +568,6 @@
         <button id="chat-tab-clan" class="main-btn" onclick="switchChatTab(true)" style="flex: 1; padding: 8px; font-size: 14px; background: #333; box-shadow: none;">Клан</button>
     </div>
     <div id="chat-messages" style="flex: 1; overflow-y: auto; background: #111; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; border: 1px solid #333;">
-        <!-- Сообщения -->
     </div>
     <div style="display: flex; gap: 5px;">
         <input type="text" id="chat-input" placeholder="Сообщение..." maxlength="100" style="flex: 1; padding: 10px; background: #222; color: #fff; border: 1px solid #444; border-radius: 8px; outline: none;">
@@ -659,28 +713,6 @@ let spinning = false;
 let currentFishCaught = 0;
 
 window.addEventListener('load', () => {
-    const carousel = $('games-carousel');
-    const games = [
-        { id: 'fruits', title: 'Классика', desc: '3 барабана, 1 линия', cls: 'bg-fruits' },
-        { id: 'fishing', title: 'Рыбалка', desc: 'Бонусная игра', cls: 'bg-fishing' },
-        { id: 'roulette', title: 'Рулетка', desc: 'Европейская', cls: 'bg-roulette' }
-    ];
-
-    games.forEach(g => {
-        const card = document.createElement('div');
-        card.className = `game-card ${g.cls}`;
-        card.innerHTML = `<h3>${g.title}</h3><p>${g.desc}</p><span class="min-bet">от 10 ₽</span>`;
-        card.onclick = () => { 
-            SFX.click(); 
-            if (g.id === 'roulette') {
-                startRoulette();
-            } else {
-                startGame(g.id); 
-            }
-        };
-        carousel.appendChild(card);
-    });
-
     api('/state').then(s => {
         if (s.free_spins > 0) {
             api('/reset_fs').then(() => refresh());
@@ -821,7 +853,8 @@ function startSpin(finalGrid) {
         }, 800 + i * 200);
     }
 }
-  let state = {};
+
+let state = {};
 async function refresh() {
   try {
     state = await api('/state'); 
@@ -855,7 +888,6 @@ async function refresh() {
     $('menu-ad').disabled = !state.ad_ready || !state.ad_allowed || freeSpins > 0;
     $('ref-count').textContent = state.ref_count || 0;
 
-    // Капитал
     try {
         const assetsData = await api('/get_assets');
         state.assets_value = assetsData.total_value || 0;
@@ -863,7 +895,6 @@ async function refresh() {
         if ($('networth')) $('networth').textContent = networth.toLocaleString();
     } catch(e) { console.log("Ошибка капитала:", e); }
 
-    // Всплывашка низкого баланса
     if (state.balance < 5000) {
         const now = Date.now();
         if (now - lastLowBalanceShow > 300000 && $('welcome-screen').style.display === 'none' && $('low-balance-modal').style.display !== 'flex') {
@@ -874,7 +905,6 @@ async function refresh() {
         }
     }
     
-    // Баннер ивента
     if (state.active_event !== undefined) {
         updateEventBanner(state.active_event);
     }
@@ -1128,7 +1158,8 @@ function updateEventBanner(eventData) {
 }
 
 function closeLowBalanceModal() { $('low-balance-modal').style.display = 'none'; }
-  // --- РУЛЕТКА ЛОГИКА ---
+
+// --- РУЛЕТКА ЛОГИКА ---
 let currentRouletteBets = [];
 let currentRouletteAmount = 10;
 
@@ -1554,7 +1585,8 @@ async function cryptoTrade(action) {
         refresh();
     } catch(e) { SFX.lose(); toast(e.message); }
 }
-  // --- МАГАЗИН ---
+
+// --- МАГАЗИН ---
 const SHOP_CATALOG = {
     "car_lada": {"name": "Лада Приора", "price": 500000, "emoji": "🚗"}, "car_camry": {"name": "Toyota Camry", "price": 2500000, "emoji": "🚘"},
     "car_bmw": {"name": "BMW M5", "price": 8000000, "emoji": "🏎️"}, "car_porsche": {"name": "Porsche 911", "price": 15000000, "emoji": "🏎️"},
@@ -1789,7 +1821,8 @@ async function buyHouseUpgrade() {
         state.balance = d.balance; $('bal').textContent = state.balance; $('menu-house').click(); refresh();
     } catch(e) { SFX.lose(); toast(e.message); }
 }
-  // --- КВЕСТЫ ---
+
+// --- КВЕСТЫ ---
 $('menu-quests').onclick = async () => {
     $('dropdown-menu').style.display = 'none'; SFX.click();
     $('quests-modal').style.display = 'flex';
