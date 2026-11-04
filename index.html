@@ -24,20 +24,14 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; font-family: 'Montserrat', sans-serif;}
   html, body { margin:0; padding:0; background: var(--bg-dark); color:#fff; overflow:hidden; height:100%; }
 
-  /* --- АНИМАЦИИ --- */
   @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes pulseGold { 0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(255, 215, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); } }
   @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-8px); } 100% { transform: translateY(0px); } }
   @keyframes shine { to { background-position: 200% center; } }
 
-  /* --- ОБЩИЕ ЭЛЕМЕНТЫ --- */
   .glass-panel { background: var(--bg-panel); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow); border-radius: 20px; }
   
-  .main-btn { 
-    padding: 15px; font-size: 16px; font-weight: 800; border-radius: 16px; border: none; 
-    text-transform: uppercase; cursor: pointer; transition: all 0.2s ease; font-family: inherit;
-    position: relative; overflow: hidden; letter-spacing: 0.5px;
-  }
+  .main-btn { padding: 15px; font-size: 16px; font-weight: 800; border-radius: 16px; border: none; text-transform: uppercase; cursor: pointer; transition: all 0.2s ease; font-family: inherit; position: relative; overflow: hidden; letter-spacing: 0.5px; }
   .main-btn:active { transform: scale(0.95); filter: brightness(0.8); }
   .main-btn:disabled { opacity: 0.4; filter: grayscale(1); cursor: not-allowed; }
   
@@ -47,15 +41,13 @@
   .btn-blue { background: linear-gradient(135deg, #00d2ff 0%, #0055ff 100%); color: #fff; box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3); }
   .btn-dark { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: #fff; }
 
-  /* --- ЭКРАН ПРИВЕТСТВИЯ --- */
   #welcome-screen { position: fixed; inset: 0; z-index: 200; background: radial-gradient(circle at center, #1a1a2e 0%, #000 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s; }
   #welcome-screen h1 { font-size: 48px; font-weight: 900; background: linear-gradient(to right, #ffd700, #fff, #ffd700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-size: 200% auto; animation: shine 3s linear infinite; text-align: center; margin-bottom: 10px; }
   #welcome-screen p { color: var(--text-muted); margin-bottom: 40px; font-size: 16px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; }
   #start-btn { padding: 20px 60px; font-size: 24px; font-weight: 900; border-radius: 30px; border: none; background: linear-gradient(to right, #ffd700, #ff8c00); color: #000; box-shadow: 0 0 30px rgba(255, 215, 0, 0.5); cursor: pointer; animation: pulseGold 2s infinite; }
 
-  /* --- ЛОББИ --- */
-  #lobby-screen { position: fixed; inset: 0; z-index: 150; background: #05050a; display: none; flex-direction: column; overflow-y: auto; padding-bottom: 50px; animation: fadeIn 0.4s ease-out; }
-  #lobby-screen::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 0%, rgba(30,20,60,0.8) 0%, rgba(5,5,10,1) 80%); z-index: -1; }
+  #lobby-screen { position: fixed; inset: 0; z-index: 150; background: url('https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=1000&auto=format&fit=crop') center/cover; display: none; flex-direction: column; overflow-y: auto; padding-bottom: 50px; animation: fadeIn 0.4s ease-out; }
+  #lobby-screen::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5,5,10,0.8) 0%, rgba(5,5,10,0.95) 100%); z-index: -1; }
   
   .lobby-header { padding: 30px 20px 20px; text-align: center; }
   .lobby-header h2 { font-size: 32px; font-weight: 900; background: linear-gradient(135deg, #ffd700, #ff8c00); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; letter-spacing: 1px;}
@@ -65,12 +57,7 @@
   .lobby-section h3::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(255,255,255,0.2), transparent); }
 
   .game-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-  .game-card-new { 
-    background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255,255,255,0.08); 
-    border-radius: 20px; aspect-ratio: 1 / 1; display: flex; flex-direction: column; 
-    justify-content: center; align-items: center; cursor: pointer; 
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); position: relative; overflow: hidden;
-  }
+  .game-card-new { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; aspect-ratio: 1 / 1; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); position: relative; overflow: hidden; }
   .game-card-new::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at center, rgba(255,215,0,0.1) 0%, transparent 70%); opacity: 0; transition: 0.3s; }
   .game-card-new:hover::before, .game-card-new:active::before { opacity: 1; }
   .game-card-new:active { transform: scale(0.92); border-color: #ffd700; box-shadow: 0 0 20px rgba(255,215,0,0.2); }
@@ -79,7 +66,6 @@
   .game-card-new .title { color: #fff; font-size: 12px; font-weight: 800; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.8; }
   .game-card-new .badge { position: absolute; top: 10px; right: 10px; background: var(--neon-red); color: #fff; font-size: 9px; padding: 3px 8px; border-radius: 8px; font-weight: 900; box-shadow: 0 0 10px rgba(255,59,48,0.5); }
 
-  /* --- ИГРОВОЙ ЭКРАН (СЛОТЫ) --- */
   #game-screen { position: fixed; inset: 0; z-index: 100; display: none; flex-direction: column; }
   #game-screen.bg-fruits { background: radial-gradient(circle at 50% 10%, #2a1040 0%, #05050a 80%); }
   #game-screen.bg-fishing { background: radial-gradient(circle at 50% 10%, #0a3a5a 0%, #05050a 80%); }
@@ -101,14 +87,6 @@
 
   #pixi-container { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 10px; position: relative; overflow: hidden; }
   
-  #fisher-scale { display: none; width: 95%; max-width: 600px; background: #4a2e15; border: 2px solid #b8860b; border-radius: 15px; padding: 5px; z-index: 20; margin-bottom: 10px; flex-shrink: 0; }
-  .fisher-track { display: flex; gap: 2px; width: 100%; height: 30px; }
-  .fisher-cell { flex: 1; background: #2a1a0a; border: 1px solid #5a3a1a; border-radius: 4px; display: flex; justify-content: center; align-items: center; font-size: 16px; filter: grayscale(1) brightness(0.5); }
-  .fisher-cell.active { filter: none; background: #5a3a1a; box-shadow: inset 0 0 10px #ffd700; }
-  .fisher-cell.bonus-cell { flex: 1.5; flex-direction: column; font-size: 8px; font-weight: 900; color: #fff; text-align: center; background: #111; }
-  .fisher-cell.bonus-cell .plus { color: #00ff88; font-size: 9px; }
-  .fisher-cell.bonus-cell .mult { color: #ffd700; font-size: 11px; }
-
   #slot-grid { width: 95%; max-width: 600px; height: auto; aspect-ratio: 3 / 1; border-radius: 20px; border: 2px solid rgba(255,255,255,0.1); position: relative; background: rgba(0,0,0,0.5); overflow: hidden; display: flex; margin: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
   #slot-grid.fishing-mode { aspect-ratio: 5 / 3; }
   .reel-col { display: flex; flex-direction: column; flex: 1; height: 100%; overflow: hidden; position: relative; border-right: 1px solid rgba(255,255,255,0.05); min-width: 40px;}
@@ -118,27 +96,23 @@
   .win-cell { background: rgba(255, 215, 0, 0.2) !important; box-shadow: inset 0 0 20px #ffd700; border-radius: 10px; border: 1px solid #ffd700; }
 
   #controls-panel { background: linear-gradient(to top, rgba(5,5,10,1) 0%, transparent 100%); padding: 15px; padding-bottom: 30px; display: flex; flex-direction: column; gap: 12px; z-index: 10;}
-  #msg { min-height: 20px; text-align: center; font-weight: 900; font-size: 16px; color: #ffd700; opacity: 0; transition: 0.2s; text-transform: uppercase; text-shadow: 0 0 10px rgba(255,215,0,0.5);}
-  #msg.show { opacity: 1; }
   .bet-controls { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
   .bet-btn { padding: 10px 15px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 12px; font-weight: 800; font-size: 14px; cursor: pointer; transition: 0.2s; }
   .bet-btn.active { background: var(--gold); color: #000; border-color: #fff; box-shadow: 0 0 15px rgba(255,215,0,0.4); }
   #custom-bet { width: 80px; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); color: var(--gold); border-radius: 12px; text-align: center; font-weight: 800; outline: none; font-size: 14px; }
   
   .action-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  #spin-btn { grid-column: 1 / 2; background: linear-gradient(135deg, #ff3b30 0%, #a30000 100%); color: #fff; font-size: 20px; padding: 18px; box-shadow: 0 8px 0 #600000, 0 10px 20px rgba(255,0,0,0.3); border-radius: 16px; }
+  #spin-btn { grid-column: 1 / 2; background: linear-gradient(135deg, #ff3b30 0%, #a30000 100%); color: #fff; font-size: 22px; padding: 18px; box-shadow: 0 8px 0 #600000, 0 10px 20px rgba(255,0,0,0.3); border-radius: 16px; }
   #autospin-btn { grid-column: 2 / 3; background: linear-gradient(135deg, #00d2ff 0%, #0055ff 100%); color: #fff; font-size: 18px; padding: 18px; box-shadow: 0 8px 0 #0033aa, 0 10px 20px rgba(0,210,255,0.3); border-radius: 16px; display: none; }
   #buy-bonus-btn { grid-column: 1 / -1; background: linear-gradient(135deg, #ffd700 0%, #b8860b 100%); color: #000; font-size: 18px; border-radius: 16px; box-shadow: 0 8px 0 #7a5900; display: none; }
   #spin-btn:active, #autospin-btn:active, #buy-bonus-btn:active { transform: translateY(6px); box-shadow: none; }
 
-  /* --- МОДАЛКИ --- */
   .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 300; display: none; justify-content: center; align-items: center; flex-direction: column; padding: 20px; overflow-y: auto; }
   .modal-content { background: #0f0f1a; width: 100%; max-width: 420px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); padding: 25px; text-align: center; position: relative; max-height: 85vh; overflow-y: auto; box-shadow: 0 25px 60px rgba(0,0,0,0.9); animation: fadeIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
   .modal-close { position: absolute; top: 15px; right: 20px; font-size: 28px; color: var(--text-muted); cursor: pointer; transition: 0.2s; }
   .modal-close:active { color: #fff; transform: scale(1.1); }
   .modal h2 { font-size: 24px; font-weight: 900; margin-top: 0; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
 
-  /* --- РУЛЕТКА --- */
   #roulette-screen { position: fixed; inset: 0; z-index: 150; background: radial-gradient(circle at center, #0f1a2e 0%, #05050a 100%); display: none; flex-direction: column; padding: 20px; overflow-y: auto;}
   .roulette-board { display: grid; grid-template-columns: repeat(3, 1fr); flex: 0 0 45%; max-width: 200px; padding: 8px; gap: 4px; background: rgba(0,0,0,0.5); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); }
   .r-cell { background: rgba(255,255,255,0.05); color: #fff; border: none; border-radius: 6px; display: flex; justify-content: center; align-items: center; height: 36px; font-weight: 800; cursor: pointer; font-size: 13px; transition: 0.2s; }
@@ -154,20 +128,21 @@
   #r-spin-btn { width: 100%; margin-top: 20px; padding: 20px; font-size: 22px; background: linear-gradient(135deg, #ff3b30 0%, #a30000 100%); color: #fff; border: none; border-radius: 16px; font-weight: 900; cursor: pointer; box-shadow: 0 8px 0 #600000; }
   #r-reset-btn { width: 100%; margin-top: 10px; padding: 12px; background: rgba(255,255,255,0.05); color: #fff; box-shadow: none; border-radius: 12px; }
 
-  /* --- ШАХТА --- */
   #mine-modal { background: radial-gradient(circle at 50% 20%, #2a1a0a 0%, #05050a 100%); padding: 0; }
   #mine-tap-area { font-size: 180px; cursor: pointer; user-select: none; transition: transform 0.08s; filter: drop-shadow(0 10px 30px rgba(255,215,0,0.3)); animation: float 3s ease-in-out infinite; }
   #mine-tap-area:active { transform: scale(0.85); }
+  .mine-stat-box { background: rgba(0,0,0,0.5); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); flex: 1; text-align: center; }
   
-  /* --- ДРУГОЕ --- */
   #toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); background: rgba(0,0,0,0.9); color: var(--gold); padding: 15px 30px; border-radius: 20px; border: 2px solid var(--gold); font-size: 24px; font-weight: 900; opacity: 0; pointer-events: none; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 999; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
   #toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   .win-flash { position: fixed; inset: 0; background: #fff; z-index: 90; pointer-events: none; opacity: 0; transition: opacity 0.1s; }
   .win-flash.active { opacity: 0.6; }
+  
+  .ref-link-box { background: rgba(0,0,0,0.4); padding: 15px; border-radius: 12px; margin: 15px 0; font-size: 13px; word-break: break-all; border: 1px solid rgba(255,255,255,0.1); color: var(--neon-green); font-family: monospace; }
+  .copy-btn { width: 100%; padding: 15px; background: linear-gradient(135deg, #00ff88 0%, #007a33 100%); color: #000; border: none; border-radius: 12px; font-weight: 900; font-size: 16px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,255,136,0.3); }
 </style>
 </head>
 <body>
-
 <div class="win-flash" id="win-flash"></div>
 <div id="toast"></div>
 
@@ -295,6 +270,7 @@
     <button id="menu-music">🎵 Музыка: ВКЛ</button>
     <button id="menu-daily">🎡 Колесо Фортуны</button>
     <button id="menu-quests">📜 Задания</button>
+    <button id="menu-auction">🏛️ Аукцион</button>
     <button id="menu-chat">💬 Чат</button>
     <button id="menu-ref">👥 Рефералы</button>
     <button id="menu-promo">🎟️ Промокод</button>
@@ -313,7 +289,7 @@
   </div>
 
   <div id="controls-panel">
-    <div id="msg"></div>
+    <div id="msg" style="font-size: 20px; font-weight: 900; text-shadow: 0 0 10px var(--gold);"></div>
     <div class="bet-controls" id="betrow">
       <button class="bet-btn active" data-bet="10">10</button>
       <button class="bet-btn" data-bet="50">50</button>
@@ -485,13 +461,19 @@
     <span class="modal-close" onclick="document.getElementById('auction-modal').style.display='none'">×</span>
     <h2 style="color: var(--neon-blue);">🏛️ Аукцион</h2>
     <div style="display: flex; gap: 8px; margin-bottom: 20px;">
-        <button id="tab-auction-buy" class="main-btn btn-blue" onclick="switchAuctionTab('buy')" style="flex: 1; padding: 12px; font-size: 13px;">Купить</button>
-        <button id="tab-auction-sell" class="main-btn btn-dark" onclick="switchAuctionTab('sell')" style="flex: 1; padding: 12px; font-size: 13px;">Выставить</button>
-        <button id="tab-auction-my" class="main-btn btn-dark" onclick="switchAuctionTab('my')" style="flex: 1; padding: 12px; font-size: 13px;">Мои лоты</button>
+        <button id="tab-auction-buy" class="main-btn btn-blue" onclick="switchAuctionTab('buy')" style="flex: 1; padding: 10px; font-size: 12px;">Купить</button>
+        <button id="tab-auction-sell" class="main-btn btn-dark" onclick="switchAuctionTab('sell')" style="flex: 1; padding: 10px; font-size: 12px;">Выставить</button>
+        <button id="tab-auction-my" class="main-btn btn-dark" onclick="switchAuctionTab('my')" style="flex: 1; padding: 10px; font-size: 12px;">Мои лоты</button>
     </div>
-    <div id="auction-buy-panel" style="display: flex; flex-direction: column; gap: 10px; width: 100%;"><div id="auction-lots-list" style="display: flex; flex-direction: column; gap: 10px;"></div></div>
-    <div id="auction-sell-panel" style="display: none; flex-direction: column; gap: 10px; width: 100%;"><div id="auction-my-assets" style="display: flex; flex-direction: column; gap: 10px;"></div></div>
-    <div id="auction-my-panel" style="display: none; flex-direction: column; gap: 10px; width: 100%;"><div id="auction-my-lots-list" style="display: flex; flex-direction: column; gap: 10px;"></div></div>
+    <div id="auction-buy-panel" style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+        <div id="auction-lots-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+    </div>
+    <div id="auction-sell-panel" style="display: none; flex-direction: column; gap: 10px; width: 100%;">
+        <div id="auction-my-assets" style="display: flex; flex-direction: column; gap: 10px;"></div>
+    </div>
+    <div id="auction-my-panel" style="display: none; flex-direction: column; gap: 10px; width: 100%;">
+        <div id="auction-my-lots-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+    </div>
   </div>
 </div>
 
@@ -499,20 +481,20 @@
   <div class="modal-content">
     <span class="modal-close" onclick="closeLowBalanceModal()">×</span>
     <h2 style="color: var(--neon-red);">Мало фишек!</h2>
-    <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">Твой баланс ниже 5000. Посмотри рекламу и получи бонус!</p>
-    <button class="main-btn btn-gold" id="low-bal-ad-btn" style="width: 100%; margin-bottom: 10px;">🎬 СМОТРЕТЬ РЕКЛАМУ</button>
+    <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">Баланс ниже 5000. Посмотри рекламу и получи бонус!</p>
+    <button class="main-btn btn-gold" id="low-bal-ad-btn" style="width: 100%; margin-bottom: 10px;">🎬 СМОТРЕТЬ</button>
     <button class="main-btn btn-dark" onclick="closeLowBalanceModal()" style="width: 100%;">ЗАКРЫТЬ</button>
   </div>
 </div>
 
 <div class="modal" id="low-energy-modal">
-    <div class="modal-content">
-        <span class="modal-close" onclick="closeLowEnergyModal()">×</span>
-        <h2 style="color: var(--neon-red);">Мало энергии!</h2>
-        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">Посмотри короткую рекламу и получи +300 энергии!</p>
-        <button class="main-btn btn-green" onclick="watchAdForEnergy()" style="width: 100%; margin-bottom: 10px;">🎬 СМОТРЕТЬ РЕКЛАМУ</button>
-        <button class="main-btn btn-dark" onclick="closeLowEnergyModal()" style="width: 100%;">ЗАКРЫТЬ</button>
-    </div>
+  <div class="modal-content">
+    <span class="modal-close" onclick="closeLowEnergyModal()">×</span>
+    <h2 style="color: var(--neon-red);">Мало энергии!</h2>
+    <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">Посмотри рекламу и получи +300 энергии!</p>
+    <button class="main-btn btn-green" onclick="watchAdForEnergy()" style="width: 100%; margin-bottom: 10px;">🎬 СМОТРЕТЬ</button>
+    <button class="main-btn btn-dark" onclick="closeLowEnergyModal()" style="width: 100%;">ЗАКРЫТЬ</button>
+  </div>
 </div>
 
 <div class="modal" id="house-modal">
@@ -527,7 +509,7 @@
   <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('jackpot-modal').style.display='none'">×</span>
     <h2 style="color: var(--gold);">💰 Джекпот</h2>
-    <p style="color: var(--text-muted); font-size: 14px; text-align: center;">Собери 3 семерки в «Классике» или 5 скаттеров в «Рыбалке», чтобы забрать весь банк!</p>
+    <p style="color: var(--text-muted); font-size: 14px; text-align: center;">Собери 3 семерки в «Классике» или 5 скаттеров в «Рыбалке»!</p>
     <div style="text-align: center; font-size: 42px; font-weight: 900; color: var(--neon-green); text-shadow: 0 0 20px var(--neon-green); margin: 20px 0;" id="jackpot-amount">0</div>
     <button class="main-btn btn-dark" onclick="document.getElementById('jackpot-modal').style.display='none'" style="width: 100%;">ЗАКРЫТЬ</button>
   </div>
@@ -537,8 +519,8 @@
   <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('promo-modal').style.display='none'">×</span>
     <h2 style="color: var(--neon-green);">🎟️ Промокод</h2>
-    <input type="text" id="promo-input" placeholder="ВВЕДИ КОД" style="width: 100%; padding: 15px; background: #111; color: #fff; border: 2px solid #444; border-radius: 12px; text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; outline: none;">
-    <button class="main-btn btn-green" id="promo-btn" onclick="redeemPromo()" style="width: 100%; padding: 15px;">АКТИВИРОВАТЬ</button>
+    <input type="text" id="promo-input" placeholder="ВВЕДИ КОД" style="width: 100%; padding: 18px; background: #000; color: #fff; border: 2px solid var(--gold); border-radius: 12px; text-align: center; font-size: 18px; font-weight: 900; margin-bottom: 20px; text-transform: uppercase; outline: none;">
+    <button class="main-btn btn-green" id="promo-btn" onclick="redeemPromo()" style="width: 100%; padding: 18px;">АКТИВИРОВАТЬ</button>
   </div>
 </div>
 
@@ -546,17 +528,17 @@
   <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('crypto-modal').style.display='none'">×</span>
     <h2 style="color: var(--neon-green);">📈 TimCoin</h2>
-    <div style="text-align: center; margin-bottom: 15px;">
-        <div style="font-size: 36px; font-weight: 900; color: var(--gold);" id="crypto-price">0.00</div>
-        <div style="color: var(--text-muted); font-size: 12px;">Текущий курс</div>
+    <div style="text-align: center; margin-bottom: 20px;">
+        <div style="font-size: 42px; font-weight: 900; color: var(--gold); text-shadow: 0 0 20px var(--gold);" id="crypto-price">0.00</div>
+        <div style="color: var(--text-muted); font-size: 12px;">Курс за 1 TIM</div>
     </div>
-    <div style="background: #222; padding: 15px; border-radius: 12px; margin-bottom: 15px; text-align: center; font-weight: bold;">
-        В кошельке: <strong id="crypto-balance" style="color: var(--neon-green);">0.0000</strong> TIM
+    <div style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center;">
+        В кошельке: <strong id="crypto-balance" style="color: var(--neon-green); font-size: 18px;">0.0000</strong> TIM
     </div>
     <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-        <input type="number" id="crypto-amount" placeholder="Кол-во" style="flex: 1; padding: 12px; background: #111; color: #fff; border: 1px solid #444; border-radius: 12px; outline: none;">
-        <button class="main-btn btn-green" onclick="cryptoTrade('buy')" style="flex: 1;">Купить</button>
-        <button class="main-btn btn-red" onclick="cryptoTrade('sell')" style="flex: 1;">Продать</button>
+        <input type="number" id="crypto-amount" placeholder="Кол-во" style="flex: 1; padding: 15px; background: #000; color: #fff; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; font-weight: bold; outline: none;">
+        <button class="main-btn btn-green" onclick="cryptoTrade('buy')" style="flex: 1; padding: 15px;">КУПИТЬ</button>
+        <button class="main-btn btn-red" onclick="cryptoTrade('sell')" style="flex: 1; padding: 15px;">ПРОДАТЬ</button>
     </div>
   </div>
 </div>
@@ -565,23 +547,23 @@
   <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('black-modal').style.display='none'">×</span>
     <h2 style="color: var(--neon-red);">🕶️ Черный рынок</h2>
-    <div id="black-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+    <div id="black-list" style="display: flex; flex-direction: column; gap: 12px;"></div>
   </div>
 </div>
 
 <div class="modal" id="vip-modal">
-  <div class="modal-content" style="border-color: var(--gold);">
+  <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('vip-modal').style.display='none'">×</span>
-    <h2 style="color: var(--gold);">👑 VIP-Клуб</h2>
-    <ul style="text-align: left; color: #fff; font-size: 14px; margin-bottom: 20px; line-height: 1.6;">
-        <li>✅ +10% к выигрышу во всех играх</li>
-        <li>✅ Золотая рамка в рейтингах</li>
+    <h2 style="color: var(--gold); text-shadow: 0 0 20px var(--gold);">👑 VIP-Клуб</h2>
+    <ul style="text-align: left; color: #fff; font-size: 14px; margin-bottom: 25px; line-height: 1.8; list-style: none; padding: 0;">
+        <li>✅ +10% к выигрышу</li>
+        <li>✅ Золотая рамка</li>
     </ul>
-    <div style="background: #222; padding: 15px; border-radius: 12px; margin-bottom: 15px; font-weight: bold;">
+    <div style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 12px; margin-bottom: 20px;">
         <div>Цена: <strong>100 USD</strong></div>
         <div>У тебя: <strong id="vip-usd-balance" style="color: var(--neon-green);">0</strong> USD</div>
     </div>
-    <button class="main-btn btn-gold" id="vip-buy-btn" onclick="buyVip()" style="width: 100%; padding: 15px;">КУПИТЬ VIP</button>
+    <button class="main-btn btn-gold" id="vip-buy-btn" onclick="buyVip()" style="width: 100%; padding: 18px;">КУПИТЬ VIP</button>
   </div>
 </div>
 
@@ -589,48 +571,45 @@
   <div class="modal-content" style="display: flex; flex-direction: column; height: 80vh;">
     <span class="modal-close" onclick="closeChat()">×</span>
     <h2 style="color: var(--neon-green);">💬 Чат</h2>
-    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-        <button id="chat-tab-global" class="main-btn btn-green" onclick="switchChatTab(false)" style="flex: 1; padding: 10px; font-size: 14px;">Глобальный</button>
-        <button id="chat-tab-clan" class="main-btn btn-dark" onclick="switchChatTab(true)" style="flex: 1; padding: 10px; font-size: 14px;">Клан</button>
+    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <button id="chat-tab-global" class="main-btn btn-green" onclick="switchChatTab(false)" style="flex: 1; padding: 12px; font-size: 13px;">Глобальный</button>
+        <button id="chat-tab-clan" class="main-btn btn-dark" onclick="switchChatTab(true)" style="flex: 1; padding: 12px; font-size: 13px;">Клан</button>
     </div>
-    <div id="chat-messages" style="flex: 1; overflow-y: auto; background: #111; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; border: 1px solid #333;"></div>
+    <div id="chat-messages" style="flex: 1; overflow-y: auto; background: rgba(0,0,0,0.4); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05);"></div>
     <div style="display: flex; gap: 8px;">
-        <input type="text" id="chat-input" placeholder="Сообщение..." maxlength="100" style="flex: 1; padding: 12px; background: #222; color: #fff; border: 1px solid #444; border-radius: 12px; outline: none;">
-        <button class="main-btn btn-green" onclick="sendChatMessage()" style="padding: 10px 20px;">➤</button>
+        <input type="text" id="chat-input" placeholder="Сообщение..." maxlength="100" style="flex: 1; padding: 15px; background: #000; color: #fff; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; outline: none; font-weight: bold;">
+        <button class="main-btn btn-green" onclick="sendChatMessage()" style="padding: 15px 25px;">➤</button>
     </div>
   </div>
 </div>
 
 <div class="modal" id="mine-modal" style="padding: 0;">
-  <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 20px;">
-    <span class="modal-close" onclick="closeMine()" style="top: 15px; right: 15px; z-index: 10;">×</span>
-
-    <div style="width: 100%; max-width: 500px; display: flex; justify-content: space-around; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
-      <div style="text-align: center;">
-        <div style="font-size: 11px; color: var(--text-muted); font-weight: bold; letter-spacing: 1px;">⚡ ЭНЕРГИЯ</div>
-        <div style="font-size: 22px; color: var(--neon-green); font-weight: 900;" id="mine-energy">0</div>
+  <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 25px;">
+    <span class="modal-close" onclick="closeMine()" style="top: 20px; right: 25px; z-index: 10;">×</span>
+    <div style="width: 100%; max-width: 500px; display: flex; gap: 10px;">
+      <div class="mine-stat-box">
+        <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">⚡ Энергия</div>
+        <div style="font-size: 24px; color: var(--neon-green); font-weight: 900;" id="mine-energy">0</div>
       </div>
-      <div style="text-align: center;">
-        <div style="font-size: 11px; color: var(--text-muted); font-weight: bold; letter-spacing: 1px;">⛏️ СИЛА</div>
-        <div style="font-size: 22px; color: var(--gold); font-weight: 900;" id="mine-power">0</div>
+      <div class="mine-stat-box">
+        <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">⛏️ Сила</div>
+        <div style="font-size: 24px; color: var(--gold); font-weight: 900;" id="mine-power">0</div>
       </div>
-      <div style="text-align: center;">
-        <div style="font-size: 11px; color: var(--text-muted); font-weight: bold; letter-spacing: 1px;">💰 НАТАПАНО</div>
-        <div style="font-size: 22px; color: #ff8c00; font-weight: 900;" id="mine-total-tapped">0</div>
+      <div class="mine-stat-box">
+        <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">💰 Натапано</div>
+        <div style="font-size: 24px; color: #ff8c00; font-weight: 900;" id="mine-total-tapped">0</div>
       </div>
     </div>
-
     <div style="flex: 1; display: flex; align-items: center; justify-content: center; position: relative; width: 100%;">
       <div id="mine-tap-area" onclick="tapMine()">
         ⛏️
         <div id="mine-float-reward" style="position: absolute; top: -20px; left: 50%; transform: translateX(-50%); color: var(--neon-green); font-weight: 900; font-size: 28px; opacity: 0; pointer-events: none; text-shadow: 0 0 10px var(--neon-green);"></div>
       </div>
-      <div style="position: absolute; bottom: 10px; color: var(--gold); font-size: 16px; font-weight: 900; text-transform: uppercase; animation: pulseGold 1.5s infinite; text-shadow: 0 0 10px var(--gold);">👆 ТАПАЙ ПО КИРКЕ</div>
+      <div style="position: absolute; bottom: 10px; color: var(--gold); font-size: 14px; font-weight: 800; text-transform: uppercase; animation: pulseGold 2s infinite; background: rgba(0,0,0,0.5); padding: 8px 15px; border-radius: 10px; border: 1px solid var(--gold);">👆 ТАПАЙ ПО КИРКЕ</div>
     </div>
-
-    <div style="width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 20px;">
-      <button class="main-btn btn-green" id="mine-ad-btn" onclick="watchAdForEnergy()" style="width: 100%; padding: 15px;">🎬 +300 ЭНЕРГИИ (РЕКЛАМА)</button>
-      <button class="main-btn btn-gold" id="mine-upgrade-btn" onclick="upgradePickaxe()" style="width: 100%; padding: 15px;">УЛУЧШИТЬ КИРКУ</button>
+    <div style="width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 20px;">
+      <button class="main-btn btn-green" id="mine-ad-btn" onclick="watchAdForEnergy()" style="width: 100%; padding: 18px;">🎬 +300 ЭНЕРГИИ</button>
+      <button class="main-btn btn-gold" id="mine-upgrade-btn" onclick="upgradePickaxe()" style="width: 100%; padding: 18px;">УЛУЧШИТЬ КИРКУ</button>
     </div>
   </div>
 </div>
@@ -639,7 +618,7 @@
   <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('skins-modal').style.display='none'">×</span>
     <h2 style="color: var(--gold);">🎨 Скины</h2>
-    <div id="skins-list" style="display: flex; flex-direction: column; gap: 10px; width: 100%;"></div>
+    <div id="skins-list" style="display: flex; flex-direction: column; gap: 12px; width: 100%;"></div>
   </div>
 </div>
 
@@ -647,7 +626,7 @@
   <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('frames-modal').style.display='none'">×</span>
     <h2 style="color: var(--neon-blue);">🖼️ Рамки</h2>
-    <div id="frames-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+    <div id="frames-list" style="display: flex; flex-direction: column; gap: 12px;"></div>
   </div>
 </div>
 
@@ -655,7 +634,7 @@
   <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('tech-modal').style.display='none'">×</span>
     <h2 style="color: var(--neon-blue);">🧬 Технологии</h2>
-    <div id="tech-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+    <div id="tech-list" style="display: flex; flex-direction: column; gap: 12px;"></div>
   </div>
 </div>
 
@@ -663,7 +642,7 @@
   <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('donate-modal').style.display='none'">×</span>
     <h2 style="color: var(--neon-blue);">💎 Донат</h2>
-    <div id="donate-list" style="display: flex; flex-direction: column; gap: 10px; width: 100%;"></div>
+    <div id="donate-list" style="display: flex; flex-direction: column; gap: 12px; width: 100%;"></div>
   </div>
 </div>
 
@@ -671,7 +650,7 @@
   <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('story-modal').style.display='none'">×</span>
     <h2 style="color: #8a2be2;">🕶️ Империя</h2>
-    <div id="story-list" style="display: flex; flex-direction: column; gap: 10px; width: 100%;"></div>
+    <div id="story-list" style="display: flex; flex-direction: column; gap: 12px; width: 100%;"></div>
   </div>
 </div>
 
@@ -686,32 +665,45 @@
 <div class="modal" id="clan-chest-modal">
   <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('clan-chest-modal').style.display='none'">×</span>
-    <h2 style="color: var(--gold);">🎁 Сундук</h2>
-    <div id="clan-chest-progress" style="background: #222; height: 24px; border-radius: 12px; overflow: hidden; margin-bottom: 10px; border: 1px solid #444;">
-        <div id="clan-chest-bar" style="background: var(--gold); height: 100%; width: 0%; transition: width 0.3s; box-shadow: 0 0 15px var(--gold);"></div>
+    <h2 style="color: var(--gold);">🎁 Сундук Клана</h2>
+    <div style="background: #000; height: 20px; border-radius: 10px; overflow: hidden; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1);">
+        <div id="clan-chest-bar" style="background: var(--gold); height: 100%; width: 0%; transition: width 0.3s; box-shadow: 0 0 10px var(--gold);"></div>
     </div>
-    <div style="text-align: center; color: #fff; font-weight: bold; margin-bottom: 20px;" id="clan-chest-text">0 / 100 000 000</div>
-    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-        <input type="number" id="clan-donate-input" placeholder="Сумма" style="flex: 1; padding: 12px; background: #111; color: #fff; border: 1px solid #444; border-radius: 12px; outline: none;">
-        <button class="main-btn btn-green" onclick="donateClan()" style="flex: 1;">ВНЕСТИ</button>
+    <div style="text-align: center; color: #fff; font-weight: 800; margin-bottom: 25px;" id="clan-chest-text">0 / 100 000 000</div>
+    <div style="display: flex; gap: 10px; margin-bottom: 25px;">
+        <input type="number" id="clan-donate-input" placeholder="Сумма" style="flex: 1; padding: 15px; background: #000; color: #fff; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; font-weight: bold; outline: none;">
+        <button class="main-btn btn-green" onclick="donateClan()" style="flex: 1; padding: 15px;">ВНЕСТИ</button>
     </div>
-    <h3 style="color: #fff; font-size: 14px; margin-bottom: 10px; text-transform: uppercase;">Топ вкладчиков:</h3>
+    <h3 style="color: #fff; font-size: 14px; margin-bottom: 15px;">Топ вкладчиков:</h3>
     <div id="clan-chest-donors" style="display: flex; flex-direction: column; gap: 8px;"></div>
   </div>
 </div>
 
+<div class="modal" id="wheel-modal">
+  <div id="wheel-wrapper">
+    <div style="position:absolute; top:-20px; left:50%; transform:translateX(-50%); width:0; height:0; border-left:20px solid transparent; border-right:20px solid transparent; border-top:30px solid #ff0000; z-index:10;"></div>
+    <canvas id="wheel-canvas" width="300" height="300"></canvas>
+  </div>
+  <div id="wheel-result" style="font-size:40px; font-weight:900; color:var(--gold); margin:20px 0; opacity:0; transition:0.3s;">0</div>
+  <div style="text-align:center;">
+    <div id="wheel-timer" style="color:var(--text-muted); margin-bottom:10px;">Загрузка...</div>
+    <button class="main-btn btn-blue" id="wheel-spin-btn" style="width:200px; padding:15px;">КРУТИТЬ</button>
+    <button class="main-btn btn-gold" id="wheel-close" style="width:200px; padding:15px; display:none; margin-top:10px;">ЗАБРАТЬ</button>
+  </div>
+</div>
+
 <div class="modal" id="autospin-modal" style="z-index: 400;">
-  <div class="modal-content" style="border-color: var(--neon-blue);">
+  <div class="modal-content">
     <span class="modal-close" onclick="document.getElementById('autospin-modal').style.display='none'">×</span>
     <h2 style="color: var(--neon-blue);">🔄 Автоспин</h2>
     <p style="color: var(--text-muted); font-size: 14px;">Выберите количество спинов:</p>
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
-        <button class="main-btn btn-dark" onclick="startAutoSpin(10)">10</button>
-        <button class="main-btn btn-dark" onclick="startAutoSpin(25)">25</button>
-        <button class="main-btn btn-dark" onclick="startAutoSpin(50)">50</button>
-        <button class="main-btn btn-dark" onclick="startAutoSpin(100)">100</button>
+        <button class="main-btn btn-dark" onclick="startAutoSpin(10)" style="padding: 15px;">10</button>
+        <button class="main-btn btn-dark" onclick="startAutoSpin(25)" style="padding: 15px;">25</button>
+        <button class="main-btn btn-dark" onclick="startAutoSpin(50)" style="padding: 15px;">50</button>
+        <button class="main-btn btn-dark" onclick="startAutoSpin(100)" style="padding: 15px;">100</button>
     </div>
-    <button class="main-btn btn-red" onclick="stopAutoSpin()" style="width: 100%; margin-top: 15px; padding: 15px;">ОСТАНОВИТЬ</button>
+    <button class="main-btn btn-red" onclick="stopAutoSpin()" style="width: 100%; margin-top: 20px; padding: 15px;">ОСТАНОВИТЬ</button>
   </div>
 </div>
 <script>
@@ -789,8 +781,22 @@ const SKINS_CATALOG = { "default": { "name": "Стандарт", "price": 0, "sy
 const FRAMES_CATALOG = { "default": { "name": "Стандарт", "price": 0, "css": "border: 2px solid #555; border-radius: 50%;" }, "neon": { "name": "Неон", "price": 10000000, "css": "border: 3px solid #00ffff; border-radius: 50%; box-shadow: 0 0 15px #00ffff;" }, "gold": { "name": "Золото", "price": 50000000, "css": "border: 3px solid #ffd700; border-radius: 50%; box-shadow: 0 0 15px #ffd700;" }, "fire": { "name": "Огонь", "price": 150000000, "css": "border: 3px solid #ff3b30; border-radius: 50%; box-shadow: 0 0 15px #ff3b30;" } };
 const AVATARS = { "dog": { "emoji": "🐶", "price": 100000 }, "wolf": { "emoji": "🐺", "price": 500000 }, "lion": { "emoji": "🦁", "price": 1000000 }, "diamond": { "emoji": "💎", "price": 5000000 }, "crown": { "emoji": "👑", "price": 10000000 }, "rocket": { "emoji": "🚀", "price": 20000000 }, "alien": { "emoji": "👽", "price": 50000000 } };
 
-let currentGame = 'fruits'; let columns = []; let freeSpins = 0; let currentBet = 10; let spinning = false; let currentFishCaught = 0; let state = {};
-let isAutoSpinning = false; let autoSpinsLeft = 0; let autoSpinTimeout = null;
+// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ (включая шахту, чтобы не было ошибки инициализации)
+let currentGame = 'fruits'; 
+let columns = []; 
+let freeSpins = 0; 
+let currentBet = 10; 
+let spinning = false; 
+let currentFishCaught = 0; 
+let state = {};
+let isAutoSpinning = false; 
+let autoSpinsLeft = 0; 
+let autoSpinTimeout = null;
+let mineEnergy = 0; 
+let minePower = 0; 
+let mineMaxEnergy = 1000; 
+let minePickLvl = 1; 
+let mineTotalTapped = 0;
 
 async function refresh() {
   try {
@@ -823,7 +829,7 @@ async function refresh() {
     if (state.balance < 5000) {
         const now = Date.now();
         if (now - lastLowBalanceShow > 300000 && $('welcome-screen').style.display === 'none' && $('low-balance-modal').style.display !== 'flex') {
-            if ($('ref-modal').style.display !== 'flex' && $('rating-modal').style.display !== 'flex' && $('wheel-modal').style.display !== 'flex' && $('daily-wheel-modal').style.display !== 'flex' && $('shop-modal').style.display !== 'flex') {
+            if ($('ref-modal')?.style.display !== 'flex' && $('rating-modal')?.style.display !== 'flex' && $('wheel-modal')?.style.display !== 'flex' && $('daily-wheel-modal')?.style.display !== 'flex' && $('shop-modal')?.style.display !== 'flex') {
                 $('low-balance-modal').style.display = 'flex'; lastLowBalanceShow = now;
             }
         }
@@ -833,22 +839,22 @@ async function refresh() {
 }
 
 function updateUIState(level, xp, nextXp = null) {
-    $('lvl-text').textContent = level; if (nextXp === null) nextXp = level * 15000;
-    let percent = (xp / nextXp) * 100; if (percent > 100) percent = 100; $('lvl-fill').style.width = `${percent}%`;
+    if ($('lvl-text')) $('lvl-text').textContent = level; if (nextXp === null) nextXp = level * 15000;
+    let percent = (xp / nextXp) * 100; if (percent > 100) percent = 100; if ($('lvl-fill')) $('lvl-fill').style.width = `${percent}%`;
 }
-function showMsg(t, win) { const m = $('msg'); m.textContent = t; m.className = 'show ' + (win ? 'win':'lose'); setTimeout(()=> m.className='', 2000); }
-function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); setTimeout(()=> el.classList.remove('show'), 1500); }
-function triggerWinFlash() { const flash = $('win-flash'); flash.classList.add('active'); setTimeout(() => flash.classList.remove('active'), 150); }
+function showMsg(t, win) { const m = $('msg'); if (!m) return; m.textContent = t; m.className = 'show ' + (win ? 'win':'lose'); setTimeout(()=> m.className='', 2000); }
+function toast(t) { const el = $('toast'); if (!el) return; el.textContent = t; el.classList.add('show'); setTimeout(()=> el.classList.remove('show'), 1500); }
+function triggerWinFlash() { const flash = $('win-flash'); if (!flash) return; flash.classList.add('active'); setTimeout(() => flash.classList.remove('active'), 150); }
 function updateEventBanner(eventData) {
-    const banner = $('event-banner'); if (!eventData) { banner.style.display = 'none'; return; }
+    const banner = $('event-banner'); if (!banner) return; if (!eventData) { banner.style.display = 'none'; return; }
     banner.style.display = 'block'; let text = `🔥 ${eventData.type.replace(/_/g, ' ').toUpperCase()} x${eventData.multiplier}`;
     $('event-text').textContent = text; let timeLeft = eventData.time_left;
     if (window.eventInterval) clearInterval(window.eventInterval);
     function tick() { if (timeLeft <= 0) { banner.style.display = 'none'; clearInterval(window.eventInterval); return; } let m = Math.floor(timeLeft / 60), s = timeLeft % 60; $('event-timer').textContent = `${m}:${s < 10 ? '0' : ''}${s}`; timeLeft--; }
     tick(); window.eventInterval = setInterval(tick, 1000);
 }
-function closeLowBalanceModal() { $('low-balance-modal').style.display = 'none'; }
-function closeLowEnergyModal() { $('low-energy-modal').style.display = 'none'; }
+function closeLowBalanceModal() { if ($('low-balance-modal')) $('low-balance-modal').style.display = 'none'; }
+function closeLowEnergyModal() { if ($('low-energy-modal')) $('low-energy-modal').style.display = 'none'; }
 
 $('start-btn').onclick = () => { audioCtx(); playBackgroundMusic(); SFX.click(); $('welcome-screen').style.opacity = '0'; setTimeout(() => { $('welcome-screen').style.display = 'none'; $('lobby-screen').style.display = 'flex'; refresh(); }, 500); };
 window.addEventListener('load', () => { api('/state').then(s => { if (s.free_spins > 0) { api('/reset_fs').then(() => refresh()); } else { refresh(); } }).catch(() => refresh()); });
@@ -986,10 +992,11 @@ function startAutoSpin(count) {
     isAutoSpinning = true; autoSpinsLeft = count; updateAutoSpinBtn(); executeAutoSpin();
 }
 function stopAutoSpin() {
-    isAutoSpinning = false; autoSpinsLeft = 0; if (autoSpinTimeout) clearTimeout(autoSpinTimeout); updateAutoSpinBtn(); $('autospin-modal').style.display = 'none';
+    isAutoSpinning = false; autoSpinsLeft = 0; if (autoSpinTimeout) clearTimeout(autoSpinTimeout); updateAutoSpinBtn(); if($('autospin-modal')) $('autospin-modal').style.display = 'none';
 }
 function updateAutoSpinBtn() {
-    const btn = $('autospin-btn'); if (isAutoSpinning) { btn.textContent = `STOP (${autoSpinsLeft})`; btn.style.background = 'linear-gradient(to bottom, #ff3b30, #a30000)'; } 
+    const btn = $('autospin-btn'); if (!btn) return;
+    if (isAutoSpinning) { btn.textContent = `STOP (${autoSpinsLeft})`; btn.style.background = 'linear-gradient(to bottom, #ff3b30, #a30000)'; } 
     else { btn.textContent = `АВТОСПИН`; btn.style.background = 'linear-gradient(to bottom, #3498db, #2980b9)'; }
 }
 async function executeAutoSpin() {
@@ -1003,24 +1010,19 @@ async function executeAutoSpin() {
 
 // --- РУЛЕТКА ---
 let currentRouletteBets = [], currentRouletteAmount = 10;
-
 function startRoulette() {
     $('lobby-screen').style.display = 'none'; $('roulette-screen').style.display = 'flex';
     const board = $('r-board');
     if (board.innerHTML === '') {
-        const zero = document.createElement('div'); zero.className = 'r-cell green'; zero.textContent = '0 (x10)'; zero.style.gridColumn = 'span 3'; zero.onclick = () => addBet('number', 0);
-        board.appendChild(zero);
+        const zero = document.createElement('div'); zero.className = 'r-cell green'; zero.textContent = '0 (x10)'; zero.style.gridColumn = 'span 3'; zero.onclick = () => addBet('number', 0); board.appendChild(zero);
         for (let i=1; i<=36; i++) {
-            const cell = document.createElement('div');
-            const isRed = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].includes(i);
-            cell.className = `r-cell ${isRed ? 'red' : 'black'}`; cell.textContent = i; cell.onclick = () => addBet('number', i);
-            board.appendChild(cell);
+            const cell = document.createElement('div'); const isRed = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].includes(i);
+            cell.className = `r-cell ${isRed ? 'red' : 'black'}`; cell.textContent = i; cell.onclick = () => addBet('number', i); board.appendChild(cell);
         }
         drawRouletteWheel();
         document.querySelectorAll('.r-amount-btn').forEach(btn => {
             btn.onclick = (e) => {
-                SFX.click();
-                document.querySelectorAll('.r-amount-btn').forEach(b => { b.classList.remove('active'); b.style.background = '#222'; b.style.color = '#fff'; b.style.borderColor = '#444'; });
+                SFX.click(); document.querySelectorAll('.r-amount-btn').forEach(b => { b.classList.remove('active'); b.style.background = '#222'; b.style.color = '#fff'; b.style.borderColor = '#444'; });
                 e.target.classList.add('active'); e.target.style.background = '#ffd700'; e.target.style.color = '#000'; e.target.style.borderColor = '#fff';
                 currentRouletteAmount = parseInt(e.target.dataset.amount); $('r-custom-bet').value = '';
             };
@@ -1033,24 +1035,19 @@ function startRoulette() {
         };
     }
 }
-
 $('r-menu-toggle').onclick = () => { const m = $('r-dropdown-menu'); m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; SFX.click(); };
-
 function drawRouletteWheel() {
-    const container = $('r-wheel-sectors'); container.innerHTML = '';
-    const redNumbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
+    const container = $('r-wheel-sectors'); container.innerHTML = ''; const redNumbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
     const wheelOrder = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
     const totalSectors = wheelOrder.length, anglePerSector = 360 / totalSectors, reversedOrder = [...wheelOrder].reverse();
     reversedOrder.forEach((num, index) => {
-        const sector = document.createElement('div'); sector.className = 'wheel-sector';
-        let color = num === 0 ? '#008800' : (redNumbers.includes(num) ? '#cc0000' : '#222');
+        const sector = document.createElement('div'); sector.className = 'wheel-sector'; let color = num === 0 ? '#008800' : (redNumbers.includes(num) ? '#cc0000' : '#222');
         sector.style.backgroundColor = color; sector.style.transform = `rotate(${index * anglePerSector}deg) skewY(${90 - anglePerSector}deg)`;
         const textWrap = document.createElement('div'); textWrap.style.position = 'absolute'; textWrap.style.width = '100%'; textWrap.style.height = '100%'; textWrap.style.display = 'flex'; textWrap.style.justifyContent = 'center'; textWrap.style.alignItems = 'flex-start'; textWrap.style.paddingTop = '8px'; textWrap.style.boxSizing = 'border-box'; textWrap.style.transform = `skewY(-${90 - anglePerSector}deg)`;
         const textSpan = document.createElement('span'); textSpan.textContent = num; textSpan.style.fontSize = '12px'; textSpan.style.fontWeight = '900'; textSpan.style.color = '#fff'; textSpan.style.textShadow = '0 1px 2px #000'; textSpan.style.transform = `rotate(${anglePerSector / 2}deg)`;
         textWrap.appendChild(textSpan); sector.appendChild(textWrap); container.appendChild(sector);
     });
 }
-
 function addBet(type, value) {
     if (currentRouletteAmount <= 0) { toast("Введи ставку!"); return; }
     let currentBalance = parseInt(state.balance) || 0;
@@ -1064,26 +1061,23 @@ function addBet(type, value) {
         if (cell) cell.classList.add('active');
     }
 }
-
 function resetRouletteBets() {
     if (currentRouletteBets.length === 0) return;
     const refund = currentRouletteBets.reduce((a,b)=>a+b.amount,0);
     state.balance = (parseInt(state.balance) || 0) + refund;
     $('r-bal').textContent = state.balance; $('bal').textContent = state.balance;
-    currentRouletteBets = []; $('r-total-bet').textContent = '0'; [...$('r-board').children].forEach(c => c.classList.remove('active'));
+    currentRouletteBets = []; $('r-total-bet').textContent = '0'; 
+    [...$('r-board').children].forEach(c => c.classList.remove('active'));
     SFX.click(); toast("Ставки сброшены");
 }
-
+$('r-reset-btn').onclick = resetRouletteBets;
 $('r-spin-btn').onclick = async () => {
-    const now = Date.now();
-    if (now - lastRouletteTime < SPIN_COOLDOWN) { toast(`Подожди ${Math.ceil((SPIN_COOLDOWN - (now - lastRouletteTime)) / 1000)} сек.`); return; }
-    lastRouletteTime = now;
-    if (currentRouletteBets.length === 0) { toast("Сделай ставку"); return; }
+    const now = Date.now(); if (now - lastRouletteTime < SPIN_COOLDOWN) { toast(`Подожди ${Math.ceil((SPIN_COOLDOWN - (now - lastRouletteTime)) / 1000)} сек.`); return; }
+    lastRouletteTime = now; if (currentRouletteBets.length === 0) { toast("Сделай ставку"); return; }
     const btn = $('r-spin-btn'); btn.disabled = true;
     try {
         const d = await api('/roulette/bet', { bets: currentRouletteBets });
-        $('r-bal').textContent = d.balance; $('bal').textContent = d.balance; state.balance = d.balance;
-        $('r-result').textContent = "Крутим..."; SFX.reelTick();
+        $('r-bal').textContent = d.balance; $('bal').textContent = d.balance; state.balance = d.balance; $('r-result').textContent = "Крутим..."; SFX.reelTick();
         setTimeout(async () => {
             try {
                 const res = await api('/roulette/spin');
@@ -1116,27 +1110,18 @@ $('menu-back').onclick = () => { location.reload(); };
 $('menu-ref').onclick = async () => {
     $('dropdown-menu').style.display = 'none'; SFX.click(); $('ref-modal').style.display = 'flex';
     $('ref-link').textContent = `https://t.me/Tim_slot_bot/slot?startapp=ref_${myId}`;
-    $('ref-friends-list').innerHTML = '<div style="color: #aaa;">Загрузка...</div>';
-    $('ref-stat-count').textContent = '0'; $('ref-stat-earn').textContent = '0';
+    $('ref-friends-list').innerHTML = '<div style="color: #aaa;">Загрузка...</div>'; $('ref-stat-count').textContent = '0'; $('ref-stat-earn').textContent = '0';
     try {
         const d = await api('/ref_stats');
-        $('ref-stat-count').textContent = d.ref_count || 0;
-        $('ref-stat-earn').textContent = (d.ref_earnings || 0).toLocaleString();
+        $('ref-stat-count').textContent = d.ref_count || 0; $('ref-stat-earn').textContent = (d.ref_earnings || 0).toLocaleString();
         const list = $('ref-friends-list'); list.innerHTML = '';
         if (!d.friends || d.friends.length === 0) { list.innerHTML = '<div style="color: #666; font-size: 12px; width: 100%; text-align: center;">Пока никого нет. Приглашай!</div>'; } 
-        else {
-            d.friends.forEach(f => {
-                const div = document.createElement('div'); div.style.cssText = "background: #222; padding: 5px; border-radius: 5px; display: flex; align-items: center; gap: 5px; font-size: 10px;";
-                div.innerHTML = `<span style="font-size: 16px;">${f.avatar || '👤'}</span> <span style="color: #aaa;">${f.id}</span>`; list.appendChild(div);
-            });
-        }
+        else { d.friends.forEach(f => { const div = document.createElement('div'); div.style.cssText = "background: #222; padding: 5px; border-radius: 5px; display: flex; align-items: center; gap: 5px; font-size: 10px;"; div.innerHTML = `<span style="font-size: 16px;">${f.avatar || '👤'}</span> <span style="color: #aaa;">${f.id}</span>`; list.appendChild(div); }); }
     } catch(e) { toast(e.message); }
 };
 $('copy-ref-btn').onclick = () => { 
     const link = $('ref-link').textContent; 
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(link).then(() => { $('copy-ref-btn').textContent = 'СКОПИРОВАНО!'; setTimeout(() => $('copy-ref-btn').textContent = 'КОПИРОВАТЬ', 2000); }).catch(() => {});
-    }
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(link).then(() => { $('copy-ref-btn').textContent = 'СКОПИРОВАНО!'; setTimeout(() => $('copy-ref-btn').textContent = 'КОПИРОВАТЬ', 2000); }).catch(() => {}); }
 };
 
 // --- РЕЙТИНГ ---
@@ -1145,8 +1130,7 @@ $('menu-rating').onclick = async () => {
     try {
         const d = await api('/rating'); $('rating-list').innerHTML = '';
         d.top.forEach((player, index) => {
-            const div = document.createElement('div');
-            div.style.cssText = "display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 1px solid #333;";
+            const div = document.createElement('div'); div.style.cssText = "display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 1px solid #333;";
             if (index === 0) div.style.borderColor = '#ffd700'; else if (index === 1) div.style.borderColor = '#c0c0c0'; else if (index === 2) div.style.borderColor = '#cd7f32';
             div.innerHTML = `<div style="display: flex; align-items: center; gap: 10px;"><strong style="font-size: 24px; width: 30px; text-align: center;">${player.avatar || '👤'}</strong><div><strong style="color: #fff; font-size: 14px;">${player.name}</strong></div></div><div style="text-align: right;"><strong style="color: #00ff88; font-size: 14px;">${player.capital.toLocaleString()}</strong><span style="color: #666; font-size: 10px; display: block;">капитал</span></div>`;
             $('rating-list').appendChild(div);
@@ -1224,7 +1208,6 @@ async function openCase() {
 const dailyWheelCanvas = $('daily-wheel-canvas'); const dailyCtx = dailyWheelCanvas.getContext('2d');
 const dailySlices = [ { label: '1000', color: '#333333' }, { label: '5000', color: '#111111' }, { label: '25000', color: '#333333' }, { label: '100000', color: '#111111' }, { label: '500000', color: '#ffd700' }, { label: '0', color: '#333333' }, { label: '1M', color: '#ff0000' }, { label: '0', color: '#333333' } ];
 const dailySliceAngle = Math.PI * 2 / dailySlices.length; let dailyRotation = 0; let isSpinningDaily = false; const dailyOffsetAngle = -Math.PI / 2 - dailySliceAngle / 2;
-
 function drawDailyWheel() {
     dailyCtx.clearRect(0, 0, 300, 300);
     for (let i = 0; i < dailySlices.length; i++) {
@@ -1234,34 +1217,16 @@ function drawDailyWheel() {
     }
     dailyCtx.beginPath(); dailyCtx.fillStyle = '#d4af37'; dailyCtx.arc(150, 150, 30, 0, Math.PI*2); dailyCtx.fill();
 }
-
 $('menu-daily').onclick = () => {
-    $('dropdown-menu').style.display = 'none'; 
-    SFX.click(); 
-    $('daily-wheel-modal').style.display = 'flex';
-    $('daily-wheel-result').style.opacity = '0'; 
-    $('daily-wheel-close').style.display = 'none'; 
-    $('daily-wheel-spin-btn').style.display = 'block';
-    
+    $('dropdown-menu').style.display = 'none'; SFX.click(); $('daily-wheel-modal').style.display = 'flex';
+    $('daily-wheel-result').style.opacity = '0'; $('daily-wheel-close').style.display = 'none'; $('daily-wheel-spin-btn').style.display = 'block';
     let timeLeft = state && typeof state.wheel_time_left === 'number' ? state.wheel_time_left : 0;
     let isReady = state && state.wheel_ready;
-
-    if (isReady) { 
-        $('daily-wheel-spin-btn').disabled = false; 
-        $('daily-wheel-timer').textContent = "Колесо доступно!"; 
-    } else if (timeLeft > 0) { 
-        $('daily-wheel-spin-btn').disabled = true; 
-        let m = Math.floor(timeLeft / 60); 
-        let h = Math.floor(m / 60); 
-        m = m % 60; 
-        $('daily-wheel-timer').textContent = `Ждать: ${h}ч ${m}м`; 
-    } else {
-        $('daily-wheel-spin-btn').disabled = true; 
-        $('daily-wheel-timer').textContent = "Загрузка данных..."; 
-    }
+    if (isReady) { $('daily-wheel-spin-btn').disabled = false; $('daily-wheel-timer').textContent = "Колесо доступно!"; } 
+    else if (timeLeft > 0) { $('daily-wheel-spin-btn').disabled = true; let m = Math.floor(timeLeft / 60); let h = Math.floor(m / 60); m = m % 60; $('daily-wheel-timer').textContent = `Ждать: ${h}ч ${m}м`; } 
+    else { $('daily-wheel-spin-btn').disabled = true; $('daily-wheel-timer').textContent = "Загрузка данных..."; }
     drawDailyWheel();
 };
-
 $('daily-wheel-spin-btn').onclick = async () => {
     if (isSpinningDaily) return; isSpinningDaily = true; $('daily-wheel-spin-btn').style.display = 'none';
     try {
@@ -1278,7 +1243,6 @@ $('daily-wheel-spin-btn').onclick = async () => {
 $('daily-wheel-close').onclick = () => { $('daily-wheel-modal').style.display = 'none'; };
 
 // --- ШАХТА ---
-let mineEnergy = 0, minePower = 0, mineMaxEnergy = 1000, minePickLvl = 1, mineTotalTapped = 0;
 async function openMine() { $('lobby-screen').style.display = 'none'; $('mine-modal').style.display = 'flex'; SFX.click(); await loadMineData(); }
 function closeMine() { $('mine-modal').style.display = 'none'; $('lobby-screen').style.display = 'flex'; refresh(); }
 async function loadMineData() { try { const d = await api('/get_mine'); mineEnergy = d.energy; minePower = d.tap_power; mineMaxEnergy = d.max_energy; minePickLvl = d.pickaxe_lvl; updateMineUI(); } catch(e) { toast(e.message); } }
@@ -1306,11 +1270,9 @@ $('menu-profile').onclick = () => {
     const list = $('avatars-list'); list.innerHTML = '';
     Object.entries(AVATARS).forEach(([id, item]) => {
         const isOwned = state.avatar === item.emoji; const canBuy = state.balance >= item.price;
-        const btn = document.createElement('button');
-        btn.style.cssText = `background: ${isOwned ? '#00c853' : (canBuy ? '#333' : '#111')}; border: 1px solid ${isOwned ? '#fff' : '#444'}; color: #fff; padding: 10px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: ${isOwned || !canBuy ? 'default' : 'pointer'};`;
+        const btn = document.createElement('button'); btn.style.cssText = `background: ${isOwned ? '#00c853' : (canBuy ? '#333' : '#111')}; border: 1px solid ${isOwned ? '#fff' : '#444'}; color: #fff; padding: 10px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: ${isOwned || !canBuy ? 'default' : 'pointer'};`;
         btn.innerHTML = `<span style="font-size: 30px;">${item.emoji}</span><span style="font-size: 10px; color: ${isOwned ? '#fff' : '#ffd700'};">${isOwned ? 'Надет' : item.price.toLocaleString()}</span>`;
-        if (!isOwned && canBuy) btn.onclick = () => buyAvatar(id);
-        list.appendChild(btn);
+        if (!isOwned && canBuy) btn.onclick = () => buyAvatar(id); list.appendChild(btn);
     });
 };
 async function buyAvatar(id) { SFX.click(); try { const d = await api('/buy_avatar', { avatar_id: id }); SFX.win(); toast(`Куплен!`); state.balance = d.balance; state.avatar = d.avatar; $('bal').textContent = state.balance; $('menu-profile').click(); refresh(); } catch(e) { SFX.lose(); toast(e.message); } }
@@ -1512,6 +1474,69 @@ async function buyAuctionLot(lotId, name) {
     if (!confirm(`Купить ${name}?`)) return; SFX.click();
     try { const d = await api('/auction/buy', { item_id: lotId }); SFX.bigWin(); triggerWinFlash(); toast(d.message); state.balance = d.balance; $('bal').textContent = state.balance; loadAuctionLots(); refresh(); } catch(e) { SFX.lose(); toast(e.message); }
 }
+
+// --- КЛАНЫ ---
+$('menu-clans').onclick = async () => { $('dropdown-menu').style.display = 'none'; SFX.click(); $('clans-modal').style.display = 'flex'; loadClans(); };
+async function loadClans() {
+    const container = $('clan-content'); container.innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
+    try {
+        const d = await api('/get_clans'); container.innerHTML = '';
+        if (d.my_clan) {
+            container.innerHTML = `<div style="text-align: center; margin-bottom: 20px; background: rgba(0,255,136,0.1); border: 2px solid #00ff88; padding: 15px; border-radius: 15px;"><h3 style="color: #00ff88; margin: 0;">${d.my_clan.name}</h3><p style="color: #aaa; margin: 5px 0;">Участников: ${d.my_clan.members} | Очки: ${d.my_clan.score.toLocaleString()}</p>${d.my_clan.role === 'owner' ? '<div style="color: #ffd700; font-size: 12px; margin-bottom: 10px;">👑 Вы владелец</div>' : ''}<button class="main-btn" onclick="openClanChest()" style="background: linear-gradient(to bottom, #ffd700, #b8860b); color: #000; width: 100%; padding: 10px; margin-bottom: 5px; box-shadow: none;">🎁 Сундук Клана</button><button class="main-btn" onclick="leaveClan()" style="background: #cc0000; padding: 10px; width: 100%; box-shadow: none;">Покинуть клан</button></div><h3 style="color: #ffd700; font-size: 16px;">Топ кланов</h3>`;
+        } else {
+            container.innerHTML = `<div style="margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px;"><h3 style="color: #fff; margin-top: 0; font-size: 16px;">Создать клан</h3><p style="color: #aaa; font-size: 12px;">Стоимость: 1 000 000</p><input type="text" id="clan-name-input" placeholder="Название" style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: #fff; border: 1px solid #444; border-radius: 8px;"><button class="main-btn" onclick="createClan()" style="background: #00c853; width: 100%; box-shadow: none;">СОЗДАТЬ</button></div><h3 style="color: #ffd700; font-size: 16px;">Топ кланов</h3>`;
+        }
+        d.top_clans.forEach(clan => {
+            const div = document.createElement('div'); div.style.cssText = "display: flex; justify-content: space-between; align-items: center; background: #222; padding: 10px; border-radius: 10px; margin-bottom: 5px;";
+            div.innerHTML = `<div><strong style="color: #fff;">${clan.name}</strong><div style="color: #aaa; font-size: 11px;">Очки: ${clan.score.toLocaleString()}</div></div>${!d.my_clan ? `<button class="main-btn" onclick="joinClan(${clan.id})" style="padding: 5px 10px; font-size: 10px; background: #ffd700; color: #000; box-shadow: none;">ВСТУПИТЬ</button>` : ''}`;
+            container.appendChild(div);
+        });
+    } catch(e) { toast(e.message); }
+}
+async function createClan() { const name = $('clan-name-input').value.trim(); if (name.length < 3) { toast("Короткое"); return; } SFX.click(); try { const d = await api('/create_clan', { name: name }); SFX.bigWin(); toast(d.message); state.balance = d.balance; $('bal').textContent = state.balance; loadClans(); refresh(); } catch(e) { SFX.lose(); toast(e.message); } }
+async function joinClan(id) { SFX.click(); try { await api('/join_clan', { clan_id: id }); SFX.win(); toast("Вступили!"); loadClans(); } catch(e) { SFX.lose(); toast(e.message); } }
+async function leaveClan() { if (!confirm("Покинуть?")) return; SFX.click(); try { await api('/leave_clan'); SFX.win(); toast("Покинули"); loadClans(); } catch(e) { SFX.lose(); toast(e.message); } }
+function openClanChest() { $('clans-modal').style.display = 'none'; $('clan-chest-modal').style.display = 'flex'; loadClanChest(); }
+async function loadClanChest() {
+    try {
+        const d = await api('/get_clan_chest'); const percent = Math.min(100, (d.current / d.goal) * 100);
+        $('clan-chest-bar').style.width = `${percent}%`; $('clan-chest-text').textContent = `${d.current.toLocaleString()} / ${d.goal.toLocaleString()}`;
+        const donorsList = $('clan-chest-donors'); donorsList.innerHTML = '';
+        if (d.donors.length === 0) { donorsList.innerHTML = '<div style="color: #666;">Пока никого</div>'; } 
+        else { d.donors.forEach(donor => { const div = document.createElement('div'); div.style.cssText = "display: flex; justify-content: space-between; background: rgba(255,255,255,0.05); padding: 5px 10px; border-radius: 5px; font-size: 12px;"; div.innerHTML = `<span>${donor.avatar} ${donor.name}</span><span style="color: #ffd700;">${donor.amount.toLocaleString()}</span>`; donorsList.appendChild(div); }); }
+    } catch(e) { toast(e.message); }
+}
+async function donateClan() {
+    const amount = parseInt($('clan-donate-input').value); if (isNaN(amount) || amount < 1000) { toast("Мин. 1000"); return; }
+    SFX.click(); try { const d = await api('/donate_clan', { amount: amount }); if (d.message.includes("ЦЕЛЬ")) { SFX.bigWin(); triggerWinFlash(); } else { SFX.win(); } toast(d.message); state.balance = d.balance; $('bal').textContent = state.balance; $('clan-donate-input').value = ''; loadClanChest(); refresh(); } catch(e) { SFX.lose(); toast(e.message); }
+}
+
+// --- КЛАНОВЫЕ ВОЙНЫ ---
+$('menu-clan-war').onclick = async () => {
+    $('dropdown-menu').style.display = 'none'; SFX.click(); $('clan-war-modal').style.display = 'flex'; const container = $('clan-war-content'); container.innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
+    try {
+        const d = await api('/clan_war_state');
+        if (!d.active) { container.innerHTML = '<div style="color: #aaa; text-align: center;">Нет активных войн</div>'; return; }
+        const total = d.clan1_score + d.clan2_score || 1; const percent1 = (d.clan1_score / total) * 100;
+        const timeLeft = d.end_time - Math.floor(Date.now() / 1000); const days = Math.floor(timeLeft / 86400); const hours = Math.floor((timeLeft % 86400) / 3600);
+        container.innerHTML = `<div style="text-align: center; color: #aaa; margin-bottom: 10px;">До конца: ${days}д ${hours}ч</div><div style="display: flex; justify-content: space-between; color: #fff; font-weight: bold; margin-bottom: 5px;"><span>${d.clan1_name}</span><span>${d.clan2_name}</span></div><div style="background: #222; height: 30px; border-radius: 15px; overflow: hidden; display: flex;"><div style="background: #00c853; width: ${percent1}%; height: 100%; display: flex; align-items: center; padding-left: 10px; font-size: 12px; color: #fff; font-weight: bold;">${d.clan1_score.toLocaleString()}</div><div style="background: #ff3b30; flex: 1; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; font-size: 12px; color: #fff; font-weight: bold;">${d.clan2_score.toLocaleString()}</div></div><div style="text-align: center; margin-top: 20px; font-size: 12px; color: #ffd700;">🏆 Победитель получает Сундук</div>`;
+    } catch(e) { toast(e.message); }
+};
+
+// --- ТУРНИР ---
+$('menu-tournament').onclick = async () => {
+    $('dropdown-menu').style.display = 'none'; SFX.click(); $('tournament-modal').style.display = 'flex'; const container = $('tournament-list'); container.innerHTML = '<div style="color: #ffd700;">Загрузка...</div>';
+    try {
+        const d = await api('/tournament'); $('tourney-score').textContent = d.my_score.toLocaleString(); container.innerHTML = '';
+        if (d.top.length === 0) { container.innerHTML = '<div style="color: #666;">Пусто</div>'; return; }
+        d.top.forEach((player, index) => {
+            const div = document.createElement('div'); div.style.cssText = "display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 1px solid #333;";
+            if (index === 0) div.style.borderColor = '#ffd700'; else if (index === 1) div.style.borderColor = '#c0c0c0'; else if (index === 2) div.style.borderColor = '#cd7f32';
+            div.innerHTML = `<div style="display: flex; align-items: center; gap: 10px;"><strong style="font-size: 18px; width: 30px; text-align: center;">${player.avatar || '👤'}</strong><strong style="color: #fff; font-size: 14px;">${player.name}</strong></div><strong style="color: #00ff88; font-size: 14px;">${player.score.toLocaleString()}</strong>`;
+            container.appendChild(div);
+        });
+    } catch(e) { toast(e.message); }
+};
 
 // --- ЧАТ ---
 let chatIsClan = false; let chatLastId = 0; let chatInterval = null; let lastSystemMessageId = 0;
